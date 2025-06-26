@@ -37,7 +37,10 @@ def index():
 
 @app.route('/<path:filename>')
 def static_files(filename):
-    return send_from_directory('.', filename)
+    try:
+        return send_from_directory('.', filename)
+    except FileNotFoundError:
+        return send_from_directory('.', 'index.html')
 
 @app.route('/api/students', methods=['GET', 'POST'])
 def handle_students():
