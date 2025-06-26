@@ -772,7 +772,7 @@ function getDateRange(startDate, endDate) {
 }
 
 // API Integration Functions
-const API_BASE = '/api';
+const API_BASE = window.location.port === '5000' ? '/api' : 'http://localhost:5000/api';
 
 async function saveData() {
     try {
