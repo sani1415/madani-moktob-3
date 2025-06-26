@@ -135,7 +135,7 @@ const translations = {
         subDistrict: "উপজেলা",
         mobileNumber: "মোবাইল নম্বর",
         class: "শ্রেণী",
-        uniqueId: "অনন্য পরিচয় নম্বর",
+        uniqueId: "পরিচিতি নম্বর",
         selectClass: "শ্রেণী নির্বাচন করুন",
         registerStudentBtn: "ছাত্র নিবন্ধন করুন",
         required: "*",
