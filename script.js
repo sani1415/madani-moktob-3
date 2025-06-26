@@ -26,14 +26,227 @@ function initializeApp() {
         initializeTodayAttendance();
     }
     
+    // Add sample data if no students exist
+    if (students.length === 0) {
+        addSampleData();
+    }
+    
     // Listen for date changes
     document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
     document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
 }
 
-// Sample Data Generation - Empty by default
+// Sample Data Generation - 15 students (5 per class for Classes 1-3)
 function addSampleData() {
-    // No sample data added unless explicitly requested
+    const sampleStudents = [
+        // Class 1 students
+        {
+            id: '101',
+            name: 'মোহাম্মদ আহমেদ',
+            fatherName: 'আব্দুল হামিদ',
+            address: 'বাড্ডা',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01612345677',
+            class: 'Class 1',
+            idNumber: '101',
+            registrationDate: '2024-01-14'
+        },
+        {
+            id: '102',
+            name: 'আব্দুল রহমান',
+            fatherName: 'মোহাম্মদ আলী',
+            address: 'মিরপুর ১০',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01712345678',
+            class: 'Class 1',
+            idNumber: '102',
+            registrationDate: '2024-01-15'
+        },
+        {
+            id: '103',
+            name: 'ইউসুফ হাসান',
+            fatherName: 'আব্দুল করিম',
+            address: 'উত্তরা সেক্টর ৭',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01812345679',
+            class: 'Class 1',
+            idNumber: '103',
+            registrationDate: '2024-01-16'
+        },
+        {
+            id: '104',
+            name: 'আব্দুল্লাহ সাইফ',
+            fatherName: 'মোহাম্মদ ইব্রাহিম',
+            address: 'ধানমন্ডি',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01912345680',
+            class: 'Class 1',
+            idNumber: '104',
+            registrationDate: '2024-01-17'
+        },
+        {
+            id: '105',
+            name: 'উমর ফারুক',
+            fatherName: 'আব্দুর রহমান',
+            address: 'গুলশান',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01612345681',
+            class: 'Class 1',
+            idNumber: '105',
+            registrationDate: '2024-01-18'
+        },
+        // Class 2 students
+        {
+            id: '201',
+            name: 'মোহাম্মদ হাসান',
+            fatherName: 'আবু বকর',
+            address: 'বনানী',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01512345682',
+            class: 'Class 2',
+            idNumber: '201',
+            registrationDate: '2024-01-19'
+        },
+        {
+            id: '202',
+            name: 'আব্দুল্লাহ মামুন',
+            fatherName: 'মোহাম্মদ ইউসুফ',
+            address: 'মোহাম্মদপুর',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01412345683',
+            class: 'Class 2',
+            idNumber: '202',
+            registrationDate: '2024-01-20'
+        },
+        {
+            id: '203',
+            name: 'ইসমাইল হোসেন',
+            fatherName: 'আব্দুল মজিদ',
+            address: 'যাত্রাবাড়ী',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01312345684',
+            class: 'Class 2',
+            idNumber: '203',
+            registrationDate: '2024-01-21'
+        },
+        {
+            id: '204',
+            name: 'মোহাম্মদ সালাহউদ্দিন',
+            fatherName: 'মোহাম্মদ সালাম',
+            address: 'রমনা',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01212345685',
+            class: 'Class 2',
+            idNumber: '204',
+            registrationDate: '2024-01-22'
+        },
+        {
+            id: '205',
+            name: 'হাফেজ আহমাদ',
+            fatherName: 'মোলানা আব্দুল কাদের',
+            address: 'কল্যাণপুর',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01112345686',
+            class: 'Class 2',
+            idNumber: '205',
+            registrationDate: '2024-01-23'
+        },
+        // Class 3 students
+        {
+            id: '301',
+            name: 'মোহাম্মদ ইব্রাহিম',
+            fatherName: 'আবু তালিব',
+            address: 'পল্টন',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01712345687',
+            class: 'Class 3',
+            idNumber: '301',
+            registrationDate: '2024-01-24'
+        },
+        {
+            id: '302',
+            name: 'আহমাদুল হক',
+            fatherName: 'মোহাম্মদ জামাল',
+            address: 'নিউমার্কেট',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01812345688',
+            class: 'Class 3',
+            idNumber: '302',
+            registrationDate: '2024-01-25'
+        },
+        {
+            id: '303',
+            name: 'আব্দুস সামাদ',
+            fatherName: 'মোহাম্মদ কবির',
+            address: 'ওয়ারী',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01912345689',
+            class: 'Class 3',
+            idNumber: '303',
+            registrationDate: '2024-01-26'
+        },
+        {
+            id: '304',
+            name: 'মোহাম্মদ তাহের',
+            fatherName: 'হাজী আব্দুর রশিদ',
+            address: 'সূত্রাপুর',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01612345690',
+            class: 'Class 3',
+            idNumber: '304',
+            registrationDate: '2024-01-27'
+        },
+        {
+            id: '305',
+            name: 'রাশিদুল ইসলাম',
+            fatherName: 'প্রফেসর আব্দুল লতিফ',
+            address: 'আজিমপুর',
+            district: 'ঢাকা',
+            upazila: 'ঢাকা সদর',
+            mobile: '01512345691',
+            class: 'Class 3',
+            idNumber: '305',
+            registrationDate: '2024-01-28'
+        }
+    ];
+    
+    // Only add students that don't already exist
+    sampleStudents.forEach(sampleStudent => {
+        if (!students.some(student => student.idNumber === sampleStudent.idNumber)) {
+            students.push(sampleStudent);
+        }
+    });
+    
+    // Initialize attendance for all new students for today
+    const today = new Date().toISOString().split('T')[0];
+    if (!attendance[today]) {
+        attendance[today] = {};
+    }
+    
+    students.forEach(student => {
+        if (!attendance[today][student.id]) {
+            attendance[today][student.id] = {
+                status: 'present',
+                reason: ''
+            };
+        }
+    });
+    
+    saveData();
 }
 
 // Mobile Menu Functions
