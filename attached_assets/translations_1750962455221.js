@@ -1,0 +1,413 @@
+
+// Translation data for the Madani Maktab application
+const translations = {
+    en: {
+        // Header
+        appTitle: "Madani Maktab",
+        appSubtitle: "Student Attendance Management System",
+        
+        // Navigation
+        dashboard: "Dashboard",
+        registerStudent: "Register Student",
+        dailyAttendance: "Daily Attendance",
+        reports: "Reports",
+        settings: "Settings",
+        
+        // Dashboard
+        totalStudents: "Total Students",
+        presentToday: "Present Today",
+        absentToday: "Absent Today",
+        attendanceRate: "Attendance Rate",
+        todayAttendanceOverview: "Today's Attendance Overview",
+        noAttendanceData: "No attendance data for today yet.",
+        noStudentsRegistered: "No students registered yet.",
+        noAttendanceDataAvailable: "No attendance data available.",
+        present: "Present",
+        absent: "Absent",
+        absentStudents: "Absent Students:",
+        noReasonProvided: "No reason provided",
+        
+        // Student Registration
+        studentRegistration: "Student Registration",
+        studentName: "Student Name",
+        fatherName: "Father's Name",
+        address: "Address",
+        district: "District",
+        subDistrict: "Sub-district (Upazila)",
+        mobileNumber: "Mobile Number",
+        class: "Class",
+        uniqueId: "Unique ID Number",
+        selectClass: "Select Class",
+        registerStudentBtn: "Register Student",
+        required: "*",
+        
+        // Daily Attendance
+        dailyAttendanceTitle: "Daily Attendance",
+        date: "Date:",
+        filterByClass: "Filter by Class:",
+        allClasses: "All Classes",
+        saveAttendance: "Save Attendance",
+        pleaseSelectDate: "Please select a date.",
+        noStudentsFound: "No students found for the selected criteria.",
+        noStudentsFoundRegister: "No students found. Please register students first.",
+        reasonForAbsence: "Reason for absence",
+        
+        // Reports
+        attendanceReports: "Attendance Reports",
+        fromDate: "From Date:",
+        toDate: "To Date:",
+        generateReport: "Generate Report",
+        attendanceReport: "Attendance Report",
+        period: "Period:",
+        studentNameCol: "Student Name",
+        classCol: "Class",
+        idNumberCol: "ID Number",
+        presentDays: "Present Days",
+        absentDays: "Absent Days",
+        attendancePercent: "Attendance %",
+        selectDateRange: "Select date range and click \"Generate Report\" to view attendance data.",
+        selectBothDates: "Please select both start and end dates.",
+        startDateAfterEnd: "Start date cannot be after end date.",
+        
+        // Settings
+        settingsTitle: "Settings",
+        manageClasses: "Manage Classes",
+        enterNewClassName: "Enter new class name",
+        enterClassName: "Please enter a class name.",
+        addClass: "Add Class",
+        delete: "Delete",
+        noClassesAdded: "No classes added yet.",
+        confirmDeleteClass: "Are you sure you want to delete the class",
+        cannotUndo: "This action cannot be undone.",
+        classExists: "This class already exists.",
+        classAdded: "class has been added successfully.",
+        classDeleted: "class has been deleted successfully.",
+        
+        // Common buttons and actions
+        ok: "OK",
+        save: "Save",
+        cancel: "Cancel",
+        edit: "Edit",
+        add: "Add",
+        
+        // Messages
+        success: "Success",
+        error: "Error",
+        fillAllFields: "Please fill in all required fields.",
+        duplicateId: "A student with this ID number already exists.",
+        duplicateMobile: "A student with this mobile number already exists.",
+        studentRegistered: "has been registered successfully.",
+        attendanceSaved: "Attendance has been saved successfully."
+    },
+    
+    bn: {
+        // Header
+        appTitle: "মাদানী মক্তব",
+        appSubtitle: "ছাত্র উপস্থিতি ব্যবস্থাপনা সিস্টেম",
+        
+        // Navigation
+        dashboard: "ড্যাশবোর্ড",
+        registerStudent: "ছাত্র নিবন্ধন",
+        dailyAttendance: "দৈনিক উপস্থিতি",
+        reports: "রিপোর্ট",
+        settings: "সেটিংস",
+        
+        // Dashboard
+        totalStudents: "মোট ছাত্র",
+        presentToday: "আজ উপস্থিত",
+        absentToday: "আজ অনুপস্থিত",
+        attendanceRate: "উপস্থিতির হার",
+        todayAttendanceOverview: "আজকের উপস্থিতির সংক্ষিপ্ত বিবরণ",
+        noAttendanceData: "আজকের জন্য এখনো কোন উপস্থিতির তথ্য নেই।",
+        noStudentsRegistered: "এখনো কোন ছাত্র নিবন্ধিত হয়নি।",
+        noAttendanceDataAvailable: "কোন উপস্থিতির তথ্য উপলব্ধ নেই।",
+        present: "উপস্থিত",
+        absent: "অনুপস্থিত",
+        absentStudents: "অনুপস্থিত ছাত্রগণ:",
+        noReasonProvided: "কোন কারণ দেওয়া হয়নি",
+        
+        // Student Registration
+        studentRegistration: "ছাত্র নিবন্ধন",
+        studentName: "ছাত্রের নাম",
+        fatherName: "পিতার নাম",
+        address: "ঠিকানা",
+        district: "জেলা",
+        subDistrict: "উপজেলা",
+        mobileNumber: "মোবাইল নম্বর",
+        class: "শ্রেণী",
+        uniqueId: "অনন্য পরিচয় নম্বর",
+        selectClass: "শ্রেণী নির্বাচন করুন",
+        registerStudentBtn: "ছাত্র নিবন্ধন করুন",
+        required: "*",
+        
+        // Daily Attendance
+        dailyAttendanceTitle: "দৈনিক উপস্থিতি",
+        date: "তারিখ:",
+        filterByClass: "শ্রেণী অনুযায়ী ফিল্টার:",
+        allClasses: "সকল শ্রেণী",
+        saveAttendance: "উপস্থিতি সংরক্ষণ করুন",
+        pleaseSelectDate: "অনুগ্রহ করে একটি তারিখ নির্বাচন করুন।",
+        noStudentsFound: "নির্বাচিত মানদণ্ডের জন্য কোন ছাত্র পাওয়া যায়নি।",
+        noStudentsFoundRegister: "কোন ছাত্র পাওয়া যায়নি। অনুগ্রহ করে প্রথমে ছাত্র নিবন্ধন করুন।",
+        reasonForAbsence: "অনুপস্থিতির কারণ",
+        
+        // Reports
+        attendanceReports: "উপস্থিতির রিপোর্ট",
+        fromDate: "শুরুর তারিখ:",
+        toDate: "শেষের তারিখ:",
+        generateReport: "রিপোর্ট তৈরি করুন",
+        attendanceReport: "উপস্থিতির রিপোর্ট",
+        period: "সময়কাল:",
+        studentNameCol: "ছাত্রের নাম",
+        classCol: "শ্রেণী",
+        idNumberCol: "পরিচয় নম্বর",
+        presentDays: "উপস্থিত দিন",
+        absentDays: "অনুপস্থিত দিন",
+        attendancePercent: "উপস্থিতির %",
+        selectDateRange: "তারিখের পরিসর নির্বাচন করুন এবং উপস্থিতির তথ্য দেখার জন্য \"রিপোর্ট তৈরি করুন\" ক্লিক করুন।",
+        selectBothDates: "অনুগ্রহ করে শুরু এবং শেষ উভয় তারিখ নির্বাচন করুন।",
+        startDateAfterEnd: "শুরুর তারিখ শেষের তারিখের পরে হতে পারে না।",
+        
+        // Settings
+        settingsTitle: "সেটিংস",
+        manageClasses: "শ্রেণী ব্যবস্থাপনা",
+        enterNewClassName: "নতুন শ্রেণীর নাম লিখুন",
+        enterClassName: "অনুগ্রহ করে একটি শ্রেণীর নাম লিখুন।",
+        addClass: "শ্রেণী যোগ করুন",
+        delete: "মুছুন",
+        noClassesAdded: "এখনো কোন শ্রেণী যোগ করা হয়নি।",
+        confirmDeleteClass: "আপনি কি নিশ্চিত যে আপনি শ্রেণী মুছে দিতে চান",
+        cannotUndo: "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+        classExists: "এই শ্রেণী ইতিমধ্যে বিদ্যমান।",
+        classAdded: "শ্রেণী সফলভাবে যোগ করা হয়েছে।",
+        classDeleted: "শ্রেণী সফলভাবে মুছে দেওয়া হয়েছে।",
+        
+        // Common buttons and actions
+        ok: "ঠিক আছে",
+        save: "সংরক্ষণ",
+        cancel: "বাতিল",
+        edit: "সম্পাদনা",
+        add: "যোগ করুন",
+        
+        // Messages
+        success: "সফল",
+        error: "ত্রুটি",
+        fillAllFields: "অনুগ্রহ করে সব প্রয়োজনীয় তথ্য পূরণ করুন।",
+        duplicateId: "এই পরিচয় নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
+        duplicateMobile: "এই মোবাইল নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
+        studentRegistered: "সফলভাবে নিবন্ধিত হয়েছে।",
+        attendanceSaved: "উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে।"
+    }
+};
+
+// Current language
+let currentLanguage = 'en';
+
+// Translation function
+function t(key) {
+    return translations[currentLanguage][key] || key;
+}
+
+// Change language function
+function changeLanguage(lang) {
+    currentLanguage = lang;
+    updateAllTexts();
+    
+    // Save language preference
+    localStorage.setItem('madaniMaktabLanguage', lang);
+}
+
+// Initialize language on page load
+function initializeLanguage() {
+    const savedLanguage = localStorage.getItem('madaniMaktabLanguage') || 'en';
+    currentLanguage = savedLanguage;
+    document.getElementById('languageSelector').value = savedLanguage;
+    updateAllTexts();
+}
+
+// Update all texts in the application
+function updateAllTexts() {
+    updateHeaderTexts();
+    updateNavigationTexts();
+    updateDashboardTexts();
+    updateRegistrationTexts();
+    updateAttendanceTexts();
+    updateReportsTexts();
+    updateSettingsTexts();
+}
+
+// Update header texts
+function updateHeaderTexts() {
+    document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${t('appTitle')}`;
+    document.querySelector('.header p').textContent = t('appSubtitle');
+}
+
+// Update navigation texts
+function updateNavigationTexts() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'settings'];
+    
+    navLinks.forEach((link, index) => {
+        const icon = link.querySelector('i').outerHTML;
+        link.innerHTML = `${icon} ${t(navTexts[index])}`;
+    });
+}
+
+// Update dashboard texts
+function updateDashboardTexts() {
+    document.querySelector('#dashboard h2').textContent = t('dashboard');
+    
+    const statCards = document.querySelectorAll('.stat-card p');
+    const statTexts = ['totalStudents', 'presentToday', 'absentToday', 'attendanceRate'];
+    
+    statCards.forEach((card, index) => {
+        card.textContent = t(statTexts[index]);
+    });
+    
+    const overviewTitle = document.querySelector('.recent-activity h3');
+    if (overviewTitle) {
+        overviewTitle.textContent = t('todayAttendanceOverview');
+    }
+}
+
+// Update registration texts
+function updateRegistrationTexts() {
+    document.querySelector('#registration h2').textContent = t('studentRegistration');
+    
+    // Update form labels
+    const labels = [
+        { id: 'studentName', key: 'studentName' },
+        { id: 'fatherName', key: 'fatherName' },
+        { id: 'address', key: 'address' },
+        { id: 'district', key: 'district' },
+        { id: 'upazila', key: 'subDistrict' },
+        { id: 'mobile', key: 'mobileNumber' },
+        { id: 'studentClass', key: 'class' },
+        { id: 'idNumber', key: 'uniqueId' }
+    ];
+    
+    labels.forEach(label => {
+        const labelElement = document.querySelector(`label[for="${label.id}"]`);
+        if (labelElement) {
+            labelElement.textContent = t(label.key) + ' *';
+        }
+    });
+    
+    // Update class dropdown first option
+    const classSelect = document.getElementById('studentClass');
+    if (classSelect && classSelect.options[0]) {
+        classSelect.options[0].textContent = t('selectClass');
+    }
+    
+    // Update submit button
+    const submitBtn = document.querySelector('#studentForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('registerStudentBtn')}`;
+    }
+}
+
+// Update attendance texts
+function updateAttendanceTexts() {
+    document.querySelector('#attendance h2').textContent = t('dailyAttendanceTitle');
+    
+    // Update labels
+    const dateLabel = document.querySelector('label[for="attendanceDate"]');
+    if (dateLabel) dateLabel.textContent = t('date');
+    
+    const classLabel = document.querySelector('label[for="classFilter"]');
+    if (classLabel) classLabel.textContent = t('filterByClass');
+    
+    // Update class filter first option
+    const classFilter = document.getElementById('classFilter');
+    if (classFilter && classFilter.options[0]) {
+        classFilter.options[0].textContent = t('allClasses');
+    }
+    
+    // Update save button
+    const saveBtn = document.querySelector('[onclick="saveAttendance()"]');
+    if (saveBtn) {
+        saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveAttendance')}`;
+    }
+    
+    // Reload attendance for current date to update present/absent labels
+    if (typeof loadAttendanceForDate === 'function') {
+        loadAttendanceForDate();
+    }
+}
+
+// Update reports texts
+function updateReportsTexts() {
+    document.querySelector('#reports h2').textContent = t('attendanceReports');
+    
+    // Update labels
+    const reportLabels = [
+        { selector: 'label[for="reportStartDate"]', key: 'fromDate' },
+        { selector: 'label[for="reportEndDate"]', key: 'toDate' },
+        { selector: 'label[for="reportClass"]', key: 'class' }
+    ];
+    
+    reportLabels.forEach(label => {
+        const element = document.querySelector(label.selector);
+        if (element) element.textContent = t(label.key);
+    });
+    
+    // Update generate report button
+    const generateBtn = document.querySelector('[onclick="generateReport()"]');
+    if (generateBtn) {
+        generateBtn.innerHTML = `<i class="fas fa-chart-bar"></i> ${t('generateReport')}`;
+    }
+    
+    // Update report class filter first option
+    const reportClassSelect = document.getElementById('reportClass');
+    if (reportClassSelect && reportClassSelect.options[0]) {
+        reportClassSelect.options[0].textContent = t('allClasses');
+    }
+}
+
+// Update settings texts
+function updateSettingsTexts() {
+    document.querySelector('#settings h2').textContent = t('settingsTitle');
+    
+    const manageClassesTitle = document.querySelector('.settings-content h3');
+    if (manageClassesTitle) {
+        manageClassesTitle.textContent = t('manageClasses');
+    }
+    
+    // Update class name input placeholder
+    const classNameInput = document.getElementById('newClassName');
+    if (classNameInput) {
+        classNameInput.placeholder = t('enterNewClassName');
+    }
+    
+    // Update add class button
+    const addClassBtn = document.querySelector('[onclick="addClass()"]');
+    if (addClassBtn) {
+        addClassBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addClass')}`;
+    }
+}
+
+// Update section content when switching sections
+function updateSectionContent(sectionId) {
+    switch(sectionId) {
+        case 'dashboard':
+            updateDashboardTexts();
+            break;
+        case 'registration':
+            updateRegistrationTexts();
+            break;
+        case 'attendance':
+            updateAttendanceTexts();
+            break;
+        case 'reports':
+            updateReportsTexts();
+            break;
+        case 'settings':
+            updateSettingsTexts();
+            break;
+    }
+}
+
+// Initialize language when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeLanguage();
+});
