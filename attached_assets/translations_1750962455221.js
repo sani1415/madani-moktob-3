@@ -1,3 +1,4 @@
+
 // Translation data for the Madani Maktab application
 const translations = {
     en: {
@@ -55,7 +56,6 @@ const translations = {
         attendanceReports: "Attendance Reports",
         fromDate: "From Date:",
         toDate: "To Date:",
-        to: "to",
         generateReport: "Generate Report",
         attendanceReport: "Attendance Report",
         period: "Period:",
@@ -135,7 +135,7 @@ const translations = {
         subDistrict: "উপজেলা",
         mobileNumber: "মোবাইল নম্বর",
         class: "শ্রেণী",
-        uniqueId: "পরিচিতি নম্বর",
+        uniqueId: "অনন্য পরিচয় নম্বর",
         selectClass: "শ্রেণী নির্বাচন করুন",
         registerStudentBtn: "ছাত্র নিবন্ধন করুন",
         required: "*",
@@ -155,7 +155,6 @@ const translations = {
         attendanceReports: "উপস্থিতির রিপোর্ট",
         fromDate: "শুরুর তারিখ:",
         toDate: "শেষের তারিখ:",
-        to: "থেকে",
         generateReport: "রিপোর্ট তৈরি করুন",
         attendanceReport: "উপস্থিতির রিপোর্ট",
         period: "সময়কাল:",
@@ -275,23 +274,35 @@ function updateDashboardTexts() {
 function updateRegistrationTexts() {
     document.querySelector('#registration h2').textContent = t('studentRegistration');
     
-    const labels = document.querySelectorAll('#registration label');
-    const labelTexts = ['studentName', 'fatherName', 'address', 'district', 'subDistrict', 'mobileNumber', 'class', 'uniqueId'];
+    // Update form labels
+    const labels = [
+        { id: 'studentName', key: 'studentName' },
+        { id: 'fatherName', key: 'fatherName' },
+        { id: 'address', key: 'address' },
+        { id: 'district', key: 'district' },
+        { id: 'upazila', key: 'subDistrict' },
+        { id: 'mobile', key: 'mobileNumber' },
+        { id: 'studentClass', key: 'class' },
+        { id: 'idNumber', key: 'uniqueId' }
+    ];
     
-    labels.forEach((label, index) => {
-        if (labelTexts[index]) {
-            label.textContent = t(labelTexts[index]) + ' *';
+    labels.forEach(label => {
+        const labelElement = document.querySelector(`label[for="${label.id}"]`);
+        if (labelElement) {
+            labelElement.textContent = t(label.key) + ' *';
         }
     });
     
-    const submitBtn = document.querySelector('#studentForm button');
-    if (submitBtn) {
-        submitBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('registerStudentBtn')}`;
+    // Update class dropdown first option
+    const classSelect = document.getElementById('studentClass');
+    if (classSelect && classSelect.options[0]) {
+        classSelect.options[0].textContent = t('selectClass');
     }
     
-    const selectOption = document.querySelector('#studentClass option[value=""]');
-    if (selectOption) {
-        selectOption.textContent = t('selectClass');
+    // Update submit button
+    const submitBtn = document.querySelector('#studentForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('registerStudentBtn')}`;
     }
 }
 
@@ -299,48 +310,57 @@ function updateRegistrationTexts() {
 function updateAttendanceTexts() {
     document.querySelector('#attendance h2').textContent = t('dailyAttendanceTitle');
     
-    const dateLabel = document.querySelector('.date-selector label');
-    if (dateLabel) {
-        dateLabel.textContent = t('date');
+    // Update labels
+    const dateLabel = document.querySelector('label[for="attendanceDate"]');
+    if (dateLabel) dateLabel.textContent = t('date');
+    
+    const classLabel = document.querySelector('label[for="classFilter"]');
+    if (classLabel) classLabel.textContent = t('filterByClass');
+    
+    // Update class filter first option
+    const classFilter = document.getElementById('classFilter');
+    if (classFilter && classFilter.options[0]) {
+        classFilter.options[0].textContent = t('allClasses');
     }
     
-    const classLabel = document.querySelector('.class-filter label');
-    if (classLabel) {
-        classLabel.textContent = t('filterByClass');
-    }
-    
-    const saveBtn = document.querySelector('#attendance .btn-success');
+    // Update save button
+    const saveBtn = document.querySelector('[onclick="saveAttendance()"]');
     if (saveBtn) {
         saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveAttendance')}`;
     }
     
-    const allClassesOption = document.querySelector('#classFilter option[value=""]');
-    if (allClassesOption) {
-        allClassesOption.textContent = t('allClasses');
+    // Reload attendance for current date to update present/absent labels
+    if (typeof loadAttendanceForDate === 'function') {
+        loadAttendanceForDate();
     }
 }
 
-// Update reports texts 
+// Update reports texts
 function updateReportsTexts() {
     document.querySelector('#reports h2').textContent = t('attendanceReports');
     
-    const reportLabels = document.querySelectorAll('#reports .form-group label');
-    const reportLabelTexts = ['fromDate', 'toDate', 'class'];
+    // Update labels
+    const reportLabels = [
+        { selector: 'label[for="reportStartDate"]', key: 'fromDate' },
+        { selector: 'label[for="reportEndDate"]', key: 'toDate' },
+        { selector: 'label[for="reportClass"]', key: 'class' }
+    ];
     
-    reportLabels.forEach((label, index) => {
-        if (reportLabelTexts[index]) {
-            label.textContent = t(reportLabelTexts[index]);
-        }
+    reportLabels.forEach(label => {
+        const element = document.querySelector(label.selector);
+        if (element) element.textContent = t(label.key);
     });
     
-    const generateBtn = document.querySelector('#reports .btn-primary');
+    // Update generate report button
+    const generateBtn = document.querySelector('[onclick="generateReport()"]');
     if (generateBtn) {
         generateBtn.innerHTML = `<i class="fas fa-chart-bar"></i> ${t('generateReport')}`;
     }
     
-    const reportAllClassesOption = document.querySelector('#reportClass option[value=""]');
-    if (reportAllClassesOption) {
-        reportAllClassesOption.textContent = t('allClasses');
+    // Update report class filter first option
+    const reportClassSelect = document.getElementById('reportClass');
+    if (reportClassSelect && reportClassSelect.options[0]) {
+        reportClassSelect.options[0].textContent = t('allClasses');
     }
 }
 
@@ -348,17 +368,19 @@ function updateReportsTexts() {
 function updateSettingsTexts() {
     document.querySelector('#settings h2').textContent = t('settingsTitle');
     
-    const settingsH3 = document.querySelector('#settings h3');
-    if (settingsH3) {
-        settingsH3.textContent = t('manageClasses');
+    const manageClassesTitle = document.querySelector('.settings-content h3');
+    if (manageClassesTitle) {
+        manageClassesTitle.textContent = t('manageClasses');
     }
     
+    // Update class name input placeholder
     const classNameInput = document.getElementById('newClassName');
     if (classNameInput) {
         classNameInput.placeholder = t('enterNewClassName');
     }
     
-    const addClassBtn = document.querySelector('#settings .btn-primary');
+    // Update add class button
+    const addClassBtn = document.querySelector('[onclick="addClass()"]');
     if (addClassBtn) {
         addClassBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addClass')}`;
     }
@@ -384,3 +406,8 @@ function updateSectionContent(sectionId) {
             break;
     }
 }
+
+// Initialize language when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeLanguage();
+});

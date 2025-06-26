@@ -2,35 +2,28 @@
 
 ## Overview
 
-Madani Maktab is a web-based student attendance management system designed for Islamic educational institutions. The application provides a comprehensive solution for student registration, daily attendance tracking, and reporting with multilingual support (English and Bengali). Built with Flask backend and PostgreSQL database, it offers reliable data persistence and multi-user capabilities.
+Madani Maktab is a web-based student attendance management system designed for educational institutions. The application provides a comprehensive solution for student registration, daily attendance tracking, and reporting with multilingual support (English and Bengali). It's built as a client-side application using vanilla HTML, CSS, and JavaScript with local storage for data persistence.
 
 ## System Architecture
-
-### Backend Architecture
-- **Technology Stack**: Flask (Python), PostgreSQL database, SQLAlchemy ORM
-- **API Design**: RESTful endpoints for all data operations
-- **Database Models**: Student, Class, AttendanceRecord with proper relationships
-- **Data Validation**: Server-side validation with error handling
 
 ### Frontend Architecture
 - **Technology Stack**: Vanilla HTML5, CSS3, JavaScript (ES6+)
 - **UI Framework**: Custom CSS with responsive design
 - **Icons**: Font Awesome 6.0.0 for consistent iconography
 - **Layout**: Mobile-first responsive design with flexible grid system
-- **API Integration**: Async/await pattern for database communication
+- **State Management**: Browser localStorage for data persistence
 
 ### Data Storage Strategy
-- **Primary Storage**: PostgreSQL database with proper indexing and constraints
+- **Primary Storage**: Browser localStorage for all application data
 - **Data Models**: 
   - Students: Personal information, class assignment, registration details
   - Classes: Dynamic class management system
   - Attendance: Date-based attendance records with student status tracking
-- **Data Integrity**: Foreign key relationships and validation rules
 
 ### Deployment Strategy
-- **Runtime Environment**: Flask development server on port 5001
-- **Database**: PostgreSQL with environment-based configuration
-- **File Structure**: Standard Flask application layout with templates and static files
+- **Runtime Environment**: Python 3.11 HTTP server for development
+- **Static Hosting**: Simple file-based structure suitable for any web server
+- **Port Configuration**: Default port 5000 for local development
 
 ## Key Components
 
@@ -129,16 +122,5 @@ Preferred communication style: Simple, everyday language.
 
 ## Changelog
 
-- June 26, 2025: Initial setup with localStorage-based system
-- June 26, 2025: Migrated to PostgreSQL database with Flask backend
-- June 26, 2025: Cleaned up project structure, removed duplicate files
-- June 26, 2025: Updated architecture to use REST API endpoints for all operations
-
-## Recent Changes
-
-✓ Migrated from browser localStorage to PostgreSQL database
-✓ Implemented Flask backend with RESTful API endpoints  
-✓ Added proper database models with relationships and constraints
-✓ Maintained all original functionality while improving data reliability
-✓ Cleaned project structure removing unnecessary duplicate files
-✓ Updated file organization to follow Flask best practices
+Changelog:
+- June 26, 2025. Initial setup

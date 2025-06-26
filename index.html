@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Madani Maktab - Student Attendance Management</title>
-    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet" type="text/css" />
+    <link href="style.css" rel="stylesheet" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -86,7 +86,7 @@
                 <div class="recent-activity">
                     <h3>Today's Attendance Overview</h3>
                     <div id="todayOverview" class="overview-content">
-                        <p>Loading attendance data...</p>
+                        <p>No attendance data for today yet.</p>
                     </div>
                 </div>
             </section>
@@ -162,7 +162,7 @@
                     </button>
                 </div>
                 <div id="attendanceList" class="attendance-list">
-                    <p>Loading students...</p>
+                    <p>No students found. Please register students first.</p>
                 </div>
             </section>
 
@@ -231,7 +231,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='translations.js') }}"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="translations.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
