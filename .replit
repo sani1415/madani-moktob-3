@@ -4,7 +4,7 @@ modules = ["nodejs-20", "python-3.11"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Flask Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -23,6 +23,15 @@ author = "agent"
 task = "shell.exec"
 args = "python3 -m http.server 5000"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Flask Server"
+author = 39842365
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python server.py"
 
 [[ports]]
 localPort = 5000

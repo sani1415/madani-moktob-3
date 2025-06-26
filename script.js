@@ -4,8 +4,9 @@ let classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class
 let attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
 
 // Initialize Application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initializeLanguage();
+    await loadData();
     initializeApp();
 });
 
@@ -770,11 +771,63 @@ function getDateRange(startDate, endDate) {
     return dates;
 }
 
-// Utility Functions
-function saveData() {
-    localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
-    localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
-    localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+// API Integration Functions
+const API_BASE = '/api';
+
+async function saveData() {
+    try {
+        await Promise.all([
+            fetch(`${API_BASE}/students`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(students)
+            }),
+            fetch(`${API_BASE}/classes`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(classes)
+            }),
+            fetch(`${API_BASE}/attendance`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(attendance)
+            })
+        ]);
+        
+        // Fallback to localStorage
+        localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
+        localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
+        localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+    } catch (error) {
+        console.error('Save failed, using localStorage:', error);
+        localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
+        localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
+        localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+    }
+}
+
+async function loadData() {
+    try {
+        const [studentsRes, classesRes, attendanceRes] = await Promise.all([
+            fetch(`${API_BASE}/students`),
+            fetch(`${API_BASE}/classes`),
+            fetch(`${API_BASE}/attendance`)
+        ]);
+        
+        if (studentsRes.ok && classesRes.ok && attendanceRes.ok) {
+            students = await studentsRes.json();
+            classes = await classesRes.json();
+            attendance = await attendanceRes.json();
+            return;
+        }
+    } catch (error) {
+        console.error('Load from API failed, using localStorage:', error);
+    }
+    
+    // Fallback to localStorage
+    students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+    classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+    attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
 }
 
 function showModal(title, message) {
