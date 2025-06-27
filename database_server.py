@@ -19,14 +19,11 @@ CORS(app)
 def get_db_connection():
     """Get PostgreSQL database connection"""
     db_url = os.environ.get('DATABASE_URL')
-    url = urlparse(db_url)
-    return psycopg2.connect(
-        database=url.path[1:],
-        user=url.username,
-        password=url.password,
-        host=url.hostname,
-        port=url.port
-    )
+    if not db_url:
+        raise Exception("DATABASE_URL environment variable not set")
+    
+    # Connect directly using the URL for Neon database
+    return psycopg2.connect(db_url)
 
 def init_database():
     """Initialize database tables"""
@@ -121,8 +118,16 @@ def get_students():
 def add_student():
     try:
         student_data = request.json
+        if not student_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        required_fields = ['id', 'name']
+        for field in required_fields:
+            if field not in student_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
         
         cursor.execute("""
             INSERT INTO students (id, name, father_name, mobile_number, district, upazila, class_name, registration_date)
@@ -143,7 +148,7 @@ def add_student():
             student_data.get('district', ''),
             student_data.get('upazila', ''),
             student_data.get('class', ''),
-            student_data.get('registrationDate', None)
+            student_data.get('registrationDate')
         ))
         
         conn.commit()
@@ -197,6 +202,14 @@ def get_attendance():
 def save_attendance():
     try:
         data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['student_id', 'date', 'status']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+                
         conn = get_db_connection()
         cursor = conn.cursor()
         
@@ -243,6 +256,14 @@ def get_holidays():
 def add_holiday():
     try:
         data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['date', 'name']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+                
         conn = get_db_connection()
         cursor = conn.cursor()
         
