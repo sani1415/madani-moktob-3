@@ -373,9 +373,7 @@ function loadAttendanceForDate() {
         return `
             <div class="student-row">
                 <div class="student-info">
-                    <h4>${student.name}</h4>
-                    <p>${t('class')}: ${student.class} | ID: ${student.idNumber}</p>
-                    <p>${student.fatherName} | ${student.mobile}</p>
+                    <h4>${student.idNumber} - ${student.name}</h4>
                 </div>
                 <div class="attendance-toggle">
                     <span>${t('present')}</span>
