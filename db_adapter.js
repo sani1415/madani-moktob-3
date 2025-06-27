@@ -152,17 +152,21 @@ class DatabaseAdapter {
 
     async getFromIndexedDB(storeName) {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(storeName + '_data');
+            try {
+                const transaction = this.db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.get(storeName + '_data');
 
-            request.onsuccess = () => {
-                resolve(request.result ? request.result.data : null);
-            };
+                request.onsuccess = () => {
+                    resolve(request.result ? request.result.data : null);
+                };
 
-            request.onerror = () => {
-                reject(request.error);
-            };
+                request.onerror = () => {
+                    resolve(null); // Return null instead of rejecting
+                };
+            } catch (error) {
+                resolve(null); // Return null for any errors
+            }
         });
     }
 

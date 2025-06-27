@@ -7,16 +7,6 @@ channel = "stable-24_05"
 runButton = "Project"
 
 [[workflows.workflow]]
-name = "Flask Server"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
 name = "Project"
 mode = "parallel"
 author = "agent"

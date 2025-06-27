@@ -86,21 +86,29 @@ async function initializeAppWithDatabase() {
 }
 
 async function loadDataFromDatabase() {
+    // Always start with localStorage data (reliable baseline)
+    students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+    classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+    attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
+    holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+    
+    // Try to enhance with database data if available
     try {
-        // Wait for database adapter to be ready
-        await dbAdapter.waitForReady();
-        
-        students = await dbAdapter.getStudents() || [];
-        classes = await dbAdapter.getClasses() || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-        attendance = await dbAdapter.getAttendance() || {};
-        holidays = await dbAdapter.getHolidays() || [];
+        if (typeof dbAdapter !== 'undefined' && dbAdapter.useDatabase) {
+            await dbAdapter.waitForReady();
+            
+            const dbStudents = await dbAdapter.getStudents();
+            const dbClasses = await dbAdapter.getClasses();
+            const dbAttendance = await dbAdapter.getAttendance();
+            const dbHolidays = await dbAdapter.getHolidays();
+            
+            if (dbStudents && dbStudents.length > 0) students = dbStudents;
+            if (dbClasses && dbClasses.length > 0) classes = dbClasses;
+            if (dbAttendance && Object.keys(dbAttendance).length > 0) attendance = dbAttendance;
+            if (dbHolidays && dbHolidays.length > 0) holidays = dbHolidays;
+        }
     } catch (error) {
-        console.error('Error loading data from database:', error);
-        // Fallback to localStorage if database fails
-        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
-        classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
-        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+        console.log('Using localStorage data (database enhancement failed)');
     }
 }
 
@@ -125,6 +133,29 @@ async function migrateSampleData() {
     students = sampleStudents;
     await saveDataToDatabase();
     console.log('Sample data migrated to database successfully');
+}
+
+function addSampleDataFallback() {
+    // Fallback sample data for localStorage
+    const sampleStudents = [
+        // Class 4 students (IDs: 401-405)
+        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-06-01' },
+        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-06-02' },
+        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-06-03' },
+        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-06-04' },
+        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-06-05' },
+        
+        // Class 5 students (IDs: 501-505)
+        { id: '501', name: 'Zainab Rahman', fatherName: 'Md. Abdul Rahman', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-06-06' },
+        { id: '502', name: 'Yusuf Ahmed', fatherName: 'Md. Kamal Ahmed', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-06-07' },
+        { id: '503', name: 'Maryam Khatun', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 5', registrationDate: '2025-06-08' },
+        { id: '504', name: 'Omar Faruk', fatherName: 'Md. Abdus Salam', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-06-09' },
+        { id: '505', name: 'Khadija Begum', fatherName: 'Md. Nurul Islam', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 5', registrationDate: '2025-06-10' }
+    ];
+
+    students = sampleStudents;
+    localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
+    console.log('Sample data added to localStorage');
 }
 
 // Sample Data Generation - Empty by default
