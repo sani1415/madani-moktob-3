@@ -613,7 +613,6 @@ function loadAttendanceForDate() {
                         <div class="toggle-switch ${!isAbsent ? 'present' : 'absent'}" 
                              onclick="toggleAttendance('${student.id}', '${selectedDate}', '${!isAbsent ? 'absent' : 'present'}')">
                             <div class="toggle-slider"></div>
-                            <span class="toggle-label">${!isAbsent ? t('present') : t('absent')}</span>
                         </div>
                     </div>
                 </div>

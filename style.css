@@ -1171,9 +1171,7 @@ body {
         min-width: 70px;
     }
     
-    .toggle-label {
-        font-size: 12px;
-    }
+
     
     .add-class {
         flex-direction: column;
