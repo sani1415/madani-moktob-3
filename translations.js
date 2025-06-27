@@ -113,7 +113,28 @@ const translations = {
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
         noAttendanceDataFound: "No attendance data found for",
-        attendanceCopiedFrom: "Attendance copied from"
+        attendanceCopiedFrom: "Attendance copied from",
+        
+        // Student Detail
+        studentDetails: "Student Details",
+        backToReports: "Back to Reports",
+        personalInformation: "Personal Information",
+        contactInformation: "Contact Information",
+        academicInformation: "Academic Information",
+        attendanceSummary: "Attendance Summary",
+        totalPresent: "Total Present",
+        totalAbsent: "Total Absent",
+        totalDays: "Total Days",
+        recentAttendance: "Recent Attendance (Last 30 Days)",
+        registrationDate: "Registration Date",
+        studentNotFound: "Student not found",
+        
+        // Class-wise Dashboard
+        classWiseInformation: "Class-wise Information",
+        totalStudentsLabel: "Total Students",
+        presentLabel: "Present",
+        absentLabel: "Absent",
+        attendanceLabel: "Attendance"
     },
     
     bn: {
@@ -229,7 +250,28 @@ const translations = {
         studentsMarkedPresent: "ছাত্রকে উপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
         studentsMarkedAbsent: "ছাত্রকে অনুপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
         noAttendanceDataFound: "এর জন্য কোন উপস্থিতির তথ্য পাওয়া যায়নি",
-        attendanceCopiedFrom: "থেকে উপস্থিতি কপি করা হয়েছে"
+        attendanceCopiedFrom: "থেকে উপস্থিতি কপি করা হয়েছে",
+        
+        // Student Detail
+        studentDetails: "ছাত্রের বিবরণ",
+        backToReports: "রিপোর্টে ফিরুন",
+        personalInformation: "ব্যক্তিগত তথ্য",
+        contactInformation: "যোগাযোগের তথ্য",
+        academicInformation: "একাডেমিক তথ্য",
+        attendanceSummary: "উপস্থিতির সংক্ষিপ্ত বিবরণ",
+        totalPresent: "মোট উপস্থিত",
+        totalAbsent: "মোট অনুপস্থিত",
+        totalDays: "মোট দিন",
+        recentAttendance: "সাম্প্রতিক উপস্থিতি (গত ৩০ দিন)",
+        registrationDate: "নিবন্ধনের তারিখ",
+        studentNotFound: "ছাত্র পাওয়া যায়নি",
+        
+        // Class-wise Dashboard
+        classWiseInformation: "শ্রেণী অনুযায়ী তথ্য",
+        totalStudentsLabel: "মোট ছাত্র",
+        presentLabel: "উপস্থিত",
+        absentLabel: "অনুপস্থিত",
+        attendanceLabel: "উপস্থিতি"
     }
 };
 

@@ -252,6 +252,9 @@ function updateDashboard() {
     
     // Update today's overview
     updateTodayOverview();
+    
+    // Update class-wise information
+    updateClassWiseStats();
 }
 
 function updateTodayOverview() {
@@ -616,6 +619,274 @@ function copyFromPreviousDay() {
     showModal(t('success'), `${t('attendanceCopiedFrom')} ${previousDate} for ${copiedCount} students`);
 }
 
+// Class-wise Dashboard Functions
+function updateClassWiseStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayAttendance = attendance[today] || {};
+    
+    // Group students by class
+    const classSummary = {};
+    
+    classes.forEach(className => {
+        classSummary[className] = {
+            total: 0,
+            present: 0,
+            absent: 0,
+            rate: 0
+        };
+    });
+    
+    students.forEach(student => {
+        if (classSummary[student.class]) {
+            classSummary[student.class].total++;
+            
+            if (todayAttendance[student.id]) {
+                if (todayAttendance[student.id].status === 'present') {
+                    classSummary[student.class].present++;
+                } else {
+                    classSummary[student.class].absent++;
+                }
+            } else {
+                // Default to present if no data
+                classSummary[student.class].present++;
+            }
+        }
+    });
+    
+    // Calculate rates
+    Object.keys(classSummary).forEach(className => {
+        const classData = classSummary[className];
+        if (classData.total > 0) {
+            classData.rate = Math.round((classData.present / classData.total) * 100);
+        }
+    });
+    
+    // Render class-wise stats
+    const classWiseGrid = document.getElementById('classWiseGrid');
+    if (classWiseGrid) {
+        classWiseGrid.innerHTML = Object.keys(classSummary)
+            .filter(className => classSummary[className].total > 0)
+            .map(className => {
+                const data = classSummary[className];
+                return `
+                    <div class="class-stat-card">
+                        <h4>${className}</h4>
+                        <div class="class-stats">
+                            <span>Total Students:</span>
+                            <span class="stat-number">${data.total}</span>
+                        </div>
+                        <div class="class-stats">
+                            <span>Present:</span>
+                            <span class="stat-number" style="color: #27ae60;">${data.present}</span>
+                        </div>
+                        <div class="class-stats">
+                            <span>Absent:</span>
+                            <span class="stat-number" style="color: #e74c3c;">${data.absent}</span>
+                        </div>
+                        <div class="class-attendance-rate">${data.rate}% Attendance</div>
+                    </div>
+                `;
+            }).join('');
+    }
+}
+
+// Student Detail Functions
+function showStudentDetail(studentId) {
+    const student = students.find(s => s.idNumber === studentId);
+    if (!student) {
+        showModal(t('error'), t('studentNotFound'));
+        return;
+    }
+    
+    // Hide reports section and show student detail
+    document.getElementById('reports').classList.remove('active');
+    document.getElementById('student-detail').classList.add('active');
+    
+    // Update page title
+    document.getElementById('studentDetailTitle').textContent = `${student.name} - ${t('studentDetails')}`;
+    
+    // Generate student detail content
+    generateStudentDetailContent(student);
+    
+    // Update URL hash for navigation
+    window.location.hash = `student/${studentId}`;
+}
+
+function backToReports() {
+    document.getElementById('student-detail').classList.remove('active');
+    document.getElementById('reports').classList.add('active');
+    window.location.hash = 'reports';
+}
+
+function generateStudentDetailContent(student) {
+    const detailContent = document.getElementById('studentDetailContent');
+    
+    // Calculate attendance statistics
+    const attendanceStats = calculateStudentAttendanceStats(student);
+    
+    detailContent.innerHTML = `
+        <div class="student-info-card">
+            <div class="student-basic-info">
+                <div class="info-group">
+                    <h4>${t('personalInformation')}</h4>
+                    <div class="info-item">
+                        <span class="info-label">Student Name:</span>
+                        <span class="info-value">${student.name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Father's Name:</span>
+                        <span class="info-value">${student.fatherName}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">ID Number:</span>
+                        <span class="info-value">${student.idNumber}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Class:</span>
+                        <span class="info-value">${student.class}</span>
+                    </div>
+                </div>
+                
+                <div class="info-group">
+                    <h4>Contact Information</h4>
+                    <div class="info-item">
+                        <span class="info-label">Mobile Number:</span>
+                        <span class="info-value">${student.mobile}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Address:</span>
+                        <span class="info-value">${student.address}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">District:</span>
+                        <span class="info-value">${student.district}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Sub-district:</span>
+                        <span class="info-value">${student.upazila}</span>
+                    </div>
+                </div>
+                
+                <div class="info-group">
+                    <h4>Academic Information</h4>
+                    <div class="info-item">
+                        <span class="info-label">Registration Date:</span>
+                        <span class="info-value">${formatDate(student.registrationDate)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Student ID:</span>
+                        <span class="info-value">${student.id}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="attendance-history">
+                <h4>Attendance Summary</h4>
+                <div class="attendance-summary">
+                    <div class="summary-item present">
+                        <h5>Total Present</h5>
+                        <div class="number">${attendanceStats.totalPresent}</div>
+                    </div>
+                    <div class="summary-item absent">
+                        <h5>Total Absent</h5>
+                        <div class="number">${attendanceStats.totalAbsent}</div>
+                    </div>
+                    <div class="summary-item">
+                        <h5>Attendance Rate</h5>
+                        <div class="number">${attendanceStats.attendanceRate}%</div>
+                    </div>
+                    <div class="summary-item">
+                        <h5>Total Days</h5>
+                        <div class="number">${attendanceStats.totalDays}</div>
+                    </div>
+                </div>
+                
+                <div class="attendance-calendar">
+                    <div class="calendar-header">
+                        <h5>Recent Attendance (Last 30 Days)</h5>
+                    </div>
+                    ${generateAttendanceCalendar(student, attendanceStats.recentAttendance)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function calculateStudentAttendanceStats(student) {
+    let totalPresent = 0;
+    let totalAbsent = 0;
+    const recentAttendance = {};
+    
+    // Get last 30 days
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        if (attendance[dateStr] && attendance[dateStr][student.id]) {
+            const status = attendance[dateStr][student.id].status;
+            recentAttendance[dateStr] = {
+                status: status,
+                reason: attendance[dateStr][student.id].reason || ''
+            };
+            
+            if (status === 'present') {
+                totalPresent++;
+            } else {
+                totalAbsent++;
+            }
+        }
+    }
+    
+    const totalDays = totalPresent + totalAbsent;
+    const attendanceRate = totalDays > 0 ? Math.round((totalPresent / totalDays) * 100) : 100;
+    
+    return {
+        totalPresent,
+        totalAbsent,
+        totalDays,
+        attendanceRate,
+        recentAttendance
+    };
+}
+
+function generateAttendanceCalendar(student, recentAttendance) {
+    const today = new Date();
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    let calendarHTML = '<div class="calendar-grid">';
+    
+    // Add day headers
+    daysOfWeek.forEach(day => {
+        calendarHTML += `<div class="calendar-day header">${day}</div>`;
+    });
+    
+    // Add last 30 days
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayOfMonth = date.getDate();
+        
+        let className = 'calendar-day no-data';
+        let title = `${dateStr} - No data`;
+        
+        if (recentAttendance[dateStr]) {
+            className = `calendar-day ${recentAttendance[dateStr].status}`;
+            title = `${dateStr} - ${recentAttendance[dateStr].status}`;
+            if (recentAttendance[dateStr].reason) {
+                title += ` (${recentAttendance[dateStr].reason})`;
+            }
+        }
+        
+        calendarHTML += `<div class="${className}" title="${title}">${dayOfMonth}</div>`;
+    }
+    
+    calendarHTML += '</div>';
+    return calendarHTML;
+}
+
 // Report Functions
 function updateReportClassDropdown() {
     // This function is no longer needed as class dropdown is removed
@@ -764,7 +1035,11 @@ function renderReportTable(startDate, endDate) {
                 <tbody>
                     ${filteredData.map(data => `
                         <tr>
-                            <td>${data.fullName}</td>
+                            <td>
+                                <span class="clickable-name" onclick="showStudentDetail('${data.id}')">
+                                    ${data.fullName}
+                                </span>
+                            </td>
                             <td class="status-present">${data.presentDays}</td>
                             <td class="status-absent">${data.absentDays}</td>
                             <td>${data.attendancePercentage}%</td>

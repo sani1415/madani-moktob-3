@@ -83,6 +83,14 @@
                         <p>Attendance Rate</p>
                     </div>
                 </div>
+                
+                <!-- Class-wise Stats -->
+                <div class="class-wise-stats">
+                    <h3>Class-wise Information</h3>
+                    <div id="classWiseGrid" class="class-stats-grid">
+                        <!-- Class-wise statistics will be displayed here -->
+                    </div>
+                </div>
                 <div class="recent-activity">
                     <h3>Today's Attendance Overview</h3>
                     <div id="todayOverview" class="overview-content">
@@ -205,6 +213,19 @@
                 </div>
                 <div id="reportResults" class="report-results">
                     <p>Select date range and click "Generate Report" to view attendance data.</p>
+                </div>
+            </section>
+
+            <!-- Student Detail Section -->
+            <section id="student-detail" class="section">
+                <div class="student-detail-header">
+                    <button onclick="backToReports()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Reports
+                    </button>
+                    <h2 id="studentDetailTitle">Student Details</h2>
+                </div>
+                <div id="studentDetailContent" class="student-detail-content">
+                    <!-- Student details will be loaded here -->
                 </div>
             </section>
 
