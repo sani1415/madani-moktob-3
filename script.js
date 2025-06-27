@@ -28,7 +28,6 @@ function initializeApp() {
     document.getElementById('attendanceDate').value = today;
     document.getElementById('reportStartDate').value = today;
     document.getElementById('reportEndDate').value = today;
-    document.getElementById('dashboardDate').value = today;
     
     // Initialize attendance for today if not exists
     if (!attendance[today]) {
@@ -273,43 +272,22 @@ function displayClasses() {
 // Dashboard Functions
 function updateDashboard() {
     const today = new Date().toISOString().split('T')[0];
-    updateDashboardForDate(today);
-}
-
-function updateDashboardForDate(dateParam = null) {
-    const selectedDate = dateParam || document.getElementById('dashboardDate').value;
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Update date display
-    const dateDisplay = document.getElementById('dashboardDateDisplay');
-    if (selectedDate === today) {
-        dateDisplay.textContent = 'Today';
-    } else {
-        dateDisplay.textContent = formatDate(selectedDate);
-    }
     
     // Update total students
     document.getElementById('totalStudents').textContent = students.length;
     
-    // Check if selected date is a holiday
+    // Check if today is a holiday and display holiday notice
     const holidayNotice = document.getElementById('holidayNotice');
-    const attendanceStatusNotice = document.getElementById('attendanceStatusNotice');
-    
-    if (isHoliday(selectedDate)) {
-        const holidayName = getHolidayName(selectedDate);
+    if (isHoliday(today)) {
+        const holidayName = getHolidayName(today);
         if (holidayNotice) {
             holidayNotice.innerHTML = `
                 <div class="dashboard-holiday-notice">
                     <i class="fas fa-calendar-times"></i>
-                    <span>${selectedDate === today ? 'Today is' : 'This day was'} a holiday: <strong>${holidayName}</strong></span>
+                    <span>Today is a holiday: <strong>${holidayName}</strong></span>
                 </div>
             `;
             holidayNotice.style.display = 'block';
-        }
-        
-        // Hide attendance status notice on holidays
-        if (attendanceStatusNotice) {
-            attendanceStatusNotice.style.display = 'none';
         }
         
         // On holidays, show all students as present
@@ -321,69 +299,28 @@ function updateDashboardForDate(dateParam = null) {
             holidayNotice.style.display = 'none';
         }
         
-        // Check if attendance was taken for this date
-        const dateAttendance = attendance[selectedDate];
-        const attendanceTaken = dateAttendance && Object.keys(dateAttendance).length > 0;
+        const todayAttendance = attendance[today] || {};
         
-        if (!attendanceTaken && selectedDate < today) {
-            // Show warning for past days without attendance
-            if (attendanceStatusNotice) {
-                attendanceStatusNotice.innerHTML = `
-                    <div class="attendance-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Attendance was not taken on this day</span>
-                        <button onclick="goToAttendanceForDate('${selectedDate}')" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Take Attendance
-                        </button>
-                    </div>
-                `;
-                attendanceStatusNotice.style.display = 'block';
-            }
-            
-            // Show all as absent since no attendance was taken
-            document.getElementById('presentToday').textContent = 0;
-            document.getElementById('absentToday').textContent = students.length;
-            document.getElementById('attendanceRate').textContent = '0%';
-        } else {
-            if (attendanceStatusNotice) {
-                attendanceStatusNotice.style.display = 'none';
-            }
-            
-            const presentCount = dateAttendance ? Object.values(dateAttendance).filter(att => att.status === 'present').length : students.length;
-            const absentCount = dateAttendance ? Object.values(dateAttendance).filter(att => att.status === 'absent').length : 0;
-            
-            document.getElementById('presentToday').textContent = presentCount;
-            document.getElementById('absentToday').textContent = absentCount;
-            
-            const attendanceRate = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 100;
-            document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
-        }
+        const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
+        const absentCount = Object.values(todayAttendance).filter(att => att.status === 'absent').length;
+        
+        document.getElementById('presentToday').textContent = presentCount;
+        document.getElementById('absentToday').textContent = absentCount;
+        
+        const attendanceRate = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 100;
+        document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
     }
     
-    // Update overview and class-wise stats for selected date
-    updateTodayOverview(selectedDate);
-    updateClassWiseStats(selectedDate);
-}
-
-function changeDashboardDate(direction) {
-    const currentDate = new Date(document.getElementById('dashboardDate').value);
-    currentDate.setDate(currentDate.getDate() + direction);
-    const newDate = currentDate.toISOString().split('T')[0];
+    // Update today's overview
+    updateTodayOverview();
     
-    document.getElementById('dashboardDate').value = newDate;
-    updateDashboardForDate(newDate);
+    // Update class-wise information
+    updateClassWiseStats();
 }
 
-function goToAttendanceForDate(date) {
-    // Switch to attendance section and set the date
-    showSection('attendance');
-    document.getElementById('attendanceDate').value = date;
-    loadAttendanceForDate();
-}
-
-function updateTodayOverview(selectedDate = null) {
-    const date = selectedDate || new Date().toISOString().split('T')[0];
-    const dateAttendance = attendance[date] || {};
+function updateTodayOverview() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayAttendance = attendance[today] || {};
     const overviewDiv = document.getElementById('todayOverview');
     
     if (students.length === 0) {
@@ -391,30 +328,17 @@ function updateTodayOverview(selectedDate = null) {
         return;
     }
     
-    // Check if it's a holiday
-    if (isHoliday(date)) {
-        const holidayName = getHolidayName(date);
-        overviewDiv.innerHTML = `<p>This day was a holiday: <strong>${holidayName}</strong></p>`;
-        return;
-    }
-    
-    // Check if attendance was taken
-    if (Object.keys(dateAttendance).length === 0) {
-        const today = new Date().toISOString().split('T')[0];
-        if (date < today) {
-            overviewDiv.innerHTML = '<p class="warning-text">Attendance was not taken on this day.</p>';
-        } else {
-            overviewDiv.innerHTML = `<p>${t('noAttendanceData')}</p>`;
-        }
+    if (Object.keys(todayAttendance).length === 0) {
+        overviewDiv.innerHTML = `<p>${t('noAttendanceData')}</p>`;
         return;
     }
     
     const presentStudents = students.filter(student => 
-        dateAttendance[student.id] && dateAttendance[student.id].status === 'present'
+        todayAttendance[student.id] && todayAttendance[student.id].status === 'present'
     );
     
     const absentStudents = students.filter(student => 
-        dateAttendance[student.id] && dateAttendance[student.id].status === 'absent'
+        todayAttendance[student.id] && todayAttendance[student.id].status === 'absent'
     );
     
     let html = `
@@ -432,8 +356,8 @@ function updateTodayOverview(selectedDate = null) {
         `;
         
         absentStudents.forEach(student => {
-            const reason = dateAttendance[student.id].reason || t('noReasonProvided');
-            const displayId = student.id;
+            const reason = todayAttendance[student.id].reason || t('noReasonProvided');
+            const displayId = student.idNumber || student.id;
             html += `<li>${displayId} - ${student.name} - ${reason}</li>`;
         });
         
@@ -815,9 +739,9 @@ function copyFromPreviousDay() {
 }
 
 // Class-wise Dashboard Functions
-function updateClassWiseStats(selectedDate = null) {
-    const date = selectedDate || new Date().toISOString().split('T')[0];
-    const dateAttendance = attendance[date] || {};
+function updateClassWiseStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayAttendance = attendance[today] || {};
     
     // Group students by class
     const classSummary = {};
@@ -835,25 +759,15 @@ function updateClassWiseStats(selectedDate = null) {
         if (classSummary[student.class]) {
             classSummary[student.class].total++;
             
-            // On holidays, all students are considered present
-            if (isHoliday(date)) {
-                classSummary[student.class].present++;
-            } else if (dateAttendance[student.id]) {
-                if (dateAttendance[student.id].status === 'present') {
+            if (todayAttendance[student.id]) {
+                if (todayAttendance[student.id].status === 'present') {
                     classSummary[student.class].present++;
                 } else {
                     classSummary[student.class].absent++;
                 }
             } else {
-                // Check if attendance was taken for this date
-                const today = new Date().toISOString().split('T')[0];
-                if (Object.keys(dateAttendance).length === 0 && date < today) {
-                    // No attendance taken on past day - consider as absent
-                    classSummary[student.class].absent++;
-                } else {
-                    // Default to present if no data for current/future days
-                    classSummary[student.class].present++;
-                }
+                // Default to present if no data
+                classSummary[student.class].present++;
             }
         }
     });
