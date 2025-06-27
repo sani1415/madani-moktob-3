@@ -820,7 +820,7 @@ function generateStudentDetailContent(student) {
                     <h4>${t('academicInformation')}</h4>
                     <div class="info-item">
                         <span class="info-label">Registration Date:</span>
-                        <span class="info-value">${formatDate(student.registrationDate)}</span>
+                        <span class="info-value">${student.registrationDate}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Student ID:</span>
@@ -1004,9 +1004,9 @@ function generateReport() {
         const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
         
         return {
-            id: student.idNumber,
+            id: student.idNumber || student.id,
             name: student.name,
-            fullName: `${student.idNumber} - ${student.name}`,
+            fullName: `${student.idNumber || student.id} - ${student.name}`,
             presentDays,
             absentDays,
             attendancePercentage
@@ -1248,7 +1248,7 @@ function displayHolidays() {
         <div class="holiday-item">
             <div class="holiday-info">
                 <strong>${holiday.name}</strong>
-                <span class="holiday-date">${formatDate(holiday.date)}</span>
+                <span class="holiday-date">${holiday.date}</span>
             </div>
             <button onclick="deleteHoliday('${holiday.date}')" class="btn btn-danger btn-sm">
                 <i class="fas fa-trash"></i>
