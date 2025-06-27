@@ -492,9 +492,15 @@ function updateReportsTexts() {
 function updateSettingsTexts() {
     document.querySelector('#settings h2').textContent = t('settingsTitle');
     
-    const settingsH3 = document.querySelector('#settings h3');
-    if (settingsH3) {
-        settingsH3.textContent = t('manageClasses');
+    const settingsTitles = document.querySelectorAll('#settings h3');
+    if (settingsTitles.length >= 1) {
+        settingsTitles[0].textContent = t('manageClasses');
+    }
+    if (settingsTitles.length >= 2) {
+        settingsTitles[1].textContent = t('holidayManagement');
+    }
+    if (settingsTitles.length >= 3) {
+        settingsTitles[2].textContent = t('studentManagement');
     }
     
     const classNameInput = document.getElementById('newClassName');
@@ -502,9 +508,29 @@ function updateSettingsTexts() {
         classNameInput.placeholder = t('enterNewClassName');
     }
     
-    const addClassBtn = document.querySelector('#settings .btn-primary');
+    const holidayDateLabel = document.querySelector('label[for="holidayDate"]');
+    if (holidayDateLabel) {
+        holidayDateLabel.textContent = t('holidayDate') + ':';
+    }
+    
+    const holidayNameLabel = document.querySelector('label[for="holidayName"]');
+    if (holidayNameLabel) {
+        holidayNameLabel.textContent = t('holidayName') + ':';
+    }
+    
+    const addClassBtn = document.querySelector('.add-class .btn');
     if (addClassBtn) {
         addClassBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addClass')}`;
+    }
+    
+    const addHolidayBtn = document.querySelector('.add-holiday .btn');
+    if (addHolidayBtn) {
+        addHolidayBtn.innerHTML = `<i class="fas fa-calendar-plus"></i> ${t('addHoliday')}`;
+    }
+    
+    const addSampleBtn = document.querySelector('.student-management .btn');
+    if (addSampleBtn) {
+        addSampleBtn.innerHTML = `<i class="fas fa-users"></i> ${t('addSampleStudents')}`;
     }
 }
 
