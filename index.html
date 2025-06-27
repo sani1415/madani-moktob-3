@@ -62,9 +62,28 @@
             <section id="dashboard" class="section active">
                 <h2>Dashboard</h2>
                 
+                <!-- Date Navigation -->
+                <div class="dashboard-date-nav">
+                    <button onclick="changeDashboardDate(-1)" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-chevron-left"></i> Previous Day
+                    </button>
+                    <div class="current-date">
+                        <input type="date" id="dashboardDate" onchange="updateDashboardForDate()">
+                        <span id="dashboardDateDisplay">Today</span>
+                    </div>
+                    <button onclick="changeDashboardDate(1)" class="btn btn-secondary btn-sm">
+                        Next Day <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
                 <!-- Holiday Notice -->
                 <div id="holidayNotice" style="display: none;">
                     <!-- Holiday notice will be displayed here -->
+                </div>
+                
+                <!-- Attendance Status Notice -->
+                <div id="attendanceStatusNotice" style="display: none;">
+                    <!-- Attendance status notice will be displayed here -->
                 </div>
                 
                 <div class="stats-grid">
