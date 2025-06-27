@@ -29,7 +29,7 @@ async function initializeAppWithDatabase() {
         
         // Check if we need to migrate sample data or have incomplete data
         if (!students || students.length < 25) {
-            console.log(`Found ${students.length} students, migrating all 25...`);
+            console.log(`Found ${students.length} students, migrating all 25 to PostgreSQL...`);
             await migrateSampleData();
         }
         
@@ -87,83 +87,65 @@ async function initializeAppWithDatabase() {
 }
 
 async function loadDataFromDatabase() {
-    // Check if we have complete data set
-    const existingStudents = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
-    
-    // If we don't have all 25 students, force fresh migration
-    if (existingStudents.length < 25) {
-        localStorage.removeItem('madaniMaktabStudents');
-        students = [];
-    } else {
-        students = existingStudents;
-    }
-    
-    classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-    attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
-    holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
-    
-    // Try to enhance with database data if available
     try {
-        if (typeof dbAdapter !== 'undefined' && dbAdapter.useDatabase) {
-            await dbAdapter.waitForReady();
-            
-            const dbStudents = await dbAdapter.getStudents();
-            const dbClasses = await dbAdapter.getClasses();
-            const dbAttendance = await dbAdapter.getAttendance();
-            const dbHolidays = await dbAdapter.getHolidays();
-            
-            if (dbStudents && dbStudents.length > 0) students = dbStudents;
-            if (dbClasses && dbClasses.length > 0) classes = dbClasses;
-            if (dbAttendance && Object.keys(dbAttendance).length > 0) attendance = dbAttendance;
-            if (dbHolidays && dbHolidays.length > 0) holidays = dbHolidays;
+        // Load data from PostgreSQL database
+        const studentsResponse = await fetch('/api/students');
+        if (studentsResponse.ok) {
+            students = await studentsResponse.json();
+        } else {
+            students = [];
         }
+        
+        const attendanceResponse = await fetch('/api/attendance');
+        if (attendanceResponse.ok) {
+            attendance = await attendanceResponse.json();
+        } else {
+            attendance = {};
+        }
+        
+        const holidaysResponse = await fetch('/api/holidays');
+        if (holidaysResponse.ok) {
+            holidays = await holidaysResponse.json();
+        } else {
+            holidays = [];
+        }
+        
+        classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        
+        console.log(`Loaded ${students.length} students from PostgreSQL database`);
     } catch (error) {
-        console.log('Using localStorage data (database enhancement failed)');
+        console.error('Database connection failed, using fallback data:', error);
+        // Fallback to localStorage if database unavailable
+        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+        classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
+        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
     }
 }
 
 async function migrateSampleData() {
-    // Add 25 sample students (5 per class across all 5 classes)
-    const sampleStudents = [
-        // Class 1 students (IDs: 101-105)
-        { id: '101', name: 'Ali Hassan', fatherName: 'Md. Mostofa Hassan', mobileNumber: '01712345101', district: 'Dhaka', upazila: 'Savar', class: 'Class 1', registrationDate: '2025-01-01' },
-        { id: '102', name: 'Hafsa Khatun', fatherName: 'Md. Shahidul Islam', mobileNumber: '01812345102', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 1', registrationDate: '2025-01-02' },
-        { id: '103', name: 'Hamza Ahmed', fatherName: 'Md. Rafiqul Alam', mobileNumber: '01912345103', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 1', registrationDate: '2025-01-03' },
-        { id: '104', name: 'Sumaya Begum', fatherName: 'Md. Kamal Uddin', mobileNumber: '01612345104', district: 'Rajshahi', upazila: 'Paba', class: 'Class 1', registrationDate: '2025-01-04' },
-        { id: '105', name: 'Usman Khan', fatherName: 'Md. Liaquat Ali', mobileNumber: '01512345105', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 1', registrationDate: '2025-01-05' },
+    console.log('Migrating 25 sample students to PostgreSQL database...');
+    
+    try {
+        const response = await fetch('/api/migrate_sample_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         
-        // Class 2 students (IDs: 201-205)
-        { id: '201', name: 'Ruqayyah Rahman', fatherName: 'Md. Abdur Rahman', mobileNumber: '01712345201', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 2', registrationDate: '2025-02-01' },
-        { id: '202', name: 'Bilal Ahmed', fatherName: 'Md. Shahjahan', mobileNumber: '01812345202', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 2', registrationDate: '2025-02-02' },
-        { id: '203', name: 'Sakinah Khatun', fatherName: 'Md. Nurul Haque', mobileNumber: '01912345203', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 2', registrationDate: '2025-02-03' },
-        { id: '204', name: 'Ismail Hossain', fatherName: 'Md. Shamsul Huda', mobileNumber: '01612345204', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 2', registrationDate: '2025-02-04' },
-        { id: '205', name: 'Ayesha Siddique', fatherName: 'Md. Abdul Quddus', mobileNumber: '01512345205', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 2', registrationDate: '2025-02-05' },
-        
-        // Class 3 students (IDs: 301-305)
-        { id: '301', name: 'Salman Farisi', fatherName: 'Md. Abdul Halim', mobileNumber: '01712345301', district: 'Dhaka', upazila: 'Keraniganj', class: 'Class 3', registrationDate: '2025-03-01' },
-        { id: '302', name: 'Zaynab Sultana', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01812345302', district: 'Chittagong', upazila: 'Sitakunda', class: 'Class 3', registrationDate: '2025-03-02' },
-        { id: '303', name: 'Khalid Ibn Walid', fatherName: 'Md. Mahfuzul Haque', mobileNumber: '01912345303', district: 'Sylhet', upazila: 'Golapganj', class: 'Class 3', registrationDate: '2025-03-03' },
-        { id: '304', name: 'Umm Salamah', fatherName: 'Md. Anisul Haque', mobileNumber: '01612345304', district: 'Rajshahi', upazila: 'Godagari', class: 'Class 3', registrationDate: '2025-03-04' },
-        { id: '305', name: 'Abu Bakr Siddique', fatherName: 'Md. Nazrul Islam', mobileNumber: '01512345305', district: 'Rangpur', upazila: 'Kurigram', class: 'Class 3', registrationDate: '2025-03-05' },
-        
-        // Class 4 students (IDs: 401-405)
-        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-04-01' },
-        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-04-02' },
-        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-04-03' },
-        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-04-04' },
-        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-04-05' },
-        
-        // Class 5 students (IDs: 501-505)
-        { id: '501', name: 'Zainab Rahman', fatherName: 'Md. Abdul Rahman', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-05-01' },
-        { id: '502', name: 'Yusuf Ahmed', fatherName: 'Md. Kamal Ahmed', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-05-02' },
-        { id: '503', name: 'Maryam Khatun', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 5', registrationDate: '2025-05-03' },
-        { id: '504', name: 'Omar Faruk', fatherName: 'Md. Abdus Salam', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-05-04' },
-        { id: '505', name: 'Khadija Begum', fatherName: 'Md. Nurul Islam', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 5', registrationDate: '2025-05-05' }
-    ];
-
-    students = sampleStudents;
-    await saveDataToDatabase();
-    console.log('25 sample students migrated to database successfully');
+        if (response.ok) {
+            const result = await response.json();
+            console.log(result.message);
+            // Reload data from database
+            await loadDataFromDatabase();
+        } else {
+            throw new Error('Migration failed');
+        }
+    } catch (error) {
+        console.error('PostgreSQL migration failed, using fallback:', error);
+        addSampleDataFallback();
+    }
 }
 
 function addSampleDataFallback() {
