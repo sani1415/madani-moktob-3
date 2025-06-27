@@ -605,18 +605,17 @@ function loadAttendanceForDate() {
         
         return `
             <div class="student-row">
-                <div class="student-info">
-                    <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
-                </div>
-                <div class="attendance-toggle">
-                    <button class="btn btn-present ${!isAbsent ? 'active' : ''}" 
-                            onclick="toggleAttendance('${student.id}', '${selectedDate}', 'present')">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button class="btn btn-absent ${isAbsent ? 'active' : ''}" 
-                            onclick="toggleAttendance('${student.id}', '${selectedDate}', 'absent')">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="student-info-with-toggle">
+                    <div class="student-info">
+                        <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
+                    </div>
+                    <div class="attendance-toggle">
+                        <div class="toggle-switch ${!isAbsent ? 'present' : 'absent'}" 
+                             onclick="toggleAttendance('${student.id}', '${selectedDate}', '${!isAbsent ? 'absent' : 'present'}')">
+                            <div class="toggle-slider"></div>
+                            <span class="toggle-label">${!isAbsent ? t('present') : t('absent')}</span>
+                        </div>
+                    </div>
                 </div>
                 ${isAbsent ? `
                     <div class="absence-reason">

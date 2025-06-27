@@ -805,46 +805,31 @@ body {
     font-size: 14px;
 }
 
+/* Student info with toggle layout */
+.student-info-with-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.student-info-with-toggle .student-info {
+    flex: 1;
+    min-width: 0; /* Allow text to truncate if needed */
+}
+
+.student-info-with-toggle .attendance-toggle {
+    flex-shrink: 0;
+}
+
 .attendance-toggle {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* Compact Attendance Buttons */
-.btn-present, .btn-absent {
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 16px;
-    opacity: 0.6;
-}
 
-.btn-present {
-    background-color: #27ae60;
-    color: white;
-}
-
-.btn-present.active {
-    opacity: 1;
-    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
-}
-
-.btn-absent {
-    background-color: #e74c3c;
-    color: white;
-}
-
-.btn-absent.active {
-    opacity: 1;
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-}
 
 .toggle-switch {
     position: relative;
@@ -1169,20 +1154,25 @@ body {
     }
     
     .student-row {
-        grid-template-columns: 2fr 1fr;
+        padding: 12px;
+    }
+    
+    .student-info-with-toggle {
         gap: 10px;
-        align-items: center;
     }
     
-    .attendance-toggle {
-        justify-content: flex-end;
-        gap: 8px;
+    .student-info-with-toggle .student-info h4 {
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.3;
     }
     
-    .attendance-toggle .btn {
-        padding: 8px 12px;
-        font-size: 0.85em;
-        min-width: 50px;
+    .toggle-switch {
+        min-width: 70px;
+    }
+    
+    .toggle-label {
+        font-size: 12px;
     }
     
     .add-class {
