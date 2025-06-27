@@ -11,6 +11,66 @@ body {
     line-height: 1.6;
 }
 
+/* Clickable Student Names */
+.clickable-name {
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.clickable-name:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+/* Holiday Management Styles */
+.holiday-management {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.add-holiday {
+    margin-bottom: 2rem;
+}
+
+.holiday-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.holiday-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.holiday-date {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.student-management {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #e8f5e8;
+    border-radius: 8px;
+}
+
+.help-text {
+    margin-top: 0.5rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;

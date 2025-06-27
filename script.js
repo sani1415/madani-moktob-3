@@ -21,6 +21,7 @@ function initializeApp() {
     updateDashboard();
     loadTodayAttendance();
     displayClasses();
+    displayHolidays();
     
     // Set today's date
     const today = new Date().toISOString().split('T')[0];
@@ -374,6 +375,20 @@ function loadAttendanceForDate() {
     
     if (!selectedDate) {
         document.getElementById('attendanceList').innerHTML = `<p>${t('pleaseSelectDate')}</p>`;
+        updateFilteredStudentCount(0);
+        return;
+    }
+    
+    // Check if selected date is a holiday
+    if (isHoliday(selectedDate)) {
+        const holidayName = getHolidayName(selectedDate);
+        document.getElementById('attendanceList').innerHTML = `
+            <div class="holiday-notice">
+                <i class="fas fa-calendar-times"></i>
+                <h3>Holiday: ${holidayName}</h3>
+                <p>Attendance is not recorded on holidays. Students are automatically marked as present for holidays.</p>
+            </div>
+        `;
         updateFilteredStudentCount(0);
         return;
     }
@@ -793,10 +808,6 @@ function generateStudentDetailContent(student) {
                         <span class="info-value">${student.district}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">District:</span>
-                        <span class="info-value">${student.district}</span>
-                    </div>
-                    <div class="info-item">
                         <span class="info-label">Sub-district:</span>
                         <span class="info-value">${student.upazila}</span>
                     </div>
@@ -1167,10 +1178,82 @@ function getDateRange(startDate, endDate) {
 }
 
 // Utility Functions
+// Holiday Management Functions
+function addHoliday() {
+    const dateInput = document.getElementById('holidayDate');
+    const nameInput = document.getElementById('holidayName');
+    
+    const date = dateInput.value;
+    const name = nameInput.value.trim();
+    
+    if (!date || !name) {
+        showModal(t('error'), 'Please enter both holiday date and name');
+        return;
+    }
+    
+    // Check if holiday already exists for this date
+    const existingHoliday = holidays.find(h => h.date === date);
+    if (existingHoliday) {
+        showModal(t('error'), 'Holiday already exists for this date');
+        return;
+    }
+    
+    holidays.push({ date, name });
+    holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    saveData();
+    displayHolidays();
+    
+    // Clear inputs
+    dateInput.value = '';
+    nameInput.value = '';
+    
+    showModal(t('success'), 'Holiday added successfully');
+}
+
+function deleteHoliday(date) {
+    holidays = holidays.filter(h => h.date !== date);
+    saveData();
+    displayHolidays();
+    showModal(t('success'), 'Holiday deleted successfully');
+}
+
+function displayHolidays() {
+    const holidaysList = document.getElementById('holidaysList');
+    if (!holidaysList) return;
+    
+    if (holidays.length === 0) {
+        holidaysList.innerHTML = '<p>No holidays configured.</p>';
+        return;
+    }
+    
+    holidaysList.innerHTML = holidays.map(holiday => `
+        <div class="holiday-item">
+            <div class="holiday-info">
+                <strong>${holiday.name}</strong>
+                <span class="holiday-date">${formatDate(holiday.date)}</span>
+            </div>
+            <button onclick="deleteHoliday('${holiday.date}')" class="btn btn-danger btn-sm">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+function isHoliday(date) {
+    return holidays.some(h => h.date === date);
+}
+
+function getHolidayName(date) {
+    const holiday = holidays.find(h => h.date === date);
+    return holiday ? holiday.name : null;
+}
+
 function saveData() {
     localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
     localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
     localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+    localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
 }
 
 function showModal(title, message) {
