@@ -225,6 +225,7 @@ body {
     position: absolute;
     right: 20px;
     top: 0;
+    z-index: 1001;
 }
 
 .nav-list {
@@ -285,7 +286,7 @@ body {
 /* Dashboard Stats */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     margin-bottom: 30px;
 }
@@ -1133,12 +1134,20 @@ body {
     }
     
     .student-row {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        grid-template-columns: 2fr 1fr;
+        gap: 10px;
+        align-items: center;
     }
     
     .attendance-toggle {
-        justify-content: space-between;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    
+    .attendance-toggle .btn {
+        padding: 8px 12px;
+        font-size: 0.85em;
+        min-width: 50px;
     }
     
     .add-class {

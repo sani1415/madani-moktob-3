@@ -609,11 +609,14 @@ function loadAttendanceForDate() {
                     <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
                 </div>
                 <div class="attendance-toggle">
-                    <span>${t('present')}</span>
-                    <div class="toggle-switch ${isAbsent ? 'absent' : ''}" 
-                         onclick="toggleAttendance('${student.id}', '${selectedDate}')">
-                    </div>
-                    <span>${t('absent')}</span>
+                    <button class="btn btn-present ${!isAbsent ? 'active' : ''}" 
+                            onclick="toggleAttendance('${student.id}', '${selectedDate}', 'present')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-absent ${isAbsent ? 'active' : ''}" 
+                            onclick="toggleAttendance('${student.id}', '${selectedDate}', 'absent')">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
                 ${isAbsent ? `
                     <div class="absence-reason">
@@ -628,7 +631,7 @@ function loadAttendanceForDate() {
     }).join('');
 }
 
-function toggleAttendance(studentId, date) {
+function toggleAttendance(studentId, date, status) {
     // Prevent attendance marking on holidays
     if (isHoliday(date)) {
         showModal(t('error'), 'Cannot mark attendance on holidays');
@@ -639,16 +642,10 @@ function toggleAttendance(studentId, date) {
         attendance[date] = {};
     }
     
-    if (!attendance[date][studentId]) {
-        attendance[date][studentId] = { status: 'present', reason: '' };
-    }
-    
-    const currentStatus = attendance[date][studentId].status;
-    attendance[date][studentId].status = currentStatus === 'present' ? 'absent' : 'present';
-    
-    if (attendance[date][studentId].status === 'present') {
-        attendance[date][studentId].reason = '';
-    }
+    attendance[date][studentId] = {
+        status: status || 'present',
+        reason: status === 'present' ? '' : (attendance[date][studentId]?.reason || '')
+    };
     
     saveData();
     loadAttendanceForDate();
