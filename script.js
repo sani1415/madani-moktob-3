@@ -1,8 +1,8 @@
 // Application State
-let students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
-let classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-let attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
-let holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+let students = [];
+let classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+let attendance = {};
+let holidays = [];
 
 // Utility Functions
 function formatDate(dateString) {
@@ -11,10 +11,10 @@ function formatDate(dateString) {
 }
 
 // Initialize Application
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     try {
         initializeLanguage();
-        initializeApp();
+        await initializeAppWithDatabase();
         console.log('Madani Maktab app initialized successfully');
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -22,27 +22,109 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function initializeApp() {
-    updateClassDropdowns();
-    updateDashboard();
-    loadTodayAttendance();
-    displayClasses();
-    displayHolidays();
-    
-    // Set today's date
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('attendanceDate').value = today;
-    document.getElementById('reportStartDate').value = today;
-    document.getElementById('reportEndDate').value = today;
-    
-    // Initialize attendance for today if not exists
-    if (!attendance[today]) {
-        initializeTodayAttendance();
+async function initializeAppWithDatabase() {
+    try {
+        // Load data from database
+        await loadDataFromDatabase();
+        
+        // Check if we need to migrate sample data
+        if (!students || students.length === 0) {
+            await migrateSampleData();
+        }
+        
+        updateClassDropdowns();
+        updateDashboard();
+        loadTodayAttendance();
+        displayClasses();
+        displayHolidays();
+        
+        // Set today's date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('attendanceDate').value = today;
+        document.getElementById('reportStartDate').value = today;
+        document.getElementById('reportEndDate').value = today;
+        
+        // Initialize attendance for today if not exists
+        if (!attendance[today]) {
+            initializeTodayAttendance();
+        }
+        
+        // Listen for date changes
+        document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
+        document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
+    } catch (error) {
+        console.error('Database initialization failed, using localStorage fallback:', error);
+        // Complete fallback to localStorage
+        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+        classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
+        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+        
+        // If no data exists, add sample data
+        if (students.length === 0) {
+            addSampleDataFallback();
+        }
+        
+        updateClassDropdowns();
+        updateDashboard();
+        loadTodayAttendance();
+        displayClasses();
+        displayHolidays();
+        
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('attendanceDate').value = today;
+        document.getElementById('reportStartDate').value = today;
+        document.getElementById('reportEndDate').value = today;
+        
+        if (!attendance[today]) {
+            initializeTodayAttendance();
+        }
+        
+        document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
+        document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
     }
-    
-    // Listen for date changes
-    document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
-    document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
+}
+
+async function loadDataFromDatabase() {
+    try {
+        // Wait for database adapter to be ready
+        await dbAdapter.waitForReady();
+        
+        students = await dbAdapter.getStudents() || [];
+        classes = await dbAdapter.getClasses() || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        attendance = await dbAdapter.getAttendance() || {};
+        holidays = await dbAdapter.getHolidays() || [];
+    } catch (error) {
+        console.error('Error loading data from database:', error);
+        // Fallback to localStorage if database fails
+        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+        classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
+        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+    }
+}
+
+async function migrateSampleData() {
+    // Add sample students for all classes
+    const sampleStudents = [
+        // Class 4 students (IDs: 401-405)
+        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-06-01' },
+        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-06-02' },
+        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-06-03' },
+        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-06-04' },
+        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-06-05' },
+        
+        // Class 5 students (IDs: 501-505)
+        { id: '501', name: 'Zainab Rahman', fatherName: 'Md. Abdul Rahman', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-06-06' },
+        { id: '502', name: 'Yusuf Ahmed', fatherName: 'Md. Kamal Ahmed', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-06-07' },
+        { id: '503', name: 'Maryam Khatun', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 5', registrationDate: '2025-06-08' },
+        { id: '504', name: 'Omar Faruk', fatherName: 'Md. Abdus Salam', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-06-09' },
+        { id: '505', name: 'Khadija Begum', fatherName: 'Md. Nurul Islam', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 5', registrationDate: '2025-06-10' }
+    ];
+
+    students = sampleStudents;
+    await saveDataToDatabase();
+    console.log('Sample data migrated to database successfully');
 }
 
 // Sample Data Generation - Empty by default
@@ -1413,16 +1495,28 @@ function getHolidayName(date) {
     return holiday ? holiday.name : null;
 }
 
-function saveData() {
+async function saveDataToDatabase() {
     try {
-        localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
-        localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
-        localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
-        localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
+        await dbAdapter.saveStudents(students);
+        await dbAdapter.saveClasses(classes);
+        await dbAdapter.saveAttendance(attendance);
+        await dbAdapter.saveHolidays(holidays);
     } catch (error) {
-        console.error('Error saving data:', error);
-        showModal('Error', 'Failed to save data. Your browser storage might be full.');
+        console.error('Error saving data to database:', error);
+        // Fallback to localStorage
+        try {
+            localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
+            localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
+            localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+            localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
+        } catch (localError) {
+            showModal('Error', 'Failed to save data. Your browser storage might be full.');
+        }
     }
+}
+
+function saveData() {
+    saveDataToDatabase();
 }
 
 function showModal(title, message) {
