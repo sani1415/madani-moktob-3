@@ -492,7 +492,7 @@ function markAllPresent() {
         updateDashboard();
     }
     
-    showModal(t('success'), `${filteredStudents.length} students marked as present`);
+    showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedPresent')}`);
 }
 
 function showMarkAllAbsentModal() {
@@ -524,7 +524,7 @@ function confirmMarkAllAbsent() {
     const reason = document.getElementById('bulkAbsentReason').value.trim();
     
     if (!reason) {
-        showModal(t('error'), 'Please provide a reason for the absence');
+        showModal(t('error'), t('pleaseProvideReason'));
         return;
     }
     
@@ -553,7 +553,7 @@ function confirmMarkAllAbsent() {
         updateDashboard();
     }
     
-    showModal(t('success'), `${filteredStudents.length} students marked as absent`);
+    showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedAbsent')}`);
 }
 
 function copyFromPreviousDay() {
@@ -576,7 +576,7 @@ function copyFromPreviousDay() {
     
     // Check if previous day attendance exists
     if (!attendance[previousDate]) {
-        showModal(t('error'), `No attendance data found for ${previousDate}`);
+        showModal(t('error'), `${t('noAttendanceDataFound')} ${previousDate}`);
         return;
     }
     
@@ -613,7 +613,7 @@ function copyFromPreviousDay() {
         updateDashboard();
     }
     
-    showModal(t('success'), `Attendance copied from ${previousDate} for ${copiedCount} students`);
+    showModal(t('success'), `${t('attendanceCopiedFrom')} ${previousDate} for ${copiedCount} students`);
 }
 
 // Report Functions

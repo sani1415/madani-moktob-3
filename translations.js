@@ -350,6 +350,36 @@ function updateAttendanceTexts() {
     if (allClassesOption) {
         allClassesOption.textContent = t('allClasses');
     }
+    
+    // Update bulk action buttons
+    const bulkButtons = document.querySelectorAll('.bulk-buttons .btn');
+    if (bulkButtons.length >= 3) {
+        bulkButtons[0].innerHTML = `<i class="fas fa-check-circle"></i> ${t('markAllPresent')}`;
+        bulkButtons[1].innerHTML = `<i class="fas fa-times-circle"></i> ${t('markAllAbsent')}`;
+        bulkButtons[2].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
+    }
+    
+    // Update bulk absent modal
+    const modalTitle = document.querySelector('#bulkAbsentModal h3');
+    if (modalTitle) {
+        modalTitle.textContent = t('bulkAbsentTitle');
+    }
+    
+    const modalLabel = document.querySelector('#bulkAbsentModal label');
+    if (modalLabel) {
+        modalLabel.textContent = t('bulkAbsentReason');
+    }
+    
+    const modalInput = document.getElementById('bulkAbsentReason');
+    if (modalInput) {
+        modalInput.placeholder = t('bulkAbsentPlaceholder');
+    }
+    
+    const modalButtons = document.querySelectorAll('#bulkAbsentModal .modal-buttons .btn');
+    if (modalButtons.length >= 2) {
+        modalButtons[0].innerHTML = `<i class="fas fa-times-circle"></i> ${t('bulkAbsentConfirm')}`;
+        modalButtons[1].innerHTML = `<i class="fas fa-times"></i> ${t('cancel')}`;
+    }
 }
 
 // Update reports texts 

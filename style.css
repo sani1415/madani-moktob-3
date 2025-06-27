@@ -769,6 +769,16 @@ body {
         align-items: stretch;
     }
     
+    .bulk-actions {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .bulk-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
     .student-row {
         grid-template-columns: 1fr;
         gap: 15px;
