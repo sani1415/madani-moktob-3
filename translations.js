@@ -118,6 +118,20 @@ const translations = {
         // Student Detail
         studentDetails: "Student Details",
         backToReports: "Back to Reports",
+        
+        // Holiday Management
+        holidayManagement: "Holiday Management",
+        addHoliday: "Add Holiday",
+        holidayDate: "Holiday Date",
+        holidayName: "Holiday Name",
+        studentManagement: "Student Management",
+        addSampleStudents: "Add Sample Students (Classes 4-5)",
+        
+        // Dashboard Labels
+        totalStudentsLabel: "Total Students",
+        presentLabel: "Present",
+        absentLabel: "Absent",
+        classWiseInformation: "Class-wise Information",
         personalInformation: "Personal Information",
         contactInformation: "Contact Information",
         academicInformation: "Academic Information",
@@ -219,6 +233,31 @@ const translations = {
         classExists: "এই শ্রেণী ইতিমধ্যে বিদ্যমান।",
         classAdded: "শ্রেণী সফলভাবে যোগ করা হয়েছে।",
         classDeleted: "শ্রেণী সফলভাবে মুছে দেওয়া হয়েছে।",
+        
+        // Holiday Management
+        holidayManagement: "ছুটির দিন ব্যবস্থাপনা",
+        addHoliday: "ছুটির দিন যোগ করুন",
+        holidayDate: "ছুটির তারিখ",
+        holidayName: "ছুটির নাম",
+        studentManagement: "ছাত্র ব্যবস্থাপনা",
+        addSampleStudents: "নমুনা ছাত্র যোগ করুন (ক্লাস ৪-৫)",
+        
+        // Dashboard Labels
+        totalStudentsLabel: "মোট ছাত্র",
+        presentLabel: "উপস্থিত",
+        absentLabel: "অনুপস্থিত",
+        classWiseInformation: "ক্লাসভিত্তিক তথ্য",
+        personalInformation: "ব্যক্তিগত তথ্য",
+        contactInformation: "যোগাযোগের তথ্য",
+        academicInformation: "একাডেমিক তথ্য",
+        attendanceSummary: "উপস্থিতির সারসংক্ষেপ",
+        totalPresent: "মোট উপস্থিত",
+        totalAbsent: "মোট অনুপস্থিত",
+        attendanceRate: "উপস্থিতির হার",
+        totalDays: "মোট দিন",
+        recentAttendance: "সাম্প্রতিক উপস্থিতি (গত ৩০ দিন)",
+        studentDetails: "ছাত্রের বিবরণ",
+        backToReports: "রিপোর্টে ফিরে যান",
         
         // Common buttons and actions
         ok: "ঠিক আছে",

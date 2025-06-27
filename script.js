@@ -870,6 +870,15 @@ function calculateStudentAttendanceStats(student) {
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
         
+        // Skip holidays - they don't count toward attendance calculations
+        if (isHoliday(dateStr)) {
+            recentAttendance[dateStr] = {
+                status: 'holiday',
+                reason: getHolidayName(dateStr)
+            };
+            continue;
+        }
+        
         if (attendance[dateStr] && attendance[dateStr][student.id]) {
             const status = attendance[dateStr][student.id].status;
             recentAttendance[dateStr] = {
@@ -919,10 +928,15 @@ function generateAttendanceCalendar(student, recentAttendance) {
         let title = `${dateStr} - No data`;
         
         if (recentAttendance[dateStr]) {
-            className = `calendar-day ${recentAttendance[dateStr].status}`;
-            title = `${dateStr} - ${recentAttendance[dateStr].status}`;
-            if (recentAttendance[dateStr].reason) {
-                title += ` (${recentAttendance[dateStr].reason})`;
+            if (recentAttendance[dateStr].status === 'holiday') {
+                className = 'calendar-day holiday';
+                title = `${dateStr} - Holiday: ${recentAttendance[dateStr].reason}`;
+            } else {
+                className = `calendar-day ${recentAttendance[dateStr].status}`;
+                title = `${dateStr} - ${recentAttendance[dateStr].status}`;
+                if (recentAttendance[dateStr].reason) {
+                    title += ` (${recentAttendance[dateStr].reason})`;
+                }
             }
         }
         

@@ -71,6 +71,47 @@ body {
     font-size: 0.9rem;
 }
 
+/* Holiday Notice */
+.holiday-notice {
+    text-align: center;
+    padding: 2rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    color: #856404;
+}
+
+.holiday-notice i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #f39c12;
+}
+
+.holiday-notice h3 {
+    margin-bottom: 1rem;
+    color: #856404;
+}
+
+.holiday-notice p {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Calendar Holiday Styling */
+.calendar-day.holiday {
+    background-color: #fff3cd !important;
+    border-color: #ffeaa7 !important;
+    color: #856404 !important;
+}
+
+.calendar-day.holiday::after {
+    content: "🎉";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.7rem;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
