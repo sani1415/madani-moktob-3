@@ -408,8 +408,8 @@ body {
 .student-detail-header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .student-detail-content {
@@ -425,14 +425,14 @@ body {
 
 .student-basic-info {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .info-group {
     background: #f8f9fa;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     border-left: 4px solid #3498db;
 }
@@ -465,8 +465,8 @@ body {
 }
 
 .attendance-history {
-    margin-top: 30px;
-    padding: 25px;
+    margin-top: 20px;
+    padding: 15px;
     background: #f8f9fa;
 }
 
@@ -811,6 +811,41 @@ body {
     gap: 10px;
 }
 
+/* Compact Attendance Buttons */
+.btn-present, .btn-absent {
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    opacity: 0.6;
+}
+
+.btn-present {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-present.active {
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.btn-absent {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-absent.active {
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
 .toggle-switch {
     position: relative;
     width: 60px;
@@ -1111,7 +1146,7 @@ body {
     }
     
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
     }
     
     .form-row {
