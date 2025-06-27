@@ -295,7 +295,7 @@ function updateTodayOverview() {
         
         absentStudents.forEach(student => {
             const reason = todayAttendance[student.id].reason || t('noReasonProvided');
-            html += `<li>${student.name} (${student.class}) - ${reason}</li>`;
+            html += `<li>${student.idNumber} - ${student.name} - ${reason}</li>`;
         });
         
         html += `
