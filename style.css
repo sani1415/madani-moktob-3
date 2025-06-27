@@ -438,10 +438,15 @@ body {
     min-height: 300px;
 }
 
+.report-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
 .report-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    min-width: 600px;
 }
 
 .report-table th,
@@ -455,6 +460,63 @@ body {
     background: #f8f9fa;
     font-weight: 600;
     color: #2c3e50;
+    position: relative;
+}
+
+.sortable-header {
+    position: relative;
+    user-select: none;
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.sort-btn:hover {
+    background: #e9ecef;
+    color: #3498db;
+}
+
+.sort-btn i {
+    font-size: 12px;
+}
+
+.column-filter {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 12px;
+    width: 80px;
+    transition: all 0.3s ease;
+}
+
+.column-filter:focus {
+    outline: none;
+    border-color: #3498db;
+    width: 120px;
+}
+
+.column-filter::placeholder {
+    color: #999;
+    font-size: 11px;
 }
 
 .status-present {
@@ -465,6 +527,10 @@ body {
 .status-absent {
     color: #e74c3c;
     font-weight: 600;
+}
+
+.sortable-table tbody tr:hover {
+    background-color: #f8f9fa;
 }
 
 /* Settings */

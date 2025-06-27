@@ -80,8 +80,6 @@ function showSection(sectionId) {
         updateDashboard();
     } else if (sectionId === 'attendance') {
         loadAttendanceForDate();
-    } else if (sectionId === 'reports') {
-        updateReportClassDropdown();
     }
 }
 
@@ -441,21 +439,17 @@ function saveAttendance() {
 
 // Report Functions
 function updateReportClassDropdown() {
-    const dropdown = document.getElementById('reportClass');
-    dropdown.innerHTML = '<option value="">All Classes</option>';
-    
-    classes.forEach(className => {
-        const option = document.createElement('option');
-        option.value = className;
-        option.textContent = className;
-        dropdown.appendChild(option);
-    });
+    // This function is no longer needed as class dropdown is removed
 }
+
+// Global variables for table sorting and filtering
+let currentReportData = [];
+let sortDirection = {};
+let columnFilters = {};
 
 function generateReport() {
     const startDate = document.getElementById('reportStartDate').value;
     const endDate = document.getElementById('reportEndDate').value;
-    const selectedClass = document.getElementById('reportClass').value;
     
     if (!startDate || !endDate) {
         showModal(t('error'), t('selectBothDates'));
@@ -467,13 +461,7 @@ function generateReport() {
         return;
     }
     
-    // Filter students
-    let filteredStudents = students;
-    if (selectedClass) {
-        filteredStudents = students.filter(student => student.class === selectedClass);
-    }
-    
-    if (filteredStudents.length === 0) {
+    if (students.length === 0) {
         document.getElementById('reportResults').innerHTML = `<p>${t('noStudentsFound')}</p>`;
         return;
     }
@@ -482,7 +470,7 @@ function generateReport() {
     const dateRange = getDateRange(startDate, endDate);
     
     // Calculate attendance for each student
-    const reportData = filteredStudents.map(student => {
+    currentReportData = students.map(student => {
         let presentDays = 0;
         let absentDays = 0;
         
@@ -503,43 +491,181 @@ function generateReport() {
         const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
         
         return {
-            student,
+            id: student.idNumber,
+            name: student.name,
+            fullName: `${student.idNumber} - ${student.name}`,
             presentDays,
             absentDays,
             attendancePercentage
         };
     });
     
-    // Generate report HTML
+    // Reset filters and sort direction
+    columnFilters = {};
+    sortDirection = {};
+    
+    renderReportTable(startDate, endDate);
+}
+
+function renderReportTable(startDate, endDate) {
+    // Apply filters
+    let filteredData = currentReportData.filter(row => {
+        return Object.keys(columnFilters).every(column => {
+            const filterValue = columnFilters[column].toLowerCase();
+            if (!filterValue) return true;
+            
+            const cellValue = row[column].toString().toLowerCase();
+            return cellValue.includes(filterValue);
+        });
+    });
+    
+    // Generate report HTML with filterable/sortable table
     const reportResults = document.getElementById('reportResults');
     reportResults.innerHTML = `
         <h3>${t('attendanceReport')}</h3>
         <p><strong>${t('period')}:</strong> ${startDate} ${t('to')} ${endDate}</p>
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>${t('studentNameCol')}</th>
-                    <th>${t('classCol')}</th>
-                    <th>${t('idNumberCol')}</th>
-                    <th>${t('presentDays')}</th>
-                    <th>${t('absentDays')}</th>
-                    <th>${t('attendancePercent')}</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${reportData.map(data => `
+        <div class="report-table-container">
+            <table class="report-table sortable-table">
+                <thead>
                     <tr>
-                        <td>${data.student.idNumber} - ${data.student.name}</td>
-                        <td>${data.student.class}</td>
-                        <td>${data.student.idNumber}</td>
-                        <td class="status-present">${data.presentDays}</td>
-                        <td class="status-absent">${data.absentDays}</td>
-                        <td>${data.attendancePercentage}%</td>
+                        <th class="sortable-header" data-column="fullName">
+                            <div class="header-content">
+                                <span>${t('studentNameCol')}</span>
+                                <div class="header-controls">
+                                    <button class="sort-btn" onclick="sortTable('fullName')">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                    <input type="text" class="column-filter" placeholder="Filter..." 
+                                           onkeyup="filterColumn('fullName', this.value)" 
+                                           onclick="event.stopPropagation()">
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sortable-header" data-column="presentDays">
+                            <div class="header-content">
+                                <span>${t('presentDays')}</span>
+                                <div class="header-controls">
+                                    <button class="sort-btn" onclick="sortTable('presentDays')">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                    <input type="text" class="column-filter" placeholder="Filter..." 
+                                           onkeyup="filterColumn('presentDays', this.value)" 
+                                           onclick="event.stopPropagation()">
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sortable-header" data-column="absentDays">
+                            <div class="header-content">
+                                <span>${t('absentDays')}</span>
+                                <div class="header-controls">
+                                    <button class="sort-btn" onclick="sortTable('absentDays')">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                    <input type="text" class="column-filter" placeholder="Filter..." 
+                                           onkeyup="filterColumn('absentDays', this.value)" 
+                                           onclick="event.stopPropagation()">
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sortable-header" data-column="attendancePercentage">
+                            <div class="header-content">
+                                <span>${t('attendancePercent')}</span>
+                                <div class="header-controls">
+                                    <button class="sort-btn" onclick="sortTable('attendancePercentage')">
+                                        <i class="fas fa-sort"></i>
+                                    </button>
+                                    <input type="text" class="column-filter" placeholder="Filter..." 
+                                           onkeyup="filterColumn('attendancePercentage', this.value)" 
+                                           onclick="event.stopPropagation()">
+                                </div>
+                            </div>
+                        </th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    ${filteredData.map(data => `
+                        <tr>
+                            <td>${data.fullName}</td>
+                            <td class="status-present">${data.presentDays}</td>
+                            <td class="status-absent">${data.absentDays}</td>
+                            <td>${data.attendancePercentage}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
     `;
+}
+
+function sortTable(column) {
+    // Toggle sort direction
+    if (sortDirection[column] === 'asc') {
+        sortDirection[column] = 'desc';
+    } else {
+        sortDirection[column] = 'asc';
+    }
+    
+    // Clear other sort directions
+    Object.keys(sortDirection).forEach(key => {
+        if (key !== column) {
+            delete sortDirection[key];
+        }
+    });
+    
+    // Sort the data
+    currentReportData.sort((a, b) => {
+        let aValue = a[column];
+        let bValue = b[column];
+        
+        // Handle numeric values
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return sortDirection[column] === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        // Handle string values
+        aValue = aValue.toString().toLowerCase();
+        bValue = bValue.toString().toLowerCase();
+        
+        if (sortDirection[column] === 'asc') {
+            return aValue.localeCompare(bValue);
+        } else {
+            return bValue.localeCompare(aValue);
+        }
+    });
+    
+    // Update sort icon
+    updateSortIcons(column);
+    
+    // Re-render table
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+    renderReportTable(startDate, endDate);
+}
+
+function filterColumn(column, value) {
+    columnFilters[column] = value;
+    
+    // Re-render table with filters
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+    renderReportTable(startDate, endDate);
+}
+
+function updateSortIcons(activeColumn) {
+    // Update all sort icons
+    document.querySelectorAll('.sort-btn i').forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+    
+    // Update active column icon
+    const activeHeader = document.querySelector(`[data-column="${activeColumn}"] .sort-btn i`);
+    if (activeHeader) {
+        if (sortDirection[activeColumn] === 'asc') {
+            activeHeader.className = 'fas fa-sort-up';
+        } else {
+            activeHeader.className = 'fas fa-sort-down';
+        }
+    }
 }
 
 function getDateRange(startDate, endDate) {

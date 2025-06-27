@@ -325,7 +325,7 @@ function updateReportsTexts() {
     document.querySelector('#reports h2').textContent = t('attendanceReports');
     
     const reportLabels = document.querySelectorAll('#reports .form-group label');
-    const reportLabelTexts = ['fromDate', 'toDate', 'class'];
+    const reportLabelTexts = ['fromDate', 'toDate'];
     
     reportLabels.forEach((label, index) => {
         if (reportLabelTexts[index]) {
@@ -336,11 +336,6 @@ function updateReportsTexts() {
     const generateBtn = document.querySelector('#reports .btn-primary');
     if (generateBtn) {
         generateBtn.innerHTML = `<i class="fas fa-chart-bar"></i> ${t('generateReport')}`;
-    }
-    
-    const reportAllClassesOption = document.querySelector('#reportClass option[value=""]');
-    if (reportAllClassesOption) {
-        reportAllClassesOption.textContent = t('allClasses');
     }
 }
 
