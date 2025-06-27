@@ -12,8 +12,14 @@ function formatDate(dateString) {
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
-    initializeLanguage();
-    initializeApp();
+    try {
+        initializeLanguage();
+        initializeApp();
+        console.log('Madani Maktab app initialized successfully');
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showModal('Error', 'Failed to initialize the application. Please refresh the page.');
+    }
 });
 
 function initializeApp() {
@@ -1408,10 +1414,15 @@ function getHolidayName(date) {
 }
 
 function saveData() {
-    localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
-    localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
-    localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
-    localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
+    try {
+        localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
+        localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
+        localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
+        localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
+    } catch (error) {
+        console.error('Error saving data:', error);
+        showModal('Error', 'Failed to save data. Your browser storage might be full.');
+    }
 }
 
 function showModal(title, message) {
