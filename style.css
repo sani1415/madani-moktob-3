@@ -688,7 +688,8 @@ body {
     display: flex;
     gap: 20px;
     align-items: flex-end;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    width: 100%;
 }
 
 /* Bulk Actions */
@@ -783,7 +784,8 @@ body {
 .class-filter {
     display: flex;
     flex-direction: column;
-    min-width: 180px;
+    min-width: 200px;
+    max-width: 300px;
     flex: 1;
 }
 
@@ -1180,13 +1182,15 @@ body {
     }
     
     .controls-row {
-        flex-direction: column;
+        flex-direction: row;
         gap: 15px;
+        flex-wrap: wrap;
     }
     
     .date-selector,
     .class-filter {
-        min-width: auto;
+        min-width: 150px;
+        max-width: none;
     }
     
     .bulk-actions {
