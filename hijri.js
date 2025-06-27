@@ -1,6 +1,6 @@
 /**
  * Hijri Calendar System for Madani Maktab
- * Based on astronomical calculations with local adjustment support
+ * Based on Tabular Islamic Calendar with local adjustment support
  */
 
 class HijriCalendar {
@@ -8,9 +8,9 @@ class HijriCalendar {
         // Hijri month names in Arabic and Bengali
         this.monthNames = {
             en: [
-                'Muharram', 'Safar', 'Rabi\' al-awwal', 'Rabi\' al-thani',
-                'Jumada al-awwal', 'Jumada al-thani', 'Rajab', 'Sha\'ban',
-                'Ramadan', 'Shawwal', 'Dhu al-Qi\'dah', 'Dhu al-Hijjah'
+                'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
+                'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Shaban',
+                'Ramadan', 'Shawwal', 'Dhu al-Qidah', 'Dhu al-Hijjah'
             ],
             bn: [
                 'মুহাররম', 'সফর', 'রবিউল আউয়াল', 'রবিউস সানি',
@@ -21,50 +21,122 @@ class HijriCalendar {
         
         // Load adjustment from localStorage
         this.adjustment = parseInt(localStorage.getItem('hijriAdjustment') || '0');
+        
+        // Islamic calendar epoch (July 16, 622 CE in Julian calendar)
+        this.islamicEpoch = 1948085; // Julian Day Number
     }
 
     /**
      * Convert Gregorian date to Hijri date
-     * Using astronomical calculation (Umm al-Qura calendar approximation)
+     * Using Islamic calendar calculation based on Tabular Islamic Calendar
      */
     gregorianToHijri(gregorianDate) {
         const date = new Date(gregorianDate);
         
-        // Julian day calculation
-        const a = Math.floor((14 - (date.getMonth() + 1)) / 12);
-        const y = date.getFullYear() - a;
-        const m = (date.getMonth() + 1) + 12 * a - 3;
+        // Get Julian Day Number
+        const jd = this.gregorianToJulianDay(date);
         
-        const jd = date.getDate() + Math.floor((153 * m + 2) / 5) + 
-                   365 * y + Math.floor(y / 4) - Math.floor(y / 100) + 
-                   Math.floor(y / 400) + 1721119;
-        
-        // Convert Julian day to Hijri
-        const l = jd - 1948085;
-        const n = Math.floor((30 * l) / 10631);
-        const hijriYear = Math.floor((l - Math.floor((10631 * n) / 30)) / 354) + 
-                         Math.floor(n / 19) * 19 + n + 1;
-        
-        const yearStart = this.hijriYearStart(hijriYear);
-        const dayOfYear = jd - yearStart + 1;
-        
-        let hijriMonth = 1;
-        let hijriDay = dayOfYear;
-        
-        // Calculate month and day
-        for (let i = 1; i <= 12; i++) {
-            const monthLength = this.getHijriMonthLength(hijriYear, i);
-            if (hijriDay <= monthLength) {
-                hijriMonth = i;
-                break;
-            }
-            hijriDay -= monthLength;
-        }
+        // Convert Julian Day to Islamic date
+        const hijriData = this.julianDayToHijri(jd);
         
         // Apply local adjustment
-        const adjustedDate = this.applyAdjustment(hijriYear, hijriMonth, hijriDay);
+        const adjustedDate = this.applyAdjustment(hijriData.year, hijriData.month, hijriData.day);
         
         return adjustedDate;
+    }
+
+    /**
+     * Convert Gregorian date to Julian Day Number
+     */
+    gregorianToJulianDay(date) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        
+        let a = Math.floor((14 - month) / 12);
+        let y = year - a;
+        let m = month + 12 * a - 3;
+        
+        return day + Math.floor((153 * m + 2) / 5) + 365 * y + 
+               Math.floor(y / 4) - Math.floor(y / 100) + 
+               Math.floor(y / 400) + 1721119;
+    }
+
+    /**
+     * Convert Julian Day Number to Islamic date
+     * Using simplified Tabular Islamic Calendar
+     */
+    julianDayToHijri(jd) {
+        if (jd < this.islamicEpoch) {
+            return { year: 1, month: 1, day: 1 };
+        }
+        
+        const daysSinceEpoch = jd - this.islamicEpoch;
+        
+        // Calculate approximate year (30-year cycle with 11 leap years)
+        const cycleLength = 10631; // Days in 30-year cycle
+        const cycle = Math.floor(daysSinceEpoch / cycleLength);
+        const cycleDay = daysSinceEpoch % cycleLength;
+        
+        // Find year within cycle
+        let yearInCycle = Math.floor(cycleDay / 354.36667);
+        if (yearInCycle >= 30) yearInCycle = 29;
+        
+        let year = cycle * 30 + yearInCycle + 1;
+        
+        // Calculate start of this year
+        let yearStart = this.calculateYearStart(year);
+        
+        // Adjust if calculation is off
+        while (jd < yearStart) {
+            year--;
+            yearStart = this.calculateYearStart(year);
+        }
+        
+        const nextYearStart = this.calculateYearStart(year + 1);
+        while (jd >= nextYearStart) {
+            year++;
+            yearStart = nextYearStart;
+        }
+        
+        const dayOfYear = jd - yearStart + 1;
+        
+        // Find month and day
+        let month = 1;
+        let day = dayOfYear;
+        
+        for (let m = 1; m <= 12; m++) {
+            const monthLength = this.getHijriMonthLength(year, m);
+            if (day <= monthLength) {
+                month = m;
+                break;
+            }
+            day -= monthLength;
+        }
+        
+        return { year, month, day };
+    }
+
+    /**
+     * Calculate start of Hijri year in Julian Day Number
+     */
+    calculateYearStart(hijriYear) {
+        const yearsSinceEpoch = hijriYear - 1;
+        const cycles = Math.floor(yearsSinceEpoch / 30);
+        const yearInCycle = yearsSinceEpoch % 30;
+        
+        // Count leap years
+        const leapYears = Math.floor(yearInCycle * 11 / 30);
+        
+        return this.islamicEpoch + cycles * 10631 + yearInCycle * 354 + leapYears;
+    }
+
+    /**
+     * Get Julian Day for start of Hijri year
+     */
+    getHijriYearStart(hijriYear) {
+        const islamicEpoch = 1948085;
+        return Math.floor((hijriYear - 1) * 354.367) + islamicEpoch;
     }
 
     /**
@@ -107,12 +179,7 @@ class HijriCalendar {
         };
     }
 
-    /**
-     * Get Julian day for start of Hijri year
-     */
-    hijriYearStart(hijriYear) {
-        return Math.floor((hijriYear - 1) * 354.367056) + 1948085;
-    }
+
 
     /**
      * Get length of Hijri month (29 or 30 days)
