@@ -251,12 +251,18 @@
                         <div class="add-holiday">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="holidayDate">Holiday Date:</label>
-                                    <input type="date" id="holidayDate">
+                                    <label for="holidayStartDate">From Date:</label>
+                                    <input type="date" id="holidayStartDate">
                                 </div>
                                 <div class="form-group">
+                                    <label for="holidayEndDate">To Date:</label>
+                                    <input type="date" id="holidayEndDate">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
                                     <label for="holidayName">Holiday Name:</label>
-                                    <input type="text" id="holidayName" placeholder="e.g., Eid ul-Fitr, National Day">
+                                    <input type="text" id="holidayName" placeholder="e.g., Eid ul-Fitr, Winter Break, National Day">
                                 </div>
                             </div>
                             <button onclick="addHoliday()" class="btn btn-primary">

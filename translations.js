@@ -123,6 +123,8 @@ const translations = {
         holidayManagement: "Holiday Management",
         addHoliday: "Add Holiday",
         holidayDate: "Holiday Date",
+        holidayStartDate: "From Date",
+        holidayEndDate: "To Date",
         holidayName: "Holiday Name",
         studentManagement: "Student Management",
         addSampleStudents: "Add Sample Students (Classes 4-5)",
@@ -238,6 +240,8 @@ const translations = {
         holidayManagement: "ছুটির দিন ব্যবস্থাপনা",
         addHoliday: "ছুটির দিন যোগ করুন",
         holidayDate: "ছুটির তারিখ",
+        holidayStartDate: "শুরুর তারিখ",
+        holidayEndDate: "শেষের তারিখ",
         holidayName: "ছুটির নাম",
         studentManagement: "ছাত্র ব্যবস্থাপনা",
         addSampleStudents: "নমুনা ছাত্র যোগ করুন (ক্লাস ৪-৫)",
@@ -506,9 +510,14 @@ function updateSettingsTexts() {
         classNameInput.placeholder = t('enterNewClassName');
     }
     
-    const holidayDateLabel = document.querySelector('label[for="holidayDate"]');
-    if (holidayDateLabel) {
-        holidayDateLabel.textContent = t('holidayDate') + ':';
+    const holidayStartDateLabel = document.querySelector('label[for="holidayStartDate"]');
+    if (holidayStartDateLabel) {
+        holidayStartDateLabel.textContent = t('holidayStartDate') + ':';
+    }
+    
+    const holidayEndDateLabel = document.querySelector('label[for="holidayEndDate"]');
+    if (holidayEndDateLabel) {
+        holidayEndDateLabel.textContent = t('holidayEndDate') + ':';
     }
     
     const holidayNameLabel = document.querySelector('label[for="holidayName"]');

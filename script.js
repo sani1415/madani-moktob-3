@@ -1197,39 +1197,66 @@ function getDateRange(startDate, endDate) {
 // Utility Functions
 // Holiday Management Functions
 function addHoliday() {
-    const dateInput = document.getElementById('holidayDate');
+    const startDateInput = document.getElementById('holidayStartDate');
+    const endDateInput = document.getElementById('holidayEndDate');
     const nameInput = document.getElementById('holidayName');
     
-    const date = dateInput.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
     const name = nameInput.value.trim();
     
-    if (!date || !name) {
-        showModal(t('error'), 'Please enter both holiday date and name');
+    if (!startDate || !name) {
+        showModal(t('error'), 'Please enter holiday start date and name');
         return;
     }
     
-    // Check if holiday already exists for this date
-    const existingHoliday = holidays.find(h => h.date === date);
-    if (existingHoliday) {
-        showModal(t('error'), 'Holiday already exists for this date');
+    // If no end date is provided, use start date (single day holiday)
+    const finalEndDate = endDate || startDate;
+    
+    // Validate date range
+    if (new Date(startDate) > new Date(finalEndDate)) {
+        showModal(t('error'), 'Start date cannot be after end date');
         return;
     }
     
-    holidays.push({ date, name });
-    holidays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Check if any date in the range conflicts with existing holidays
+    const conflictingHoliday = holidays.find(h => {
+        const existingStart = new Date(h.startDate);
+        const existingEnd = new Date(h.endDate);
+        const newStart = new Date(startDate);
+        const newEnd = new Date(finalEndDate);
+        
+        return (newStart <= existingEnd && newEnd >= existingStart);
+    });
+    
+    if (conflictingHoliday) {
+        showModal(t('error'), 'Holiday dates conflict with existing holiday: ' + conflictingHoliday.name);
+        return;
+    }
+    
+    holidays.push({ 
+        startDate, 
+        endDate: finalEndDate, 
+        name,
+        // Keep legacy date field for compatibility
+        date: startDate
+    });
+    holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
     
     saveData();
     displayHolidays();
     
     // Clear inputs
-    dateInput.value = '';
+    startDateInput.value = '';
+    endDateInput.value = '';
     nameInput.value = '';
     
-    showModal(t('success'), 'Holiday added successfully');
+    const dayCount = Math.ceil((new Date(finalEndDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+    showModal(t('success'), `Holiday added successfully (${dayCount} day${dayCount > 1 ? 's' : ''})`);
 }
 
-function deleteHoliday(date) {
-    holidays = holidays.filter(h => h.date !== date);
+function deleteHoliday(index) {
+    holidays.splice(index, 1);
     saveData();
     displayHolidays();
     showModal(t('success'), 'Holiday deleted successfully');
@@ -1244,25 +1271,46 @@ function displayHolidays() {
         return;
     }
     
-    holidaysList.innerHTML = holidays.map(holiday => `
-        <div class="holiday-item">
-            <div class="holiday-info">
-                <strong>${holiday.name}</strong>
-                <span class="holiday-date">${holiday.date}</span>
+    holidaysList.innerHTML = holidays.map((holiday, index) => {
+        const startDate = holiday.startDate || holiday.date;
+        const endDate = holiday.endDate || holiday.date;
+        const isRange = startDate !== endDate;
+        const dayCount = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+        
+        return `
+            <div class="holiday-item">
+                <div class="holiday-info">
+                    <strong>${holiday.name}</strong>
+                    <span class="holiday-date">
+                        ${isRange ? `${startDate} to ${endDate} (${dayCount} days)` : startDate}
+                    </span>
+                </div>
+                <button onclick="deleteHoliday(${index})" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
-            <button onclick="deleteHoliday('${holiday.date}')" class="btn btn-danger btn-sm">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function isHoliday(date) {
-    return holidays.some(h => h.date === date);
+    return holidays.some(h => {
+        const startDate = h.startDate || h.date;
+        const endDate = h.endDate || h.date;
+        const checkDate = new Date(date);
+        
+        return checkDate >= new Date(startDate) && checkDate <= new Date(endDate);
+    });
 }
 
 function getHolidayName(date) {
-    const holiday = holidays.find(h => h.date === date);
+    const holiday = holidays.find(h => {
+        const startDate = h.startDate || h.date;
+        const endDate = h.endDate || h.date;
+        const checkDate = new Date(date);
+        
+        return checkDate >= new Date(startDate) && checkDate <= new Date(endDate);
+    });
     return holiday ? holiday.name : null;
 }
 
