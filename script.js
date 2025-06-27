@@ -451,6 +451,12 @@ function loadAttendanceForDate() {
 }
 
 function toggleAttendance(studentId, date) {
+    // Prevent attendance marking on holidays
+    if (isHoliday(date)) {
+        showModal(t('error'), 'Cannot mark attendance on holidays');
+        return;
+    }
+    
     if (!attendance[date]) {
         attendance[date] = {};
     }
@@ -518,6 +524,12 @@ function markAllPresent() {
         return;
     }
     
+    // Prevent bulk actions on holidays
+    if (isHoliday(selectedDate)) {
+        showModal(t('error'), 'Cannot mark attendance on holidays');
+        return;
+    }
+    
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
         showModal(t('error'), t('noStudentsFound'));
@@ -579,6 +591,13 @@ function confirmMarkAllAbsent() {
     
     if (!reason) {
         showModal(t('error'), t('pleaseProvideReason'));
+        return;
+    }
+    
+    // Prevent bulk actions on holidays
+    if (isHoliday(selectedDate)) {
+        showModal(t('error'), 'Cannot mark attendance on holidays');
+        closeBulkAbsentModal();
         return;
     }
     
@@ -988,6 +1007,11 @@ function generateReport() {
         let absentDays = 0;
         
         dateRange.forEach(date => {
+            // Skip holidays in report calculations
+            if (isHoliday(date)) {
+                return;
+            }
+            
             if (attendance[date] && attendance[date][student.id]) {
                 if (attendance[date][student.id].status === 'present') {
                     presentDays++;
