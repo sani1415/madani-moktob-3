@@ -678,9 +678,17 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     display: flex;
+    justify-content: space-between;
+    align-items: end;
     flex-wrap: wrap;
     gap: 20px;
-    align-items: end;
+}
+
+.controls-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
 }
 
 /* Bulk Actions */
@@ -775,7 +783,8 @@ body {
 .class-filter {
     display: flex;
     flex-direction: column;
-    min-width: 200px;
+    min-width: 180px;
+    flex: 1;
 }
 
 .date-selector label,
@@ -1168,6 +1177,16 @@ body {
     .attendance-controls {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    .controls-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .date-selector,
+    .class-filter {
+        min-width: auto;
     }
     
     .bulk-actions {
