@@ -529,7 +529,7 @@ function generateReport() {
             <tbody>
                 ${reportData.map(data => `
                     <tr>
-                        <td>${data.student.name}</td>
+                        <td>${data.student.idNumber} - ${data.student.name}</td>
                         <td>${data.student.class}</td>
                         <td>${data.student.idNumber}</td>
                         <td class="status-present">${data.presentDays}</td>
