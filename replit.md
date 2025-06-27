@@ -14,18 +14,21 @@ Madani Maktab is a web-based student attendance management system designed for e
 - **State Management**: Browser localStorage for data persistence
 
 ### Data Storage Strategy
-- **Primary Storage**: IndexedDB with localStorage fallback for maximum capacity
-- **Capacity**: Supports 1000+ students with full attendance history
+- **Primary Storage**: PostgreSQL database for scalable 1000+ student management
+- **Fallback Storage**: localStorage for offline functionality
+- **Database Architecture**: Flask REST API with psycopg2 PostgreSQL adapter
+- **Capacity**: Unlimited students with full attendance history and relational data integrity
 - **Data Models**: 
-  - Students: Personal information, class assignment, registration details
+  - Students: Personal information, class assignment, registration details (PostgreSQL table)
   - Classes: Dynamic class management system
-  - Attendance: Date-based attendance records with student status tracking
-  - Holidays: Holiday calendar with date-based exclusions
+  - Attendance: Date-based attendance records with student status tracking (PostgreSQL table)
+  - Holidays: Holiday calendar with date-based exclusions (PostgreSQL table)
 
 ### Deployment Strategy
-- **Runtime Environment**: Python 3.11 HTTP server for development
-- **Static Hosting**: Simple file-based structure suitable for any web server
-- **Port Configuration**: Default port 5000 for local development
+- **Backend Runtime**: Flask web server with PostgreSQL database integration
+- **Database**: Neon PostgreSQL cloud database for production scalability
+- **API Architecture**: RESTful endpoints for student, attendance, and holiday management
+- **Port Configuration**: Flask server on port 5000 with CORS enabled for frontend integration
 
 ## Key Components
 
