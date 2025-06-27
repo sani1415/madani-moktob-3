@@ -14,11 +14,13 @@ Madani Maktab is a web-based student attendance management system designed for e
 - **State Management**: Browser localStorage for data persistence
 
 ### Data Storage Strategy
-- **Primary Storage**: Browser localStorage for all application data
+- **Primary Storage**: IndexedDB with localStorage fallback for maximum capacity
+- **Capacity**: Supports 1000+ students with full attendance history
 - **Data Models**: 
   - Students: Personal information, class assignment, registration details
   - Classes: Dynamic class management system
   - Attendance: Date-based attendance records with student status tracking
+  - Holidays: Holiday calendar with date-based exclusions
 
 ### Deployment Strategy
 - **Runtime Environment**: Python 3.11 HTTP server for development
