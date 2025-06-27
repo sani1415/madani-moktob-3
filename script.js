@@ -27,8 +27,9 @@ async function initializeAppWithDatabase() {
         // Load data from database
         await loadDataFromDatabase();
         
-        // Check if we need to migrate sample data
-        if (!students || students.length === 0) {
+        // Check if we need to migrate sample data or have incomplete data
+        if (!students || students.length < 25) {
+            console.log(`Found ${students.length} students, migrating all 25...`);
             await migrateSampleData();
         }
         
@@ -60,8 +61,8 @@ async function initializeAppWithDatabase() {
         attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
         holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
         
-        // If no data exists, add sample data
-        if (students.length === 0) {
+        // If no data exists or incomplete data, add all 25 sample students
+        if (students.length < 25) {
             addSampleDataFallback();
         }
         
@@ -86,8 +87,17 @@ async function initializeAppWithDatabase() {
 }
 
 async function loadDataFromDatabase() {
-    // Always start with localStorage data (reliable baseline)
-    students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+    // Check if we have complete data set
+    const existingStudents = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
+    
+    // If we don't have all 25 students, force fresh migration
+    if (existingStudents.length < 25) {
+        localStorage.removeItem('madaniMaktabStudents');
+        students = [];
+    } else {
+        students = existingStudents;
+    }
+    
     classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
     attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
     holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
