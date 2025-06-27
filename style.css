@@ -298,6 +298,11 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     text-align: center;
     transition: transform 0.3s ease;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .stat-card:hover {
@@ -1132,6 +1137,12 @@ body {
     
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+        min-height: 160px;
     }
     
     .form-row {
@@ -1191,8 +1202,14 @@ body {
         font-size: 1.5em;
     }
     
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
     .stat-card {
         padding: 20px;
+        min-height: 140px;
     }
     
     .stat-card h3 {
