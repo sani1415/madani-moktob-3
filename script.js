@@ -748,8 +748,10 @@ function showStudentDetail(studentId) {
         return;
     }
     
-    // Hide reports section and show student detail
-    document.getElementById('reports').classList.remove('active');
+    // Hide all sections and show student detail as separate page
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
     document.getElementById('student-detail').classList.add('active');
     
     // Update page title
@@ -764,8 +766,8 @@ function showStudentDetail(studentId) {
 
 function backToReports() {
     document.getElementById('student-detail').classList.remove('active');
-    document.getElementById('reports').classList.add('active');
-    window.location.hash = 'reports';
+    document.getElementById('attendance').classList.add('active');
+    window.location.hash = 'attendance';
 }
 
 function generateStudentDetailContent(student) {

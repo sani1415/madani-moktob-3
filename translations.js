@@ -117,7 +117,7 @@ const translations = {
         
         // Student Detail
         studentDetails: "Student Details",
-        backToReports: "Back to Reports",
+        backToReports: "Back to Attendance",
         
         // Holiday Management
         holidayManagement: "Holiday Management",
@@ -257,7 +257,7 @@ const translations = {
         totalDays: "মোট দিন",
         recentAttendance: "সাম্প্রতিক উপস্থিতি (গত ৩০ দিন)",
         studentDetails: "ছাত্রের বিবরণ",
-        backToReports: "রিপোর্টে ফিরে যান",
+        backToReports: "উপস্থিতিতে ফিরে যান",
         
         // Common buttons and actions
         ok: "ঠিক আছে",
@@ -499,9 +499,7 @@ function updateSettingsTexts() {
     if (settingsTitles.length >= 2) {
         settingsTitles[1].textContent = t('holidayManagement');
     }
-    if (settingsTitles.length >= 3) {
-        settingsTitles[2].textContent = t('studentManagement');
-    }
+
     
     const classNameInput = document.getElementById('newClassName');
     if (classNameInput) {
@@ -528,10 +526,7 @@ function updateSettingsTexts() {
         addHolidayBtn.innerHTML = `<i class="fas fa-calendar-plus"></i> ${t('addHoliday')}`;
     }
     
-    const addSampleBtn = document.querySelector('.student-management .btn');
-    if (addSampleBtn) {
-        addSampleBtn.innerHTML = `<i class="fas fa-users"></i> ${t('addSampleStudents')}`;
-    }
+
 }
 
 // Update student detail texts
