@@ -8,21 +8,30 @@ runButton = "Project"
 
 [[workflows.workflow]]
 name = "Flask Server"
-author = 39842365
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 app.py"
-
-[[workflows.workflow]]
-name = "Flask Server"
 mode = "parallel"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python app.py"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Web App"
+
+[[workflows.workflow]]
+name = "Web App"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m http.server 5000"
 waitForPort = 5000
 
 [[ports]]
