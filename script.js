@@ -276,13 +276,29 @@ function updateDashboard() {
     // Update total students
     document.getElementById('totalStudents').textContent = students.length;
     
-    // Check if today is a holiday
+    // Check if today is a holiday and display holiday notice
+    const holidayNotice = document.getElementById('holidayNotice');
     if (isHoliday(today)) {
+        const holidayName = getHolidayName(today);
+        if (holidayNotice) {
+            holidayNotice.innerHTML = `
+                <div class="dashboard-holiday-notice">
+                    <i class="fas fa-calendar-times"></i>
+                    <span>Today is a holiday: <strong>${holidayName}</strong></span>
+                </div>
+            `;
+            holidayNotice.style.display = 'block';
+        }
+        
         // On holidays, show all students as present
         document.getElementById('presentToday').textContent = students.length;
         document.getElementById('absentToday').textContent = 0;
         document.getElementById('attendanceRate').textContent = '100%';
     } else {
+        if (holidayNotice) {
+            holidayNotice.style.display = 'none';
+        }
+        
         const todayAttendance = attendance[today] || {};
         
         const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
@@ -505,6 +521,14 @@ function updateAbsenceReason(studentId, date, reason) {
 }
 
 function saveAttendance() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    
+    // Prevent saving attendance on holidays
+    if (isHoliday(selectedDate)) {
+        showModal(t('error'), 'Cannot save attendance on holidays');
+        return;
+    }
+    
     saveData();
     showModal(t('success'), t('attendanceSaved'));
 }
@@ -1025,6 +1049,26 @@ function generateReport() {
     
     // Generate date range
     const dateRange = getDateRange(startDate, endDate);
+    
+    // Check if the entire date range consists only of holidays
+    const holidaysInRange = dateRange.filter(date => isHoliday(date));
+    const nonHolidaysInRange = dateRange.filter(date => !isHoliday(date));
+    
+    if (nonHolidaysInRange.length === 0) {
+        // Show holiday message if all dates in range are holidays
+        document.getElementById('reportResults').innerHTML = `
+            <div class="holiday-notice">
+                <i class="fas fa-calendar-times"></i>
+                <h3>Holiday Period Selected</h3>
+                <p>The selected date range contains only holidays. No attendance data is available for holidays.</p>
+                <p><strong>Holidays in range:</strong> ${holidaysInRange.map(date => {
+                    const holidayName = getHolidayName(date);
+                    return `${formatDate(date)} (${holidayName})`;
+                }).join(', ')}</p>
+            </div>
+        `;
+        return;
+    }
     
     // Calculate attendance for each student
     currentReportData = students.map(student => {

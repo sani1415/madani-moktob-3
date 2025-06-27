@@ -97,6 +97,25 @@ body {
     font-size: 1.1rem;
 }
 
+/* Dashboard Holiday Notice */
+.dashboard-holiday-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    color: #856404;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+}
+
+.dashboard-holiday-notice i {
+    font-size: 1.2rem;
+    color: #f39c12;
+}
+
 /* Calendar Holiday Styling */
 .calendar-day.holiday {
     background-color: #fff3cd !important;
