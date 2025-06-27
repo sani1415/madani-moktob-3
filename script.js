@@ -272,19 +272,28 @@ function displayClasses() {
 // Dashboard Functions
 function updateDashboard() {
     const today = new Date().toISOString().split('T')[0];
-    const todayAttendance = attendance[today] || {};
     
-    // Update stats
+    // Update total students
     document.getElementById('totalStudents').textContent = students.length;
     
-    const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
-    const absentCount = Object.values(todayAttendance).filter(att => att.status === 'absent').length;
-    
-    document.getElementById('presentToday').textContent = presentCount;
-    document.getElementById('absentToday').textContent = absentCount;
-    
-    const attendanceRate = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 100;
-    document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
+    // Check if today is a holiday
+    if (isHoliday(today)) {
+        // On holidays, show all students as present
+        document.getElementById('presentToday').textContent = students.length;
+        document.getElementById('absentToday').textContent = 0;
+        document.getElementById('attendanceRate').textContent = '100%';
+    } else {
+        const todayAttendance = attendance[today] || {};
+        
+        const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
+        const absentCount = Object.values(todayAttendance).filter(att => att.status === 'absent').length;
+        
+        document.getElementById('presentToday').textContent = presentCount;
+        document.getElementById('absentToday').textContent = absentCount;
+        
+        const attendanceRate = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 100;
+        document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
+    }
     
     // Update today's overview
     updateTodayOverview();
@@ -636,20 +645,36 @@ function copyFromPreviousDay() {
         return;
     }
     
+    // Prevent copying to holidays
+    if (isHoliday(selectedDate)) {
+        showModal(t('error'), 'Cannot mark attendance on holidays');
+        return;
+    }
+    
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
         showModal(t('error'), t('noStudentsFound'));
         return;
     }
     
-    // Calculate previous day
-    const currentDate = new Date(selectedDate);
-    currentDate.setDate(currentDate.getDate() - 1);
-    const previousDate = currentDate.toISOString().split('T')[0];
+    // Find previous non-holiday day with attendance data
+    let currentDate = new Date(selectedDate);
+    let previousDate;
+    let foundNonHoliday = false;
     
-    // Check if previous day attendance exists
-    if (!attendance[previousDate]) {
-        showModal(t('error'), `${t('noAttendanceDataFound')} ${previousDate}`);
+    for (let i = 1; i <= 7; i++) {
+        currentDate.setDate(currentDate.getDate() - 1);
+        const checkDate = currentDate.toISOString().split('T')[0];
+        
+        if (!isHoliday(checkDate) && attendance[checkDate]) {
+            previousDate = checkDate;
+            foundNonHoliday = true;
+            break;
+        }
+    }
+    
+    if (!foundNonHoliday) {
+        showModal(t('error'), 'No non-holiday attendance data found in the last 7 days');
         return;
     }
     
