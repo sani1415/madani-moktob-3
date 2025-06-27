@@ -55,6 +55,77 @@ body {
     margin-top: 8px;
 }
 
+/* Hijri Date Dashboard Display */
+.hijri-date-dashboard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.hijri-date-dashboard .date-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.hijri-date-dashboard .date-display i {
+    font-size: 20px;
+    color: #ffd700;
+}
+
+/* Hijri Date in Attendance Page */
+.hijri-date-attendance {
+    background: #e8f4fd;
+    border: 1px solid #b3d9ff;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-top: 15px;
+}
+
+.hijri-date-attendance .hijri-date-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #2c5aa0;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.hijri-date-attendance .hijri-date-info i {
+    color: #4a90e2;
+}
+
+/* Report Hijri Header */
+.report-hijri-header {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.report-hijri-header .hijri-date-range {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #495057;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.report-hijri-header .hijri-date-range i {
+    color: #6c757d;
+}
+
 /* Holiday Management Styles */
 .holiday-management {
     margin-top: 2rem;

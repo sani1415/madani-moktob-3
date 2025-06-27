@@ -38,6 +38,7 @@ async function initializeAppWithDatabase() {
         loadTodayAttendance();
         displayClasses();
         displayHolidays();
+        initializeHijriSettings();
         
         // Set today's date
         const today = new Date().toISOString().split('T')[0];
@@ -51,7 +52,10 @@ async function initializeAppWithDatabase() {
         }
         
         // Listen for date changes
-        document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
+        document.getElementById('attendanceDate').addEventListener('change', function() {
+            loadAttendanceForDate();
+            updateAttendancePageHijri();
+        });
         document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
     } catch (error) {
         console.error('Database initialization failed, using localStorage fallback:', error);
@@ -1259,6 +1263,7 @@ function generateReport() {
     sortDirection = {};
     
     renderReportTable(startDate, endDate);
+    addHijriToReports();
 }
 
 function renderReportTable(startDate, endDate) {
@@ -1594,6 +1599,154 @@ function showModal(title, message) {
 
 function closeModal() {
     document.getElementById('modal').style.display = 'none';
+}
+
+// Hijri Date Functions
+function initializeHijriSettings() {
+    const hijriSelect = document.getElementById('hijriAdjustment');
+    if (hijriSelect && window.hijriCalendar) {
+        // Load saved adjustment value
+        const savedAdjustment = hijriCalendar.getAdjustment();
+        hijriSelect.value = savedAdjustment;
+        
+        // Update preview
+        updateHijriPreview();
+        
+        // Add Hijri dates to dashboard and other sections
+        updateDashboardWithHijri();
+    }
+}
+
+function updateHijriAdjustment() {
+    const hijriSelect = document.getElementById('hijriAdjustment');
+    if (hijriSelect && window.hijriCalendar) {
+        const adjustment = parseInt(hijriSelect.value);
+        hijriCalendar.setAdjustment(adjustment);
+        updateHijriPreview();
+        
+        // Update all displays with new Hijri dates
+        updateDashboardWithHijri();
+        updateAttendancePageHijri();
+        
+        showModal(t('success'), 'Hijri date adjustment updated successfully');
+    }
+}
+
+function updateHijriPreview() {
+    const previewElement = document.getElementById('hijriPreview');
+    if (previewElement && window.hijriCalendar) {
+        const currentLang = localStorage.getItem('language') || 'en';
+        const hijriDate = hijriCalendar.getCurrentHijriDate();
+        const hijriString = hijriCalendar.formatHijriDate(hijriDate, currentLang);
+        
+        const today = new Date();
+        const gregorianString = today.toLocaleDateString(currentLang === 'bn' ? 'bn-BD' : 'en-GB');
+        
+        if (currentLang === 'bn') {
+            previewElement.innerHTML = `
+                <div>গ্রেগরিয়ান: ${gregorianString}</div>
+                <div>হিজরি: ${hijriString}</div>
+            `;
+        } else {
+            previewElement.innerHTML = `
+                <div>Gregorian: ${gregorianString}</div>
+                <div>Hijri: ${hijriString}</div>
+            `;
+        }
+    }
+}
+
+function updateDashboardWithHijri() {
+    // Add Hijri date to dashboard header
+    const dashboardSection = document.querySelector('#dashboard .overview');
+    if (dashboardSection && window.hijriCalendar) {
+        const currentLang = localStorage.getItem('language') || 'en';
+        let hijriDateElement = document.getElementById('hijriDateDisplay');
+        
+        if (!hijriDateElement) {
+            hijriDateElement = document.createElement('div');
+            hijriDateElement.id = 'hijriDateDisplay';
+            hijriDateElement.className = 'hijri-date-dashboard';
+            dashboardSection.insertBefore(hijriDateElement, dashboardSection.firstChild);
+        }
+        
+        const hijriDate = hijriCalendar.getCurrentHijriDate();
+        const hijriString = hijriCalendar.formatHijriDate(hijriDate, currentLang);
+        
+        hijriDateElement.innerHTML = `
+            <div class="date-display">
+                <i class="fas fa-calendar-alt"></i>
+                <span>${hijriString}</span>
+            </div>
+        `;
+    }
+}
+
+function updateAttendancePageHijri() {
+    // Add Hijri date display to attendance controls
+    const attendanceControls = document.querySelector('.attendance-controls');
+    if (attendanceControls && window.hijriCalendar) {
+        const currentLang = localStorage.getItem('language') || 'en';
+        let hijriElement = document.getElementById('attendanceHijriDate');
+        
+        if (!hijriElement) {
+            hijriElement = document.createElement('div');
+            hijriElement.id = 'attendanceHijriDate';
+            hijriElement.className = 'hijri-date-attendance';
+            
+            // Insert after controls-row
+            const controlsRow = attendanceControls.querySelector('.controls-row');
+            if (controlsRow) {
+                controlsRow.parentNode.insertBefore(hijriElement, controlsRow.nextSibling);
+            }
+        }
+        
+        // Get selected date or today
+        const selectedDate = document.getElementById('attendanceDate')?.value || new Date().toISOString().split('T')[0];
+        const hijriDate = hijriCalendar.getHijriForDate(selectedDate);
+        const hijriString = hijriCalendar.formatHijriDate(hijriDate, currentLang);
+        
+        hijriElement.innerHTML = `
+            <div class="hijri-date-info">
+                <i class="fas fa-moon"></i>
+                <span>${hijriString}</span>
+            </div>
+        `;
+    }
+}
+
+function addHijriToReports() {
+    // This function can be called when generating reports to include Hijri dates
+    const reportTable = document.querySelector('#reportTable');
+    if (reportTable && window.hijriCalendar) {
+        // Add Hijri date information to report headers if needed
+        const currentLang = localStorage.getItem('language') || 'en';
+        const startDate = document.getElementById('reportStartDate')?.value;
+        const endDate = document.getElementById('reportEndDate')?.value;
+        
+        if (startDate && endDate) {
+            const startHijri = hijriCalendar.getHijriForDate(startDate);
+            const endHijri = hijriCalendar.getHijriForDate(endDate);
+            
+            let reportHeader = document.getElementById('reportHijriHeader');
+            if (!reportHeader) {
+                reportHeader = document.createElement('div');
+                reportHeader.id = 'reportHijriHeader';
+                reportHeader.className = 'report-hijri-header';
+                reportTable.parentNode.insertBefore(reportHeader, reportTable);
+            }
+            
+            const startHijriStr = hijriCalendar.formatHijriDate(startHijri, currentLang);
+            const endHijriStr = hijriCalendar.formatHijriDate(endHijri, currentLang);
+            
+            reportHeader.innerHTML = `
+                <div class="hijri-date-range">
+                    <i class="fas fa-moon"></i>
+                    <span>${startHijriStr} - ${endHijriStr}</span>
+                </div>
+            `;
+        }
+    }
 }
 
 // Close modal when clicking outside
