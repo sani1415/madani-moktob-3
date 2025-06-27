@@ -137,3 +137,11 @@ Changelog:
   - All 25 sample students successfully migrated to PostgreSQL
   - Scalable database architecture supporting 1000+ students
   - Maintained localStorage fallback for offline functionality
+- June 27, 2025. **Hijri Calendar Integration**: Complete Islamic calendar system
+  - Implemented accurate Tabular Islamic Calendar with local adjustment
+  - Settings page with Hijri Date Adjustment (+1/-1 day) for Bangladesh timing
+  - Beautiful dashboard display showing both Gregorian and Hijri dates
+  - Attendance page shows Hijri dates for selected dates
+  - Reports include Hijri date ranges
+  - Bilingual support (English/Bengali) for all Hijri displays
+  - Persistent user preferences for local observation alignment

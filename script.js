@@ -1695,9 +1695,21 @@ function updateHijriPreview() {
 }
 
 function updateDashboardWithHijri() {
+    console.log('Updating dashboard with Hijri date...');
+    
     // Add Hijri date to dashboard header
     const dashboardSection = document.querySelector('#dashboard .overview');
-    if (dashboardSection && window.hijriCalendar) {
+    if (!dashboardSection) {
+        console.error('Dashboard overview section not found');
+        return;
+    }
+    
+    if (!window.hijriCalendar) {
+        console.error('Hijri calendar not available for dashboard');
+        return;
+    }
+    
+    try {
         const currentLang = localStorage.getItem('language') || 'en';
         let hijriDateElement = document.getElementById('hijriDateDisplay');
         
@@ -1706,17 +1718,40 @@ function updateDashboardWithHijri() {
             hijriDateElement.id = 'hijriDateDisplay';
             hijriDateElement.className = 'hijri-date-dashboard';
             dashboardSection.insertBefore(hijriDateElement, dashboardSection.firstChild);
+            console.log('Created new Hijri date element on dashboard');
         }
         
         const hijriDate = hijriCalendar.getCurrentHijriDate();
         const hijriString = hijriCalendar.formatHijriDate(hijriDate, currentLang);
         
-        hijriDateElement.innerHTML = `
-            <div class="date-display">
-                <i class="fas fa-calendar-alt"></i>
-                <span>${hijriString}</span>
-            </div>
-        `;
+        const today = new Date();
+        const gregorianString = today.toLocaleDateString(currentLang === 'bn' ? 'bn-BD' : 'en-GB');
+        
+        if (currentLang === 'bn') {
+            hijriDateElement.innerHTML = `
+                <div class="date-display">
+                    <i class="fas fa-moon"></i>
+                    <div class="date-text">
+                        <div class="hijri-main">${hijriString}</div>
+                        <div class="gregorian-sub">${gregorianString}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            hijriDateElement.innerHTML = `
+                <div class="date-display">
+                    <i class="fas fa-moon"></i>
+                    <div class="date-text">
+                        <div class="hijri-main">${hijriString}</div>
+                        <div class="gregorian-sub">${gregorianString}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        console.log('Dashboard Hijri date updated successfully');
+    } catch (error) {
+        console.error('Error updating dashboard with Hijri date:', error);
     }
 }
 

@@ -78,6 +78,25 @@ body {
 .hijri-date-dashboard .date-display i {
     font-size: 20px;
     color: #ffd700;
+    margin-right: 15px;
+}
+
+.hijri-date-dashboard .date-text {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.hijri-date-dashboard .hijri-main {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.hijri-date-dashboard .gregorian-sub {
+    font-size: 14px;
+    opacity: 0.9;
+    font-weight: 400;
 }
 
 /* Hijri Date in Attendance Page */
