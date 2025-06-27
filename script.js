@@ -2,6 +2,13 @@
 let students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
 let classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
 let attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
+let holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+
+// Utility Functions
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB');
+}
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
@@ -33,7 +40,35 @@ function initializeApp() {
 
 // Sample Data Generation - Empty by default
 function addSampleData() {
-    // No sample data added unless explicitly requested
+    // Add students for Class 4 (IDs: 401-405)
+    const class4Students = [
+        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-06-01' },
+        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-06-02' },
+        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-06-03' },
+        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-06-04' },
+        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-06-05' }
+    ];
+
+    // Add students for Class 5 (IDs: 501-505)
+    const class5Students = [
+        { id: '501', name: 'Hafez Abdullah', fatherName: 'Md. Nurul Islam', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-06-06' },
+        { id: '502', name: 'Mariam Sultana', fatherName: 'Md. Golam Mostafa', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-06-07' },
+        { id: '503', name: 'Yusuf Ahmed', fatherName: 'Md. Rezaul Karim', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Zakiganj', class: 'Class 5', registrationDate: '2025-06-08' },
+        { id: '504', name: 'Zainab Rahman', fatherName: 'Md. Mokhlesur Rahman', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-06-09' },
+        { id: '505', name: 'Ismail Hossain', fatherName: 'Md. Abdur Rashid', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Gangachara', class: 'Class 5', registrationDate: '2025-06-10' }
+    ];
+
+    // Add all new students to the students array
+    const newStudents = [...class4Students, ...class5Students];
+    
+    newStudents.forEach(student => {
+        const existingStudent = students.find(s => s.id === student.id);
+        if (!existingStudent) {
+            students.push(student);
+        }
+    });
+    
+    saveData();
 }
 
 // Mobile Menu Functions
@@ -377,7 +412,7 @@ function loadAttendanceForDate() {
         return `
             <div class="student-row">
                 <div class="student-info">
-                    <h4>${student.idNumber} - ${student.name}</h4>
+                    <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
                 </div>
                 <div class="attendance-toggle">
                     <span>${t('present')}</span>
@@ -692,7 +727,7 @@ function updateClassWiseStats() {
 
 // Student Detail Functions
 function showStudentDetail(studentId) {
-    const student = students.find(s => s.idNumber === studentId);
+    const student = students.find(s => s.id === studentId);
     if (!student) {
         showModal(t('error'), t('studentNotFound'));
         return;
@@ -739,7 +774,7 @@ function generateStudentDetailContent(student) {
                     </div>
                     <div class="info-item">
                         <span class="info-label">ID Number:</span>
-                        <span class="info-value">${student.idNumber}</span>
+                        <span class="info-value">${student.id}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Class:</span>
@@ -751,11 +786,11 @@ function generateStudentDetailContent(student) {
                     <h4>${t('contactInformation')}</h4>
                     <div class="info-item">
                         <span class="info-label">Mobile Number:</span>
-                        <span class="info-value">${student.mobile}</span>
+                        <span class="info-value">${student.mobileNumber}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Address:</span>
-                        <span class="info-value">${student.address}</span>
+                        <span class="info-label">District:</span>
+                        <span class="info-value">${student.district}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">District:</span>
@@ -1035,11 +1070,7 @@ function renderReportTable(startDate, endDate) {
                 <tbody>
                     ${filteredData.map(data => `
                         <tr>
-                            <td>
-                                <span class="clickable-name" onclick="showStudentDetail('${data.id}')">
-                                    ${data.fullName}
-                                </span>
-                            </td>
+                            <td>${data.fullName}</td>
                             <td class="status-present">${data.presentDays}</td>
                             <td class="status-absent">${data.absentDays}</td>
                             <td>${data.attendancePercentage}%</td>
