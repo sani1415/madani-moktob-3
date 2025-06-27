@@ -343,6 +343,12 @@ function updateDashboardTexts() {
     if (overviewTitle) {
         overviewTitle.textContent = t('todayAttendanceOverview');
     }
+    
+    // Update class-wise stats title
+    const classWiseTitle = document.querySelector('.class-wise-stats h3');
+    if (classWiseTitle) {
+        classWiseTitle.textContent = t('classWiseInformation');
+    }
 }
 
 // Update registration texts
@@ -463,6 +469,20 @@ function updateSettingsTexts() {
     }
 }
 
+// Update student detail texts
+function updateStudentDetailTexts() {
+    const studentDetailTitle = document.querySelector('#student-detail h2');
+    if (studentDetailTitle && studentDetailTitle.textContent.includes(' - ')) {
+        const parts = studentDetailTitle.textContent.split(' - ');
+        studentDetailTitle.textContent = `${parts[0]} - ${t('studentDetails')}`;
+    }
+    
+    const backBtn = document.querySelector('#student-detail .btn-secondary');
+    if (backBtn) {
+        backBtn.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToReports')}`;
+    }
+}
+
 // Update section content when switching sections
 function updateSectionContent(sectionId) {
     switch(sectionId) {
@@ -480,6 +500,9 @@ function updateSectionContent(sectionId) {
             break;
         case 'settings':
             updateSettingsTexts();
+            break;
+        case 'student-detail':
+            updateStudentDetailTexts();
             break;
     }
 }

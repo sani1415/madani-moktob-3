@@ -672,18 +672,18 @@ function updateClassWiseStats() {
                     <div class="class-stat-card">
                         <h4>${className}</h4>
                         <div class="class-stats">
-                            <span>Total Students:</span>
+                            <span>${t('totalStudentsLabel')}:</span>
                             <span class="stat-number">${data.total}</span>
                         </div>
                         <div class="class-stats">
-                            <span>Present:</span>
+                            <span>${t('presentLabel')}:</span>
                             <span class="stat-number" style="color: #27ae60;">${data.present}</span>
                         </div>
                         <div class="class-stats">
-                            <span>Absent:</span>
+                            <span>${t('absentLabel')}:</span>
                             <span class="stat-number" style="color: #e74c3c;">${data.absent}</span>
                         </div>
-                        <div class="class-attendance-rate">${data.rate}% Attendance</div>
+                        <div class="class-attendance-rate">${data.rate}% ${t('attendanceLabel')}</div>
                     </div>
                 `;
             }).join('');
@@ -748,7 +748,7 @@ function generateStudentDetailContent(student) {
                 </div>
                 
                 <div class="info-group">
-                    <h4>Contact Information</h4>
+                    <h4>${t('contactInformation')}</h4>
                     <div class="info-item">
                         <span class="info-label">Mobile Number:</span>
                         <span class="info-value">${student.mobile}</span>
@@ -768,7 +768,7 @@ function generateStudentDetailContent(student) {
                 </div>
                 
                 <div class="info-group">
-                    <h4>Academic Information</h4>
+                    <h4>${t('academicInformation')}</h4>
                     <div class="info-item">
                         <span class="info-label">Registration Date:</span>
                         <span class="info-value">${formatDate(student.registrationDate)}</span>
@@ -781,29 +781,29 @@ function generateStudentDetailContent(student) {
             </div>
             
             <div class="attendance-history">
-                <h4>Attendance Summary</h4>
+                <h4>${t('attendanceSummary')}</h4>
                 <div class="attendance-summary">
                     <div class="summary-item present">
-                        <h5>Total Present</h5>
+                        <h5>${t('totalPresent')}</h5>
                         <div class="number">${attendanceStats.totalPresent}</div>
                     </div>
                     <div class="summary-item absent">
-                        <h5>Total Absent</h5>
+                        <h5>${t('totalAbsent')}</h5>
                         <div class="number">${attendanceStats.totalAbsent}</div>
                     </div>
                     <div class="summary-item">
-                        <h5>Attendance Rate</h5>
+                        <h5>${t('attendanceRate')}</h5>
                         <div class="number">${attendanceStats.attendanceRate}%</div>
                     </div>
                     <div class="summary-item">
-                        <h5>Total Days</h5>
+                        <h5>${t('totalDays')}</h5>
                         <div class="number">${attendanceStats.totalDays}</div>
                     </div>
                 </div>
                 
                 <div class="attendance-calendar">
                     <div class="calendar-header">
-                        <h5>Recent Attendance (Last 30 Days)</h5>
+                        <h5>${t('recentAttendance')}</h5>
                     </div>
                     ${generateAttendanceCalendar(student, attendanceStats.recentAttendance)}
                 </div>
