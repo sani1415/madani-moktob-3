@@ -24,6 +24,37 @@ body {
     text-decoration: none;
 }
 
+/* Hijri Settings */
+.hijri-settings {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.hijri-settings .help-text {
+    color: #666;
+    font-size: 14px;
+    margin: 5px 0 10px 0;
+    font-style: italic;
+}
+
+.hijri-preview {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.hijri-date-display {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2c3e50;
+    margin-top: 8px;
+}
+
 /* Holiday Management Styles */
 .holiday-management {
     margin-top: 2rem;

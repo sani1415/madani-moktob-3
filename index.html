@@ -254,6 +254,23 @@
                         </div>
                     </div>
 
+                    <h3 data-translate="hijriSettings">Hijri Date Settings</h3>
+                    <div class="hijri-settings">
+                        <div class="form-group">
+                            <label for="hijriAdjustment" data-translate="hijriAdjustment">Hijri Date Adjustment:</label>
+                            <p class="help-text" data-translate="hijriAdjustmentDesc">Adjust Hijri date for local observation</p>
+                            <select id="hijriAdjustment" onchange="updateHijriAdjustment()">
+                                <option value="0" data-translate="hijriNoAdjustment">No Adjustment (Default)</option>
+                                <option value="1" data-translate="hijriPlusOne">+1 Day (Ahead)</option>
+                                <option value="-1" data-translate="hijriMinusOne">-1 Day (Behind)</option>
+                            </select>
+                        </div>
+                        <div class="hijri-preview">
+                            <strong>Current Date Preview:</strong>
+                            <div id="hijriPreview" class="hijri-date-display"></div>
+                        </div>
+                    </div>
+
                     <h3>Holiday Management</h3>
                     <div class="holiday-management">
                         <div class="add-holiday">
@@ -324,6 +341,7 @@
     </div>
 
     <script src="translations.js"></script>
+    <script src="hijri.js"></script>
     <script src="db_adapter.js"></script>
     <script src="script.js"></script>
 </body>

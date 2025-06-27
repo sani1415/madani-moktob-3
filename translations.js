@@ -71,6 +71,12 @@ const translations = {
         
         // Settings
         settingsTitle: "Settings",
+        hijriSettings: "Hijri Date Settings",
+        hijriAdjustment: "Hijri Date Adjustment",
+        hijriAdjustmentDesc: "Adjust Hijri date for local observation",
+        hijriNoAdjustment: "No Adjustment (Default)",
+        hijriPlusOne: "+1 Day (Ahead)",
+        hijriMinusOne: "-1 Day (Behind)",
         manageClasses: "Manage Classes",
         enterNewClassName: "Enter new class name",
         enterClassName: "Please enter a class name.",
@@ -224,6 +230,12 @@ const translations = {
         
         // Settings
         settingsTitle: "সেটিংস",
+        hijriSettings: "হিজরি তারিখ সেটিংস",
+        hijriAdjustment: "হিজরি তারিখ সমন্বয়",
+        hijriAdjustmentDesc: "স্থানীয় পর্যবেক্ষণের জন্য হিজরি তারিখ সমন্বয় করুন",
+        hijriNoAdjustment: "কোন সমন্বয় নেই (ডিফল্ট)",
+        hijriPlusOne: "+১ দিন (এগিয়ে)",
+        hijriMinusOne: "-১ দিন (পিছিয়ে)",
         manageClasses: "শ্রেণী ব্যবস্থাপনা",
         enterNewClassName: "নতুন শ্রেণীর নাম লিখুন",
         enterClassName: "অনুগ্রহ করে একটি শ্রেণীর নাম লিখুন।",
