@@ -97,7 +97,23 @@ const translations = {
         duplicateId: "A student with this ID number already exists.",
         duplicateMobile: "A student with this mobile number already exists.",
         studentRegistered: "has been registered successfully.",
-        attendanceSaved: "Attendance has been saved successfully."
+        attendanceSaved: "Attendance has been saved successfully.",
+        
+        // Bulk Actions
+        markAllPresent: "Mark All Present",
+        markAllAbsent: "Mark All Absent",
+        copyPreviousDay: "Copy Previous Day",
+        studentsShown: "students shown",
+        bulkAbsentTitle: "Mark All Students Absent",
+        bulkAbsentReason: "Reason for absence (applies to all students):",
+        bulkAbsentPlaceholder: "e.g., School holiday, Strike, etc.",
+        bulkAbsentConfirm: "Mark All Absent",
+        cancel: "Cancel",
+        pleaseProvideReason: "Please provide a reason for the absence",
+        studentsMarkedPresent: "students marked as present",
+        studentsMarkedAbsent: "students marked as absent",
+        noAttendanceDataFound: "No attendance data found for",
+        attendanceCopiedFrom: "Attendance copied from"
     },
     
     bn: {
@@ -197,7 +213,23 @@ const translations = {
         duplicateId: "এই পরিচয় নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
         duplicateMobile: "এই মোবাইল নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
         studentRegistered: "সফলভাবে নিবন্ধিত হয়েছে।",
-        attendanceSaved: "উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে।"
+        attendanceSaved: "উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে।",
+        
+        // Bulk Actions
+        markAllPresent: "সবাইকে উপস্থিত চিহ্নিত করুন",
+        markAllAbsent: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
+        copyPreviousDay: "পূর্ববর্তী দিন কপি করুন",
+        studentsShown: "ছাত্র দেখানো হচ্ছে",
+        bulkAbsentTitle: "সকল ছাত্রকে অনুপস্থিত চিহ্নিত করুন",
+        bulkAbsentReason: "অনুপস্থিতির কারণ (সকল ছাত্রের জন্য প্রযোজ্য):",
+        bulkAbsentPlaceholder: "যেমন: স্কুল বন্ধ, ধর্মঘট, ইত্যাদি",
+        bulkAbsentConfirm: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
+        cancel: "বাতিল",
+        pleaseProvideReason: "অনুগ্রহ করে অনুপস্থিতির কারণ প্রদান করুন",
+        studentsMarkedPresent: "ছাত্রকে উপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
+        studentsMarkedAbsent: "ছাত্রকে অনুপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
+        noAttendanceDataFound: "এর জন্য কোন উপস্থিতির তথ্য পাওয়া যায়নি",
+        attendanceCopiedFrom: "থেকে উপস্থিতি কপি করা হয়েছে"
     }
 };
 

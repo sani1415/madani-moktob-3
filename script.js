@@ -336,6 +336,7 @@ function loadAttendanceForDate() {
     
     if (!selectedDate) {
         document.getElementById('attendanceList').innerHTML = `<p>${t('pleaseSelectDate')}</p>`;
+        updateFilteredStudentCount(0);
         return;
     }
     
@@ -356,6 +357,8 @@ function loadAttendanceForDate() {
     if (selectedClass) {
         filteredStudents = students.filter(student => student.class === selectedClass);
     }
+    
+    updateFilteredStudentCount(filteredStudents.length);
     
     if (filteredStudents.length === 0) {
         document.getElementById('attendanceList').innerHTML = `<p>${t('noStudentsFound')}</p>`;
@@ -435,6 +438,182 @@ function updateAbsenceReason(studentId, date, reason) {
 function saveAttendance() {
     saveData();
     showModal(t('success'), t('attendanceSaved'));
+}
+
+// Bulk Attendance Functions
+function updateFilteredStudentCount(count) {
+    const countElement = document.getElementById('filteredStudentCount');
+    if (countElement) {
+        countElement.textContent = count;
+    }
+}
+
+function getFilteredStudents() {
+    const selectedClass = document.getElementById('classFilter').value;
+    let filteredStudents = students;
+    if (selectedClass) {
+        filteredStudents = students.filter(student => student.class === selectedClass);
+    }
+    return filteredStudents;
+}
+
+function markAllPresent() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (!selectedDate) {
+        showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    if (filteredStudents.length === 0) {
+        showModal(t('error'), t('noStudentsFound'));
+        return;
+    }
+    
+    // Initialize attendance for the date if it doesn't exist
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
+    }
+    
+    // Mark all filtered students as present
+    filteredStudents.forEach(student => {
+        attendance[selectedDate][student.id] = {
+            status: 'present',
+            reason: ''
+        };
+    });
+    
+    saveData();
+    loadAttendanceForDate();
+    
+    // Update dashboard if viewing today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+        updateDashboard();
+    }
+    
+    showModal(t('success'), `${filteredStudents.length} students marked as present`);
+}
+
+function showMarkAllAbsentModal() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (!selectedDate) {
+        showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    if (filteredStudents.length === 0) {
+        showModal(t('error'), t('noStudentsFound'));
+        return;
+    }
+    
+    // Clear previous reason
+    document.getElementById('bulkAbsentReason').value = '';
+    
+    // Show modal
+    document.getElementById('bulkAbsentModal').style.display = 'block';
+}
+
+function closeBulkAbsentModal() {
+    document.getElementById('bulkAbsentModal').style.display = 'none';
+}
+
+function confirmMarkAllAbsent() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    const reason = document.getElementById('bulkAbsentReason').value.trim();
+    
+    if (!reason) {
+        showModal(t('error'), 'Please provide a reason for the absence');
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    
+    // Initialize attendance for the date if it doesn't exist
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
+    }
+    
+    // Mark all filtered students as absent with the provided reason
+    filteredStudents.forEach(student => {
+        attendance[selectedDate][student.id] = {
+            status: 'absent',
+            reason: reason
+        };
+    });
+    
+    saveData();
+    loadAttendanceForDate();
+    closeBulkAbsentModal();
+    
+    // Update dashboard if viewing today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+        updateDashboard();
+    }
+    
+    showModal(t('success'), `${filteredStudents.length} students marked as absent`);
+}
+
+function copyFromPreviousDay() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (!selectedDate) {
+        showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    if (filteredStudents.length === 0) {
+        showModal(t('error'), t('noStudentsFound'));
+        return;
+    }
+    
+    // Calculate previous day
+    const currentDate = new Date(selectedDate);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const previousDate = currentDate.toISOString().split('T')[0];
+    
+    // Check if previous day attendance exists
+    if (!attendance[previousDate]) {
+        showModal(t('error'), `No attendance data found for ${previousDate}`);
+        return;
+    }
+    
+    // Initialize attendance for current date if it doesn't exist
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
+    }
+    
+    let copiedCount = 0;
+    
+    // Copy attendance from previous day for filtered students
+    filteredStudents.forEach(student => {
+        if (attendance[previousDate][student.id]) {
+            attendance[selectedDate][student.id] = {
+                status: attendance[previousDate][student.id].status,
+                reason: attendance[previousDate][student.id].reason
+            };
+            copiedCount++;
+        } else {
+            // If no previous attendance record, mark as present
+            attendance[selectedDate][student.id] = {
+                status: 'present',
+                reason: ''
+            };
+        }
+    });
+    
+    saveData();
+    loadAttendanceForDate();
+    
+    // Update dashboard if viewing today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+        updateDashboard();
+    }
+    
+    showModal(t('success'), `Attendance copied from ${previousDate} for ${copiedCount} students`);
 }
 
 // Report Functions

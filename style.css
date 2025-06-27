@@ -319,6 +319,85 @@ body {
     align-items: end;
 }
 
+/* Bulk Actions */
+.bulk-actions {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-bulk {
+    padding: 10px 20px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.bulk-info {
+    color: #666;
+    font-size: 14px;
+}
+
+.bulk-info span {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Bulk Absent Modal */
+.bulk-absent-form {
+    padding: 20px 0;
+}
+
+.bulk-absent-form label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.bulk-absent-form input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.bulk-absent-form input:focus {
+    outline: none;
+    border-color: #e74c3c;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
 .date-selector,
 .class-filter {
     display: flex;

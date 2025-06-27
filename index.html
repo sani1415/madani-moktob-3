@@ -161,6 +161,25 @@
                         <i class="fas fa-save"></i> Save Attendance
                     </button>
                 </div>
+                
+                <!-- Bulk Actions -->
+                <div class="bulk-actions">
+                    <div class="bulk-buttons">
+                        <button onclick="markAllPresent()" class="btn btn-success btn-bulk">
+                            <i class="fas fa-check-circle"></i> Mark All Present
+                        </button>
+                        <button onclick="showMarkAllAbsentModal()" class="btn btn-danger btn-bulk">
+                            <i class="fas fa-times-circle"></i> Mark All Absent
+                        </button>
+                        <button onclick="copyFromPreviousDay()" class="btn btn-primary btn-bulk">
+                            <i class="fas fa-copy"></i> Copy Previous Day
+                        </button>
+                    </div>
+                    <div class="bulk-info">
+                        <p><span id="filteredStudentCount">0</span> students shown</p>
+                    </div>
+                </div>
+
                 <div id="attendanceList" class="attendance-list">
                     <p>No students found. Please register students first.</p>
                 </div>
@@ -222,6 +241,26 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Absent Modal -->
+    <div id="bulkAbsentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBulkAbsentModal()">&times;</span>
+            <h3>Mark All Students Absent</h3>
+            <div class="bulk-absent-form">
+                <label for="bulkAbsentReason">Reason for absence (applies to all students):</label>
+                <input type="text" id="bulkAbsentReason" placeholder="e.g., School holiday, Strike, etc." maxlength="100">
+                <div class="modal-buttons">
+                    <button onclick="confirmMarkAllAbsent()" class="btn btn-danger">
+                        <i class="fas fa-times-circle"></i> Mark All Absent
+                    </button>
+                    <button onclick="closeBulkAbsentModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
