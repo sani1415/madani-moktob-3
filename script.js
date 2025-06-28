@@ -14,6 +14,7 @@ function formatDate(dateString) {
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         initializeLanguage();
+        initializeAppName();
         await initializeAppWithDatabase();
         console.log('Madani Maktab app initialized successfully');
     } catch (error) {
@@ -2036,6 +2037,29 @@ function updateAttendancePageHijri() {
             </div>
         `;
     }
+}
+
+// Application name functions
+function initializeAppName() {
+    const savedName = localStorage.getItem('madaniMaktabAppName');
+    const input = document.getElementById('appNameInput');
+    if (input && savedName) {
+        input.value = savedName;
+    }
+    updateHeaderTexts();
+}
+
+function saveAppName() {
+    const input = document.getElementById('appNameInput');
+    if (!input) return;
+    const newName = input.value.trim();
+    if (!newName) {
+        showModal(t('error'), t('enterAppName'));
+        return;
+    }
+    localStorage.setItem('madaniMaktabAppName', newName);
+    updateHeaderTexts();
+    showModal(t('success'), t('appNameUpdated'));
 }
 
 function addHijriToReports() {

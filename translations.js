@@ -77,6 +77,12 @@ const translations = {
         hijriNoAdjustment: "No Adjustment (Default)",
         hijriPlusOne: "+1 Day (Ahead)",
         hijriMinusOne: "-1 Day (Behind)",
+        applicationSettings: "Application Settings",
+        applicationName: "Application Name",
+        appNamePlaceholder: "Enter application name",
+        updateAppNameBtn: "Update Name",
+        enterAppName: "Please enter an application name.",
+        appNameUpdated: "Application name updated successfully.",
         manageClasses: "Manage Classes",
         enterNewClassName: "Enter new class name",
         enterClassName: "Please enter a class name.",
@@ -236,6 +242,12 @@ const translations = {
         hijriNoAdjustment: "কোন সমন্বয় নেই (ডিফল্ট)",
         hijriPlusOne: "+১ দিন (এগিয়ে)",
         hijriMinusOne: "-১ দিন (পিছিয়ে)",
+        applicationSettings: "অ্যাপ সেটিংস",
+        applicationName: "অ্যাপ নাম",
+        appNamePlaceholder: "অ্যাপের নাম লিখুন",
+        updateAppNameBtn: "নাম আপডেট করুন",
+        enterAppName: "অনুগ্রহ করে অ্যাপের নাম লিখুন।",
+        appNameUpdated: "অ্যাপের নাম সফলভাবে আপডেট করা হয়েছে।",
         manageClasses: "শ্রেণী ব্যবস্থাপনা",
         enterNewClassName: "নতুন শ্রেণীর নাম লিখুন",
         enterClassName: "অনুগ্রহ করে একটি শ্রেণীর নাম লিখুন।",
@@ -368,8 +380,14 @@ function updateAllTexts() {
 
 // Update header texts
 function updateHeaderTexts() {
-    document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${t('appTitle')}`;
+    const savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+    document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${savedName}`;
     document.querySelector('.header p').textContent = t('appSubtitle');
+    document.title = `${savedName} - ${t('appSubtitle')}`;
+    const footer = document.querySelector('.footer p');
+    if (footer) {
+        footer.innerHTML = `&copy; 2024 ${savedName}. All rights reserved.`;
+    }
 }
 
 // Update navigation texts
@@ -510,16 +528,35 @@ function updateSettingsTexts() {
     
     const settingsTitles = document.querySelectorAll('#settings h3');
     if (settingsTitles.length >= 1) {
-        settingsTitles[0].textContent = t('manageClasses');
+        settingsTitles[0].textContent = t('applicationSettings');
     }
     if (settingsTitles.length >= 2) {
-        settingsTitles[1].textContent = t('holidayManagement');
+        settingsTitles[1].textContent = t('manageClasses');
+    }
+    if (settingsTitles.length >= 3) {
+        settingsTitles[2].textContent = t('hijriSettings');
+    }
+    if (settingsTitles.length >= 4) {
+        settingsTitles[3].textContent = t('holidayManagement');
     }
 
     
     const classNameInput = document.getElementById('newClassName');
     if (classNameInput) {
         classNameInput.placeholder = t('enterNewClassName');
+    }
+
+    const appNameInput = document.getElementById('appNameInput');
+    if (appNameInput) {
+        appNameInput.placeholder = t('appNamePlaceholder');
+    }
+    const appNameLabel = document.querySelector('label[for="appNameInput"]');
+    if (appNameLabel) {
+        appNameLabel.textContent = t('applicationName') + ':';
+    }
+    const updateAppNameBtn = document.getElementById('saveAppNameBtn');
+    if (updateAppNameBtn) {
+        updateAppNameBtn.innerHTML = `<i class="fas fa-save"></i> ${t('updateAppNameBtn')}`;
     }
     
     const holidayStartDateLabel = document.querySelector('label[for="holidayStartDate"]');
