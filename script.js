@@ -864,7 +864,12 @@ async function saveAttendance() {
             updateDashboard();
         }
         
-        showModal(t('success'), `Attendance saved successfully! ${markedCount} students marked.`);
+        // Calculate actual marked count for display
+        const actualMarkedCount = Object.values(attendance[selectedDate] || {}).filter(att => 
+            att.status === 'present' || att.status === 'absent'
+        ).length;
+        
+        showModal(t('success'), `Attendance saved successfully! ${actualMarkedCount} students marked.`);
     } catch (error) {
         console.error('Error saving attendance:', error);
         showModal(t('error'), 'Failed to save attendance. Please try again.');
