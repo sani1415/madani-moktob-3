@@ -102,19 +102,29 @@ async function loadDataFromDatabase() {
         
         const attendanceResponse = await fetch('/api/attendance');
         if (attendanceResponse.ok) {
-            const attendanceArray = await attendanceResponse.json();
-            // Convert array of attendance records to grouped object format
-            attendance = {};
-            attendanceArray.forEach(record => {
-                if (!attendance[record.date]) {
-                    attendance[record.date] = {};
-                }
-                attendance[record.date][record.student_id] = {
-                    status: record.status,
-                    reason: record.reason || ''
-                };
-            });
+            const attendanceData = await attendanceResponse.json();
+            console.log('Loaded attendance data from database:', attendanceData);
+            
+            // Check if it's already in the correct object format or needs conversion
+            if (Array.isArray(attendanceData)) {
+                // Convert array format to object format
+                attendance = {};
+                attendanceData.forEach(record => {
+                    if (!attendance[record.date]) {
+                        attendance[record.date] = {};
+                    }
+                    attendance[record.date][record.student_id] = {
+                        status: record.status,
+                        reason: record.reason || ''
+                    };
+                });
+            } else {
+                // Already in object format from backend
+                attendance = attendanceData;
+            }
+            console.log('Final attendance object:', attendance);
         } else {
+            console.error('Failed to load attendance from database');
             attendance = {};
         }
         
@@ -716,8 +726,10 @@ function updateAbsenceReason(studentId, date, reason) {
     }
 }
 
-function saveAttendance() {
+async function saveAttendance() {
     const selectedDate = document.getElementById('attendanceDate').value;
+    
+    console.log('Saving attendance for date:', selectedDate);
     
     // Prevent saving attendance on holidays
     if (isHoliday(selectedDate)) {
@@ -725,23 +737,76 @@ function saveAttendance() {
         return;
     }
     
-    // Save to database
-    saveData();
+    // Get all students and their current toggle states
+    const studentElements = document.querySelectorAll('[data-student-id]');
     
-    // Reset save button appearance
-    const saveButton = document.querySelector('.btn-save-attendance');
-    if (saveButton) {
-        saveButton.style.background = '#27ae60';
-        saveButton.textContent = 'Save Attendance';
+    // Initialize attendance for the selected date if not exists
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
     }
     
-    // Update dashboard if viewing today's attendance
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
-        updateDashboard();
+    let changesFound = false;
+    
+    studentElements.forEach(element => {
+        const studentId = element.getAttribute('data-student-id');
+        const presentBtn = element.querySelector('.btn-present');
+        const absentBtn = element.querySelector('.btn-absent');
+        const reasonInput = element.querySelector('.reason-input');
+        
+        let status = 'unmarked';
+        let reason = '';
+        
+        if (presentBtn && presentBtn.classList.contains('active')) {
+            status = 'present';
+            changesFound = true;
+        } else if (absentBtn && absentBtn.classList.contains('active')) {
+            status = 'absent';
+            reason = reasonInput ? reasonInput.value : '';
+            changesFound = true;
+        }
+        
+        // Update attendance record
+        attendance[selectedDate][studentId] = {
+            status: status,
+            reason: reason
+        };
+        
+        console.log(`Student ${studentId}: ${status}${reason ? ` (${reason})` : ''}`);
+    });
+    
+    if (!changesFound) {
+        showModal(t('error'), 'No attendance marked. Please mark attendance before saving.');
+        return;
     }
     
-    showModal(t('success'), t('attendanceSaved'));
+    console.log('Current attendance object before save:', attendance);
+    
+    try {
+        // Save to PostgreSQL database
+        await saveDataToDatabase();
+        console.log('Attendance saved successfully to database');
+        
+        // Reset save button appearance
+        const saveButton = document.querySelector('.btn-save-attendance');
+        if (saveButton) {
+            saveButton.style.background = '#27ae60';
+            saveButton.textContent = 'Saved!';
+            setTimeout(() => {
+                saveButton.textContent = 'Save Attendance';
+            }, 2000);
+        }
+        
+        // Update dashboard if viewing today's attendance
+        const today = new Date().toISOString().split('T')[0];
+        if (selectedDate === today) {
+            updateDashboard();
+        }
+        
+        showModal(t('success'), t('attendanceSaved'));
+    } catch (error) {
+        console.error('Error saving attendance:', error);
+        showModal(t('error'), 'Failed to save attendance. Please try again.');
+    }
 }
 
 // Bulk Attendance Functions
