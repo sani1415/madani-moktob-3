@@ -460,11 +460,21 @@ function updateDashboard() {
         
         const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
         const absentCount = Object.values(todayAttendance).filter(att => att.status === 'absent').length;
+        const unmarkedCount = students.length - presentCount - absentCount;
         
         document.getElementById('presentToday').textContent = presentCount;
         document.getElementById('absentToday').textContent = absentCount;
         
-        const attendanceRate = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 100;
+        // Only calculate rate if attendance has been taken
+        let attendanceRate;
+        if (unmarkedCount === students.length) {
+            // No attendance taken yet
+            attendanceRate = 0;
+        } else if (presentCount + absentCount === 0) {
+            attendanceRate = 0;
+        } else {
+            attendanceRate = Math.round((presentCount / (presentCount + absentCount)) * 100);
+        }
         document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
     }
     
@@ -534,10 +544,11 @@ function initializeTodayAttendance() {
         attendance[today] = {};
     }
     
+    // Only initialize empty attendance structure, don't auto-mark anyone as present
     students.forEach(student => {
         if (!attendance[today][student.id]) {
             attendance[today][student.id] = {
-                status: 'present',
+                status: 'unmarked', // Change from 'present' to 'unmarked'
                 reason: ''
             };
         }
@@ -581,7 +592,7 @@ function loadAttendanceForDate() {
         attendance[selectedDate] = {};
         students.forEach(student => {
             attendance[selectedDate][student.id] = {
-                status: 'present',
+                status: 'unmarked',
                 reason: ''
             };
         });
@@ -604,18 +615,31 @@ function loadAttendanceForDate() {
     // Generate attendance list
     const attendanceList = document.getElementById('attendanceList');
     attendanceList.innerHTML = filteredStudents.map(student => {
-        const studentAttendance = attendance[selectedDate][student.id] || { status: 'present', reason: '' };
-        const isAbsent = studentAttendance.status === 'absent';
+        const studentAttendance = attendance[selectedDate][student.id] || { status: 'unmarked', reason: '' };
+        const status = studentAttendance.status;
+        const isAbsent = status === 'absent';
+        const isPresent = status === 'present';
+        const isUnmarked = status === 'unmarked';
+        
+        let toggleClass = 'unmarked';
+        if (isPresent) toggleClass = 'present';
+        if (isAbsent) toggleClass = 'absent';
+        
+        let nextStatus = 'present';
+        if (isUnmarked) nextStatus = 'present';
+        if (isPresent) nextStatus = 'absent';
+        if (isAbsent) nextStatus = 'present';
         
         return `
             <div class="student-row">
                 <div class="student-info-with-toggle">
                     <div class="student-info">
                         <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
+                        ${isUnmarked ? '<span class="unmarked-label">Not marked yet</span>' : ''}
                     </div>
                     <div class="attendance-toggle">
-                        <div class="toggle-switch ${!isAbsent ? 'present' : 'absent'}" 
-                             onclick="toggleAttendance('${student.id}', '${selectedDate}', '${!isAbsent ? 'absent' : 'present'}')">
+                        <div class="toggle-switch ${toggleClass}" 
+                             onclick="toggleAttendance('${student.id}', '${selectedDate}', '${nextStatus}')">
                             <div class="toggle-slider"></div>
                         </div>
                     </div>
@@ -914,12 +938,10 @@ function updateClassWiseStats() {
             if (todayAttendance[student.id]) {
                 if (todayAttendance[student.id].status === 'present') {
                     classSummary[student.class].present++;
-                } else {
+                } else if (todayAttendance[student.id].status === 'absent') {
                     classSummary[student.class].absent++;
                 }
-            } else {
-                // Default to present if no data
-                classSummary[student.class].present++;
+                // If status is 'unmarked', don't count as present or absent
             }
         }
     });
