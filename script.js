@@ -809,7 +809,7 @@ async function saveAttendance() {
         attendance[selectedDate] = {};
     }
     
-    let changesFound = false;
+    let markedCount = 0;
     
     studentElements.forEach(element => {
         const studentId = element.getAttribute('data-student-id');
@@ -822,11 +822,11 @@ async function saveAttendance() {
         
         if (presentBtn && presentBtn.classList.contains('active')) {
             status = 'present';
-            changesFound = true;
+            markedCount++;
         } else if (absentBtn && absentBtn.classList.contains('active')) {
             status = 'absent';
             reason = reasonInput ? reasonInput.value : '';
-            changesFound = true;
+            markedCount++;
         }
         
         // Update attendance record
@@ -838,10 +838,7 @@ async function saveAttendance() {
         console.log(`Student ${studentId}: ${status}${reason ? ` (${reason})` : ''}`);
     });
     
-    if (!changesFound) {
-        showModal(t('error'), 'No attendance marked. Please mark attendance before saving.');
-        return;
-    }
+    console.log(`Found ${markedCount} marked students out of ${studentElements.length} total students`);
     
     console.log('Current attendance object before save:', attendance);
     
@@ -867,7 +864,7 @@ async function saveAttendance() {
             updateDashboard();
         }
         
-        showModal(t('success'), t('attendanceSaved'));
+        showModal(t('success'), `Attendance saved successfully! ${markedCount} students marked.`);
     } catch (error) {
         console.error('Error saving attendance:', error);
         showModal(t('error'), 'Failed to save attendance. Please try again.');
