@@ -668,18 +668,20 @@ function toggleAttendance(studentId, date, status) {
         attendance[date] = {};
     }
     
+    // Only update in memory, don't save to database yet
     attendance[date][studentId] = {
         status: status || 'present',
         reason: status === 'present' ? '' : (attendance[date][studentId]?.reason || '')
     };
     
-    saveData();
+    // Refresh the display without saving to database
     loadAttendanceForDate();
     
-    // Update dashboard if viewing today's attendance
-    const today = new Date().toISOString().split('T')[0];
-    if (date === today) {
-        updateDashboard();
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.textContent = 'Save Changes*';
     }
 }
 
@@ -692,8 +694,15 @@ function updateAbsenceReason(studentId, date, reason) {
         attendance[date][studentId] = { status: 'absent', reason: '' };
     }
     
+    // Only update in memory, don't save to database yet
     attendance[date][studentId].reason = reason;
-    saveData();
+    
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.textContent = 'Save Changes*';
+    }
 }
 
 function saveAttendance() {
@@ -705,7 +714,22 @@ function saveAttendance() {
         return;
     }
     
+    // Save to database
     saveData();
+    
+    // Reset save button appearance
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#27ae60';
+        saveButton.textContent = 'Save Attendance';
+    }
+    
+    // Update dashboard if viewing today's attendance
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+        updateDashboard();
+    }
+    
     showModal(t('success'), t('attendanceSaved'));
 }
 
@@ -758,13 +782,14 @@ function markAllPresent() {
         };
     });
     
-    saveData();
+    // Refresh display without saving to database
     loadAttendanceForDate();
     
-    // Update dashboard if viewing today's attendance
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
-        updateDashboard();
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.textContent = 'Save Changes*';
     }
     
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedPresent')}`);
@@ -825,14 +850,15 @@ function confirmMarkAllAbsent() {
         };
     });
     
-    saveData();
+    // Refresh display without saving to database
     loadAttendanceForDate();
     closeBulkAbsentModal();
     
-    // Update dashboard if viewing today's attendance
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
-        updateDashboard();
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.textContent = 'Save Changes*';
     }
     
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedAbsent')}`);
@@ -902,13 +928,14 @@ function copyFromPreviousDay() {
         }
     });
     
-    saveData();
+    // Refresh display without saving to database
     loadAttendanceForDate();
     
-    // Update dashboard if viewing today's attendance
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
-        updateDashboard();
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.textContent = 'Save Changes*';
     }
     
     showModal(t('success'), `${t('attendanceCopiedFrom')} ${previousDate} for ${copiedCount} students`);
