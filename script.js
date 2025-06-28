@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function initializeAppWithDatabase() {
     try {
+        console.log('Starting app initialization...');
+        
         // Load data from database
         await loadDataFromDatabase();
         
@@ -31,14 +33,15 @@ async function initializeAppWithDatabase() {
         if (!students || students.length < 25) {
             console.log(`Found ${students.length} students, migrating all 25 to PostgreSQL...`);
             await migrateSampleData();
+            // Reload data after migration
+            await loadDataFromDatabase();
         }
         
+        console.log('Data loaded successfully, initializing UI...');
+        
         updateClassDropdowns();
-        updateDashboard();
-        loadTodayAttendance();
         displayClasses();
         displayHolidays();
-        initializeHijriSettings();
         
         // Set today's date
         const today = new Date().toISOString().split('T')[0];
@@ -51,12 +54,24 @@ async function initializeAppWithDatabase() {
             initializeTodayAttendance();
         }
         
+        // Load attendance for today and update dashboard
+        loadTodayAttendance();
+        setTimeout(() => {
+            updateDashboard();
+            console.log('Dashboard updated after attendance load');
+        }, 100);
+        
+        initializeHijriSettings();
+        
         // Listen for date changes
         document.getElementById('attendanceDate').addEventListener('change', function() {
             loadAttendanceForDate();
             updateAttendancePageHijri();
         });
         document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
+        
+        console.log('App initialization completed successfully');
+        
     } catch (error) {
         console.error('Database initialization failed, using localStorage fallback:', error);
         // Complete fallback to localStorage
@@ -71,8 +86,6 @@ async function initializeAppWithDatabase() {
         }
         
         updateClassDropdowns();
-        updateDashboard();
-        loadTodayAttendance();
         displayClasses();
         displayHolidays();
         
@@ -84,6 +97,9 @@ async function initializeAppWithDatabase() {
         if (!attendance[today]) {
             initializeTodayAttendance();
         }
+        
+        loadTodayAttendance();
+        updateDashboard();
         
         document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
         document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
@@ -138,6 +154,10 @@ async function loadDataFromDatabase() {
         classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
         
         console.log(`Loaded ${students.length} students from PostgreSQL database`);
+        
+        // Update dashboard immediately after data load
+        updateDashboard();
+        
     } catch (error) {
         console.error('Database connection failed, using fallback data:', error);
         // Fallback to localStorage if database unavailable
@@ -145,6 +165,9 @@ async function loadDataFromDatabase() {
         classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
         attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
         holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+        
+        // Update dashboard with fallback data
+        updateDashboard();
     }
 }
 
@@ -451,6 +474,10 @@ function displayClasses() {
 function updateDashboard() {
     const today = new Date().toISOString().split('T')[0];
     
+    console.log('Updating dashboard for date:', today);
+    console.log('Total students:', students.length);
+    console.log('Today attendance data:', attendance[today]);
+    
     // Update total students
     document.getElementById('totalStudents').textContent = students.length;
     
@@ -458,6 +485,8 @@ function updateDashboard() {
     const holidayNotice = document.getElementById('holidayNotice');
     if (isHoliday(today)) {
         const holidayName = getHolidayName(today);
+        console.log('Today is a holiday:', holidayName);
+        
         if (holidayNotice) {
             holidayNotice.innerHTML = `
                 <div class="dashboard-holiday-notice">
@@ -478,24 +507,37 @@ function updateDashboard() {
         }
         
         const todayAttendance = attendance[today] || {};
+        console.log('Processing attendance for non-holiday:', todayAttendance);
         
-        const presentCount = Object.values(todayAttendance).filter(att => att.status === 'present').length;
-        const absentCount = Object.values(todayAttendance).filter(att => att.status === 'absent').length;
+        let presentCount = 0;
+        let absentCount = 0;
+        
+        // Count attendance properly
+        Object.values(todayAttendance).forEach(att => {
+            if (att.status === 'present') {
+                presentCount++;
+            } else if (att.status === 'absent') {
+                absentCount++;
+            }
+        });
+        
         const unmarkedCount = students.length - presentCount - absentCount;
+        
+        console.log('Attendance counts - Present:', presentCount, 'Absent:', absentCount, 'Unmarked:', unmarkedCount);
         
         document.getElementById('presentToday').textContent = presentCount;
         document.getElementById('absentToday').textContent = absentCount;
         
-        // Only calculate rate if attendance has been taken
+        // Calculate attendance rate
         let attendanceRate;
-        if (unmarkedCount === students.length) {
+        if (presentCount + absentCount === 0) {
             // No attendance taken yet
-            attendanceRate = 0;
-        } else if (presentCount + absentCount === 0) {
             attendanceRate = 0;
         } else {
             attendanceRate = Math.round((presentCount / (presentCount + absentCount)) * 100);
         }
+        
+        console.log('Calculated attendance rate:', attendanceRate + '%');
         document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
     }
     
@@ -796,11 +838,8 @@ async function saveAttendance() {
             }, 2000);
         }
         
-        // Update dashboard if viewing today's attendance
-        const today = new Date().toISOString().split('T')[0];
-        if (selectedDate === today) {
-            updateDashboard();
-        }
+        // Always update dashboard after saving attendance
+        updateDashboard();
         
         showModal(t('success'), t('attendanceSaved'));
     } catch (error) {
