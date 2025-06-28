@@ -1720,9 +1720,9 @@ function updateDashboardWithHijri() {
     console.log('Updating dashboard with Hijri date...');
     
     // Add Hijri date to dashboard header
-    const dashboardSection = document.querySelector('#dashboard .overview');
+    const dashboardSection = document.querySelector('#dashboard');
     if (!dashboardSection) {
-        console.error('Dashboard overview section not found');
+        console.error('Dashboard section not found');
         return;
     }
     
@@ -1739,7 +1739,13 @@ function updateDashboardWithHijri() {
             hijriDateElement = document.createElement('div');
             hijriDateElement.id = 'hijriDateDisplay';
             hijriDateElement.className = 'hijri-date-dashboard';
-            dashboardSection.insertBefore(hijriDateElement, dashboardSection.firstChild);
+            // Insert after h2 title
+            const titleElement = dashboardSection.querySelector('h2');
+            if (titleElement) {
+                titleElement.parentNode.insertBefore(hijriDateElement, titleElement.nextSibling);
+            } else {
+                dashboardSection.insertBefore(hijriDateElement, dashboardSection.firstChild);
+            }
             console.log('Created new Hijri date element on dashboard');
         }
         

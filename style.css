@@ -996,6 +996,10 @@ body {
     background: #e74c3c;
 }
 
+.toggle-switch.unmarked {
+    background: #bdc3c7;
+}
+
 .toggle-switch::after {
     content: '';
     position: absolute;
@@ -1010,6 +1014,18 @@ body {
 
 .toggle-switch.absent::after {
     transform: translateX(30px);
+}
+
+.toggle-switch.unmarked::after {
+    transform: translateX(15px);
+    background: #95a5a6;
+}
+
+.unmarked-label {
+    font-size: 12px;
+    color: #7f8c8d;
+    font-style: italic;
+    margin-left: 10px;
 }
 
 .absence-reason {
