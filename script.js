@@ -102,7 +102,18 @@ async function loadDataFromDatabase() {
         
         const attendanceResponse = await fetch('/api/attendance');
         if (attendanceResponse.ok) {
-            attendance = await attendanceResponse.json();
+            const attendanceArray = await attendanceResponse.json();
+            // Convert array of attendance records to grouped object format
+            attendance = {};
+            attendanceArray.forEach(record => {
+                if (!attendance[record.date]) {
+                    attendance[record.date] = {};
+                }
+                attendance[record.date][record.student_id] = {
+                    status: record.status,
+                    reason: record.reason || ''
+                };
+            });
         } else {
             attendance = {};
         }
@@ -1611,10 +1622,61 @@ function getHolidayName(date) {
 
 async function saveDataToDatabase() {
     try {
-        await dbAdapter.saveStudents(students);
-        await dbAdapter.saveClasses(classes);
-        await dbAdapter.saveAttendance(attendance);
-        await dbAdapter.saveHolidays(holidays);
+        // Save attendance to PostgreSQL database (send each record individually)
+        const attendancePromises = [];
+        
+        for (const [date, dateAttendance] of Object.entries(attendance)) {
+            for (const [studentId, record] of Object.entries(dateAttendance)) {
+                // Skip unmarked attendance
+                if (record.status === 'unmarked') continue;
+                
+                const promise = fetch('/api/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        date: date,
+                        status: record.status,
+                        reason: record.reason || ''
+                    })
+                });
+                attendancePromises.push(promise);
+            }
+        }
+        
+        // Wait for all attendance records to save
+        const attendanceResponses = await Promise.all(attendancePromises);
+        for (const response of attendanceResponses) {
+            if (!response.ok) {
+                throw new Error(`Attendance save failed: ${response.status}`);
+            }
+        }
+        
+        // Save holidays to PostgreSQL database (send each holiday individually)
+        const holidayPromises = holidays.map(holiday => {
+            return fetch('/api/holidays', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: holiday.date || holiday.startDate,
+                    name: holiday.name
+                })
+            });
+        });
+        
+        const holidayResponses = await Promise.all(holidayPromises);
+        for (const response of holidayResponses) {
+            if (!response.ok) {
+                throw new Error(`Holiday save failed: ${response.status}`);
+            }
+        }
+        
+        console.log('Data saved to PostgreSQL successfully');
+        
     } catch (error) {
         console.error('Error saving data to database:', error);
         // Fallback to localStorage
@@ -1623,6 +1685,7 @@ async function saveDataToDatabase() {
             localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
             localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
             localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
+            console.log('Data saved to localStorage as fallback');
         } catch (localError) {
             showModal('Error', 'Failed to save data. Your browser storage might be full.');
         }
