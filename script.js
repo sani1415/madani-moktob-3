@@ -513,32 +513,54 @@ function updateDashboard() {
         let absentCount = 0;
         
         // Count attendance properly
-        Object.values(todayAttendance).forEach(att => {
-            if (att.status === 'present') {
+        for (const studentId in todayAttendance) {
+            const att = todayAttendance[studentId];
+            if (att && att.status === 'present') {
                 presentCount++;
-            } else if (att.status === 'absent') {
+            } else if (att && att.status === 'absent') {
                 absentCount++;
             }
-        });
+        }
         
         const unmarkedCount = students.length - presentCount - absentCount;
         
         console.log('Attendance counts - Present:', presentCount, 'Absent:', absentCount, 'Unmarked:', unmarkedCount);
         
-        document.getElementById('presentToday').textContent = presentCount;
-        document.getElementById('absentToday').textContent = absentCount;
+        // Force update DOM elements with immediate value changes
+        const presentElement = document.getElementById('presentToday');
+        const absentElement = document.getElementById('absentToday');
+        const rateElement = document.getElementById('attendanceRate');
+        const totalElement = document.getElementById('totalStudents');
+        
+        if (totalElement) {
+            totalElement.textContent = students.length;
+            totalElement.style.color = '#2c3e50';
+        }
+        
+        if (presentElement) {
+            presentElement.textContent = presentCount;
+            presentElement.style.color = '#27ae60';
+        }
+        
+        if (absentElement) {
+            absentElement.textContent = absentCount;
+            absentElement.style.color = '#e74c3c';
+        }
         
         // Calculate attendance rate
         let attendanceRate;
         if (presentCount + absentCount === 0) {
-            // No attendance taken yet
             attendanceRate = 0;
         } else {
             attendanceRate = Math.round((presentCount / (presentCount + absentCount)) * 100);
         }
         
-        console.log('Calculated attendance rate:', attendanceRate + '%');
-        document.getElementById('attendanceRate').textContent = `${attendanceRate}%`;
+        console.log('Final dashboard values - Total:', students.length, 'Present:', presentCount, 'Absent:', absentCount, 'Rate:', attendanceRate + '%');
+        
+        if (rateElement) {
+            rateElement.textContent = `${attendanceRate}%`;
+            rateElement.style.color = attendanceRate >= 80 ? '#27ae60' : attendanceRate >= 60 ? '#f39c12' : '#e74c3c';
+        }
     }
     
     // Update today's overview
@@ -838,8 +860,12 @@ async function saveAttendance() {
             }, 2000);
         }
         
-        // Always update dashboard after saving attendance
-        updateDashboard();
+        // Force dashboard update after saving attendance
+        if (typeof forceUpdateDashboard === 'function') {
+            forceUpdateDashboard();
+        } else {
+            updateDashboard();
+        }
         
         showModal(t('success'), t('attendanceSaved'));
     } catch (error) {
