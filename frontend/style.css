@@ -1051,6 +1051,31 @@ body {
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     min-height: 300px;
+    max-height: 600px; /* Set maximum height for scrollable container */
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling for report results */
+.report-results::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.report-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.report-results::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+.report-results::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .report-table-container {
@@ -1829,10 +1854,12 @@ body {
     color: white;
 }
 
+/*
 .calendar-day.weekend-day {
     background: #95a5a6;
     color: white;
 }
+*/
 
 .calendar-day.future-day {
     background: #ecf0f1;
@@ -1886,9 +1913,11 @@ body {
     background: #f39c12;
 }
 
+/*
 .legend-color.weekend-day {
     background: #95a5a6;
 }
+*/
 
 .legend-color.future-day {
     background: #ecf0f1;

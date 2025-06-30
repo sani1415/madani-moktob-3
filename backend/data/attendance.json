@@ -1,8 +1,8 @@
 {
   "2025-06-29": {
     "ST001": {
-      "status": "present",
-      "reason": ""
+      "reason": "",
+      "status": "present"
     },
     "ST002": {
       "reason": "",
@@ -103,104 +103,104 @@
   },
   "2025-06-30": {
     "ST001": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST002": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST003": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST004": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST005": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST006": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST007": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST008": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST009": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST010": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST011": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST012": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "absent",
+      "reason": ""
     },
     "ST013": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST014": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST015": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST016": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST017": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST018": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST019": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST020": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST021": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST022": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST023": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST024": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     },
     "ST025": {
-      "reason": "",
-      "status": "unmarked"
+      "status": "present",
+      "reason": ""
     }
   }
 }

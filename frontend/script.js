@@ -1664,10 +1664,13 @@ function generateAttendanceTrackingCalendar(month = null, year = null) {
                     <span class="legend-color holiday-day"></span>
                     <span>Holiday</span>
                 </div>
+                <!-- Weekend legend removed - weekends now treated as school days -->
+                <!--
                 <div class="legend-item">
                     <span class="legend-color weekend-day"></span>
                     <span>Weekend</span>
                 </div>
+                -->
                 <div class="legend-item">
                     <span class="legend-color future-day"></span>
                     <span>Future Date</span>
@@ -1767,10 +1770,13 @@ function generateCalendarDays(year, month, startDayOfWeek, daysInMonth) {
             dayTitle = `Holiday: ${holidayName}`;
         }
         // Check if it's weekend (Friday/Saturday in Islamic context, or Saturday/Sunday)
+        // Commented out - weekends are now treated as regular school days
+        /*
         else if (dayOfWeek === 5 || dayOfWeek === 6) { // Friday/Saturday
             dayClass += ' weekend-day';
             dayTitle = 'Weekend';
         }
+        */
         // Check if attendance was taken
         else if (attendance[dateStr] && Object.keys(attendance[dateStr]).length > 0) {
             dayClass += ' attendance-taken';
@@ -1809,7 +1815,7 @@ function generateAttendanceSummary(year, month) {
     let attendanceTakenDays = 0;
     let missedDays = 0;
     let holidayDays = 0;
-    let weekendDays = 0;
+    // let weekendDays = 0; // Removed - weekends now treated as school days
     
     // Count each type of day in the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
@@ -1823,10 +1829,8 @@ function generateAttendanceSummary(year, month) {
         // Check day type
         if (isHoliday(dateStr)) {
             holidayDays++;
-        } else if (dayOfWeek === 5 || dayOfWeek === 6) { // Friday/Saturday
-            weekendDays++;
         } else {
-            // This is a school day
+            // This is a school day (now includes former weekend days)
             totalSchoolDays++;
             
             if (attendance[dateStr] && Object.keys(attendance[dateStr]).length > 0) {
@@ -1862,7 +1866,6 @@ function generateAttendanceSummary(year, month) {
             </div>
             <div class="additional-stats">
                 <p><strong>Holidays this month:</strong> ${holidayDays} days</p>
-                <p><strong>Weekends this month:</strong> ${weekendDays} days</p>
             </div>
         </div>
     `;
