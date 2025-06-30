@@ -114,7 +114,8 @@ class HijriCalendar {
             day -= monthLength;
         }
         
-        return { year, month, day };
+        // Adjust year to match local observation (1447 instead of 1448)
+        return { year: year - 1, month, day };
     }
 
     /**

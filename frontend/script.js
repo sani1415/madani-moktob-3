@@ -4,6 +4,10 @@ let classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
 let attendance = {};
 let holidays = [];
 
+// Calendar navigation state
+let currentCalendarMonth = new Date().getMonth();
+let currentCalendarYear = new Date().getFullYear();
+
 // Utility Functions
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -28,10 +32,10 @@ async function initializeAppWithDatabase() {
         console.log('Starting app initialization...');
         
         // Load data from database
-        await loadDataFromDatabase();
+        const databaseSuccess = await loadDataFromDatabase();
         
-        // Check if we need to migrate sample data or have incomplete data
-        if (!students || students.length < 25) {
+        // Only try to migrate if database is available and we have few students
+        if (databaseSuccess && (!students || students.length < 25)) {
             console.log(`Found ${students.length} students, migrating all 25 to PostgreSQL...`);
             await migrateSampleData();
             // Reload data after migration
@@ -71,21 +75,15 @@ async function initializeAppWithDatabase() {
         });
         document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
         
+        // Initialize student list display
+        displayStudentsList();
+        
         console.log('App initialization completed successfully');
         
     } catch (error) {
-        console.error('Database initialization failed, using localStorage fallback:', error);
-        // Complete fallback to localStorage
-        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
-        classes = JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
-        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
+        console.error('App initialization failed:', error);
         
-        // If no data exists or incomplete data, add all 25 sample students
-        if (students.length < 25) {
-            addSampleDataFallback();
-        }
-        
+        // Final UI initialization regardless of data source
         updateClassDropdowns();
         displayClasses();
         displayHolidays();
@@ -104,44 +102,32 @@ async function initializeAppWithDatabase() {
         
         document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
         document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
+        
+        console.log('App initialized with fallback data');
     }
 }
 
 async function loadDataFromDatabase() {
     try {
-        // Load data from PostgreSQL database
+        // Load data from JSON file database
         const studentsResponse = await fetch('/api/students');
         if (studentsResponse.ok) {
             students = await studentsResponse.json();
         } else {
+            console.error('Failed to load students from JSON database');
             students = [];
         }
         
         const attendanceResponse = await fetch('/api/attendance');
         if (attendanceResponse.ok) {
             const attendanceData = await attendanceResponse.json();
-            console.log('Loaded attendance data from database:', attendanceData);
+            console.log('Loaded attendance data from JSON database:', attendanceData);
             
-            // Check if it's already in the correct object format or needs conversion
-            if (Array.isArray(attendanceData)) {
-                // Convert array format to object format
-                attendance = {};
-                attendanceData.forEach(record => {
-                    if (!attendance[record.date]) {
-                        attendance[record.date] = {};
-                    }
-                    attendance[record.date][record.student_id] = {
-                        status: record.status,
-                        reason: record.reason || ''
-                    };
-                });
-            } else {
-                // Already in object format from backend
-                attendance = attendanceData;
-            }
+            // JSON database returns object format directly
+            attendance = attendanceData || {};
             console.log('Final attendance object:', attendance);
         } else {
-            console.error('Failed to load attendance from database');
+            console.error('Failed to load attendance from JSON database');
             attendance = {};
         }
         
@@ -149,34 +135,43 @@ async function loadDataFromDatabase() {
         if (holidaysResponse.ok) {
             holidays = await holidaysResponse.json();
         } else {
+            console.error('Failed to load holidays from JSON database');
             holidays = [];
         }
         
         classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
         
-        console.log(`Loaded ${students.length} students from PostgreSQL database`);
+        console.log(`Loaded ${students.length} students from JSON database`);
         
         // Update dashboard immediately after data load
         updateDashboard();
         
     } catch (error) {
-        console.error('Database connection failed, using fallback data:', error);
+        console.error('JSON database connection failed, using fallback data:', error);
         // Fallback to localStorage if database unavailable
         students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
         classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
         attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
         holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
         
+        // If no data in localStorage, add sample data
+        if (students.length === 0) {
+            console.log('No data found, adding sample students to localStorage');
+            addSampleDataFallback();
+        }
+        
         // Update dashboard with fallback data
         updateDashboard();
+        return false; // Indicate fallback was used
     }
+    return true; // Indicate database was used successfully
 }
 
 async function migrateSampleData() {
-    console.log('Migrating 25 sample students to PostgreSQL database...');
+    console.log('Creating 25 sample students in JSON database...');
     
     try {
-        const response = await fetch('/api/migrate_sample_data', {
+        const response = await fetch('/api/create_sample_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -189,10 +184,11 @@ async function migrateSampleData() {
             // Reload data from database
             await loadDataFromDatabase();
         } else {
-            throw new Error('Migration failed');
+            console.log('JSON database creation failed, using localStorage');
+            addSampleDataFallback();
         }
     } catch (error) {
-        console.error('PostgreSQL migration failed, using fallback:', error);
+        console.error('JSON database creation failed, using fallback:', error);
         addSampleDataFallback();
     }
 }
@@ -318,6 +314,15 @@ function showSection(sectionId) {
         updateDashboard();
     } else if (sectionId === 'attendance') {
         loadAttendanceForDate();
+    } else if (sectionId === 'registration') {
+        displayStudentsList();
+        // Show student list by default, hide form
+        const studentsListContainer = document.getElementById('studentsListContainer');
+        const studentRegistrationForm = document.getElementById('studentRegistrationForm');
+        if (studentsListContainer && studentRegistrationForm) {
+            studentsListContainer.style.display = 'block';
+            studentRegistrationForm.style.display = 'none';
+        }
     }
 }
 
@@ -327,59 +332,249 @@ document.getElementById('studentForm').addEventListener('submit', function(e) {
     registerStudent();
 });
 
-function registerStudent() {
+async function registerStudent() {
     const formData = {
-        id: Date.now().toString(),
+        id: `ST${Date.now().toString().slice(-6)}`, // Generate student ID
         name: document.getElementById('studentName').value.trim(),
         fatherName: document.getElementById('fatherName').value.trim(),
-        address: document.getElementById('address').value.trim(),
+        mobileNumber: document.getElementById('mobile').value.trim(),
         district: document.getElementById('district').value.trim(),
         upazila: document.getElementById('upazila').value.trim(),
-        mobile: document.getElementById('mobile').value.trim(),
         class: document.getElementById('studentClass').value,
-        idNumber: document.getElementById('idNumber').value.trim(),
         registrationDate: new Date().toISOString().split('T')[0]
     };
     
     // Validation
-    if (!formData.name || !formData.fatherName || !formData.address || 
-        !formData.district || !formData.upazila || !formData.mobile || 
-        !formData.class || !formData.idNumber) {
+    if (!formData.name || !formData.fatherName || !formData.mobileNumber || 
+        !formData.district || !formData.upazila || !formData.class) {
         showModal(t('error'), t('fillAllFields'));
         return;
     }
     
-    // Check for duplicate ID number
-    if (students.some(student => student.idNumber === formData.idNumber)) {
-        showModal(t('error'), t('duplicateId'));
-        return;
-    }
-    
     // Check for duplicate mobile number
-    if (students.some(student => student.mobile === formData.mobile)) {
+    if (students.some(student => student.mobileNumber === formData.mobileNumber)) {
         showModal(t('error'), t('duplicateMobile'));
         return;
     }
     
-    // Add student
-    students.push(formData);
-    saveData();
+    try {
+        // Register student with backend (will auto-generate roll number)
+        const response = await fetch('/api/students', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Student registered successfully:', result.student);
+            
+            // Add to local array
+            students.push(result.student);
     
     // Reset form
     document.getElementById('studentForm').reset();
     
-    // Initialize attendance for this student for today
-    const today = new Date().toISOString().split('T')[0];
-    if (!attendance[today]) {
-        attendance[today] = {};
+            // Refresh student list if on register page
+            displayStudentsList();
+            
+            showModal(t('success'), `${formData.name} ${t('studentRegistered')} - Roll Number: ${result.student.rollNumber}`);
+            updateDashboard();
+        } else {
+            const error = await response.json();
+            showModal(t('error'), error.error || 'Registration failed');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        showModal(t('error'), 'Network error. Please try again.');
     }
-    attendance[today][formData.id] = {
-        status: 'present',
-        reason: ''
+}
+
+// Student Management Functions
+function displayStudentsList() {
+    const studentsListContainer = document.getElementById('studentsListContainer');
+    if (!studentsListContainer) return;
+    
+    if (students.length === 0) {
+        studentsListContainer.innerHTML = `
+            <div class="no-students-message">
+                <i class="fas fa-user-graduate"></i>
+                <p>No students registered yet. Click "Register New Student" to add students.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort students by class and roll number
+    const sortedStudents = [...students].sort((a, b) => {
+        const classA = parseInt(a.class?.split(' ')[1] || 0);
+        const classB = parseInt(b.class?.split(' ')[1] || 0);
+        if (classA !== classB) return classA - classB;
+        return parseInt(a.rollNumber || 0) - parseInt(b.rollNumber || 0);
+    });
+    
+    studentsListContainer.innerHTML = `
+        <div class="students-list">
+            <div class="students-list-header">
+                <h3><i class="fas fa-list"></i> All Registered Students (${students.length})</h3>
+                <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Register New Student
+                </button>
+            </div>
+            <div class="students-table-container">
+                <table class="students-table">
+                    <thead>
+                        <tr>
+                            <th>Roll No.</th>
+                            <th>Full Name</th>
+                            <th>Class</th>
+                            <th>Mobile</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedStudents.map(student => `
+                            <tr>
+                                <td><strong>${student.rollNumber || 'N/A'}</strong></td>
+                                <td>${student.name} bin ${student.fatherName}</td>
+                                <td><span class="class-badge">${student.class}</span></td>
+                                <td>${student.mobileNumber}</td>
+                                <td class="actions">
+                                    <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="Edit Student">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteStudent('${student.id}')" class="btn btn-sm btn-danger" title="Delete Student">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function showStudentRegistrationForm() {
+    document.getElementById('studentsListContainer').style.display = 'none';
+    document.getElementById('studentRegistrationForm').style.display = 'block';
+}
+
+function hideStudentRegistrationForm() {
+    document.getElementById('studentsListContainer').style.display = 'block';
+    document.getElementById('studentRegistrationForm').style.display = 'none';
+    document.getElementById('studentForm').reset();
+}
+
+async function editStudent(studentId) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+    
+    // Populate form with student data
+    document.getElementById('studentName').value = student.name || '';
+    document.getElementById('fatherName').value = student.fatherName || '';
+    document.getElementById('mobile').value = student.mobileNumber || '';
+    document.getElementById('district').value = student.district || '';
+    document.getElementById('upazila').value = student.upazila || '';
+    document.getElementById('studentClass').value = student.class || '';
+    
+    // Show form in edit mode
+    showStudentRegistrationForm();
+    
+    // Change form submit to update
+    const form = document.getElementById('studentForm');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        await updateStudent(studentId);
     };
     
-    showModal(t('success'), `${formData.name} ${t('studentRegistered')}`);
+    // Update form title and button
+    document.querySelector('#studentRegistrationForm h3').textContent = 'Edit Student';
+    document.querySelector('#studentRegistrationForm .btn-primary').textContent = 'Update Student';
+}
+
+async function updateStudent(studentId) {
+    const formData = {
+        id: studentId,
+        name: document.getElementById('studentName').value.trim(),
+        fatherName: document.getElementById('fatherName').value.trim(),
+        mobileNumber: document.getElementById('mobile').value.trim(),
+        district: document.getElementById('district').value.trim(),
+        upazila: document.getElementById('upazila').value.trim(),
+        class: document.getElementById('studentClass').value,
+    };
+    
+    try {
+        const response = await fetch(`/api/students/${studentId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // Update local array
+            const index = students.findIndex(s => s.id === studentId);
+            if (index !== -1) {
+                students[index] = result.student;
+            }
+            
+            hideStudentRegistrationForm();
+            displayStudentsList();
+            showModal(t('success'), 'Student updated successfully');
+            
+            // Reset form
+            resetStudentForm();
+        } else {
+            const error = await response.json();
+            showModal(t('error'), error.error || 'Update failed');
+        }
+    } catch (error) {
+        console.error('Update error:', error);
+        showModal(t('error'), 'Network error. Please try again.');
+    }
+}
+
+async function deleteStudent(studentId) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+    
+    if (confirm(`Are you sure you want to delete ${student.name} bin ${student.fatherName}? This action cannot be undone.`)) {
+        try {
+            const response = await fetch(`/api/students/${studentId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                // Remove from local array
+                students = students.filter(s => s.id !== studentId);
+                
+                displayStudentsList();
     updateDashboard();
+                showModal(t('success'), 'Student deleted successfully');
+            } else {
+                const error = await response.json();
+                showModal(t('error'), error.error || 'Deletion failed');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            showModal(t('error'), 'Network error. Please try again.');
+        }
+    }
+}
+
+function resetStudentForm() {
+    const form = document.getElementById('studentForm');
+    form.onsubmit = (e) => {
+        e.preventDefault();
+        registerStudent();
+    };
+    
+    document.querySelector('#studentRegistrationForm h3').textContent = 'Register New Student';
+    document.querySelector('#studentRegistrationForm .btn-primary').textContent = 'Register Student';
 }
 
 // Class Management Functions
@@ -463,12 +658,77 @@ function displayClasses() {
     
     classesList.innerHTML = classes.map(className => `
         <div class="class-item">
-            <span class="class-name">${className}</span>
-            <button onclick="deleteClass('${className}')" class="btn btn-danger btn-small">
-                <i class="fas fa-trash"></i> ${t('delete')}
+            <span class="class-name" id="className-${className.replace(/\s+/g, '')}">${className}</span>
+            <div class="class-actions">
+                <button onclick="editClass('${className}')" class="btn btn-secondary btn-small" title="Edit Class">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteClass('${className}')" class="btn btn-danger btn-small" title="Delete Class">
+                    <i class="fas fa-trash"></i>
             </button>
+            </div>
         </div>
     `).join('');
+}
+
+function editClass(oldClassName) {
+    const classNameSpan = document.getElementById(`className-${oldClassName.replace(/\s+/g, '')}`);
+    const currentName = classNameSpan.textContent;
+    
+    // Create input field
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'class-edit-input';
+    input.style.width = '150px';
+    
+    // Replace span with input
+    classNameSpan.parentNode.replaceChild(input, classNameSpan);
+    input.focus();
+    input.select();
+    
+    // Handle save/cancel
+    const saveEdit = () => {
+        const newName = input.value.trim();
+        if (newName && newName !== oldClassName) {
+            if (classes.includes(newName)) {
+                showModal(t('error'), t('classExists'));
+                return;
+            }
+            
+            // Update class name
+            const classIndex = classes.indexOf(oldClassName);
+            if (classIndex !== -1) {
+                classes[classIndex] = newName;
+            }
+            
+            // Update students' class names
+            students.forEach(student => {
+                if (student.class === oldClassName) {
+                    student.class = newName;
+                }
+            });
+            
+            saveData();
+            updateClassDropdowns();
+            displayClasses();
+            updateDashboard();
+            
+            showModal(t('success'), `Class renamed from "${oldClassName}" to "${newName}"`);
+        } else {
+            // Cancel edit
+            displayClasses();
+        }
+    };
+    
+    input.addEventListener('blur', saveEdit);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            saveEdit();
+        } else if (e.key === 'Escape') {
+            displayClasses();
+        }
+    });
 }
 
 // Dashboard Functions
@@ -610,8 +870,8 @@ function updateTodayOverview() {
         
         absentStudents.forEach(student => {
             const reason = todayAttendance[student.id].reason || t('noReasonProvided');
-            const displayId = student.idNumber || student.id;
-            html += `<li>${displayId} - ${student.name} - ${reason}</li>`;
+            const displayRoll = student.rollNumber || 'N/A';
+            html += `<li>Roll: ${displayRoll} - ${student.name} bin ${student.fatherName} - ${reason}</li>`;
         });
         
         html += `
@@ -678,11 +938,11 @@ function loadAttendanceForDate() {
         attendance[selectedDate] = {};
         students.forEach(student => {
             attendance[selectedDate][student.id] = {
-                status: 'unmarked',
+                status: 'present', // Default to present instead of unmarked
                 reason: ''
             };
         });
-        saveData();
+        // Don't auto-save here - wait for user to click Save button
     }
     
     // Filter students
@@ -701,27 +961,20 @@ function loadAttendanceForDate() {
     // Generate attendance list
     const attendanceList = document.getElementById('attendanceList');
     attendanceList.innerHTML = filteredStudents.map(student => {
-        const studentAttendance = attendance[selectedDate][student.id] || { status: 'unmarked', reason: '' };
+        const studentAttendance = attendance[selectedDate][student.id] || { status: 'present', reason: '' };
         const status = studentAttendance.status;
         const isAbsent = status === 'absent';
         const isPresent = status === 'present';
-        const isUnmarked = status === 'unmarked';
         
-        let toggleClass = 'unmarked';
-        if (isPresent) toggleClass = 'present';
-        if (isAbsent) toggleClass = 'absent';
-        
-        let nextStatus = 'present';
-        if (isUnmarked) nextStatus = 'present';
-        if (isPresent) nextStatus = 'absent';
-        if (isAbsent) nextStatus = 'present';
+        // Set toggle appearance based on actual status
+        let toggleClass = isAbsent ? 'absent' : 'present';
+        let nextStatus = isAbsent ? 'present' : 'absent';
         
         return `
             <div class="student-row">
                 <div class="student-info-with-toggle">
                     <div class="student-info">
-                        <h4>${student.id} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name}</span></h4>
-                        ${isUnmarked ? '<span class="unmarked-label">Not marked yet</span>' : ''}
+                        <h4>Roll: ${student.rollNumber || 'N/A'} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name} bin ${student.fatherName}</span></h4>
                     </div>
                     <div class="attendance-toggle">
                         <div class="toggle-switch ${toggleClass}" 
@@ -802,49 +1055,23 @@ async function saveAttendance() {
         return;
     }
     
-    // Get all students and their current toggle states
-    const studentElements = document.querySelectorAll('[data-student-id]');
-    
-    // Initialize attendance for the selected date if not exists
-    if (!attendance[selectedDate]) {
-        attendance[selectedDate] = {};
+    // Attendance data is already updated in memory by toggleAttendance function
+    // Count students who have been manually changed (absent students, since present is default)
+    let markedCount = 0;
+    if (attendance[selectedDate]) {
+        Object.values(attendance[selectedDate]).forEach(record => {
+            if (record.status === 'absent') {
+                markedCount++; // Count only students marked as absent (changed from default)
+            }
+        });
     }
     
-    let markedCount = 0;
-    
-    studentElements.forEach(element => {
-        const studentId = element.getAttribute('data-student-id');
-        const presentBtn = element.querySelector('.btn-present');
-        const absentBtn = element.querySelector('.btn-absent');
-        const reasonInput = element.querySelector('.reason-input');
-        
-        let status = 'unmarked';
-        let reason = '';
-        
-        if (presentBtn && presentBtn.classList.contains('active')) {
-            status = 'present';
-            markedCount++;
-        } else if (absentBtn && absentBtn.classList.contains('active')) {
-            status = 'absent';
-            reason = reasonInput ? reasonInput.value : '';
-            markedCount++;
-        }
-        
-        // Update attendance record
-        attendance[selectedDate][studentId] = {
-            status: status,
-            reason: reason
-        };
-        
-        console.log(`Student ${studentId}: ${status}${reason ? ` (${reason})` : ''}`);
-    });
-    
-    console.log(`Found ${markedCount} marked students out of ${studentElements.length} total students`);
+    console.log(`Found ${markedCount} marked students for ${selectedDate}`);
     
     console.log('Current attendance object before save:', attendance);
     
     try {
-        // Save to PostgreSQL database
+        // Save to JSON database
         await saveDataToDatabase();
         console.log('Attendance saved successfully to database');
         
@@ -865,12 +1092,7 @@ async function saveAttendance() {
             updateDashboard();
         }
         
-        // Calculate actual marked count for display
-        const actualMarkedCount = Object.values(attendance[selectedDate] || {}).filter(att => 
-            att.status === 'present' || att.status === 'absent'
-        ).length;
-        
-        showModal(t('success'), `Attendance saved successfully! ${actualMarkedCount} students marked.`);
+        showModal(t('success'), `Attendance saved successfully! ${markedCount} students marked absent.`);
     } catch (error) {
         console.error('Error saving attendance:', error);
         showModal(t('error'), 'Failed to save attendance. Please try again.');
@@ -936,7 +1158,7 @@ function markAllPresent() {
         saveButton.textContent = 'Save Changes*';
     }
     
-    showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedPresent')}`);
+    showModal(t('success'), `${filteredStudents.length} students confirmed present`);
 }
 
 function showMarkAllAbsentModal() {
@@ -1196,16 +1418,12 @@ function generateStudentDetailContent(student) {
                 <div class="info-group">
                     <h4>${t('personalInformation')}</h4>
                     <div class="info-item">
-                        <span class="info-label">Student Name:</span>
-                        <span class="info-value">${student.name}</span>
+                        <span class="info-label">Full Name:</span>
+                        <span class="info-value">${student.name} bin ${student.fatherName}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Father's Name:</span>
-                        <span class="info-value">${student.fatherName}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">ID Number:</span>
-                        <span class="info-value">${student.id}</span>
+                        <span class="info-label">Roll Number:</span>
+                        <span class="info-value">${student.rollNumber || 'N/A'}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Class:</span>
@@ -1236,8 +1454,8 @@ function generateStudentDetailContent(student) {
                         <span class="info-value">${student.registrationDate}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Student ID:</span>
-                        <span class="info-value">${student.id}</span>
+                        <span class="info-label">Roll Number:</span>
+                        <span class="info-value">${student.rollNumber || 'N/A'}</span>
                     </div>
                 </div>
             </div>
@@ -1373,6 +1591,338 @@ let currentReportData = [];
 let sortDirection = {};
 let columnFilters = {};
 
+function generateAttendanceTrackingCalendar(month = null, year = null) {
+    console.log('Generating attendance tracking calendar...');
+    
+    // Use provided month/year or current values
+    const displayMonth = month !== null ? month : currentCalendarMonth;
+    const displayYear = year !== null ? year : currentCalendarYear;
+    
+    console.log('Display date:', displayMonth + 1, displayYear);
+    
+    // Generate calendar for specified month
+    const firstDay = new Date(displayYear, displayMonth, 1);
+    const lastDay = new Date(displayYear, displayMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    
+    console.log('Days in month:', daysInMonth, 'Start day of week:', startDayOfWeek);
+    
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const calendarHTML = `
+        <div class="attendance-tracking-section">
+            <h3>📅 Attendance Tracking Calendar</h3>
+            
+            <!-- Month Navigation -->
+            <div class="calendar-navigation">
+                <button onclick="navigateCalendar(-1)" class="nav-btn" title="Previous Month">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="month-year-display">
+                    <select id="monthSelector" onchange="changeCalendarMonth()" class="month-selector">
+                        ${monthNames.map((month, index) => 
+                            `<option value="${index}" ${index === displayMonth ? 'selected' : ''}>${month}</option>`
+                        ).join('')}
+                    </select>
+                    <input type="number" id="yearSelector" value="${displayYear}" min="2020" max="2030" 
+                           onchange="changeCalendarYear()" class="year-selector">
+                </div>
+                <button onclick="navigateCalendar(1)" class="nav-btn" title="Next Month">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button onclick="goToCurrentMonth()" class="nav-btn today-btn" title="Go to Current Month">
+                    <i class="fas fa-calendar-day"></i>
+                </button>
+            </div>
+            
+            <div class="calendar-container">
+                <div class="calendar-grid">
+                    <div class="calendar-header">Sun</div>
+                    <div class="calendar-header">Mon</div>
+                    <div class="calendar-header">Tue</div>
+                    <div class="calendar-header">Wed</div>
+                    <div class="calendar-header">Thu</div>
+                    <div class="calendar-header">Fri</div>
+                    <div class="calendar-header">Sat</div>
+                    ${generateCalendarDays(displayYear, displayMonth, startDayOfWeek, daysInMonth)}
+                </div>
+            </div>
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <span class="legend-color attendance-taken"></span>
+                    <span>Attendance Taken</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color attendance-missed"></span>
+                    <span>Attendance NOT Taken</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color holiday-day"></span>
+                    <span>Holiday</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color weekend-day"></span>
+                    <span>Weekend</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color future-day"></span>
+                    <span>Future Date</span>
+                </div>
+            </div>
+            <div class="attendance-summary" id="attendanceSummary">
+                ${generateAttendanceSummary(displayYear, displayMonth)}
+            </div>
+        </div>
+    `;
+    
+    return calendarHTML;
+}
+
+// Calendar navigation functions
+function navigateCalendar(direction) {
+    currentCalendarMonth += direction;
+    
+    if (currentCalendarMonth > 11) {
+        currentCalendarMonth = 0;
+        currentCalendarYear++;
+    } else if (currentCalendarMonth < 0) {
+        currentCalendarMonth = 11;
+        currentCalendarYear--;
+    }
+    
+    refreshCalendar();
+}
+
+function changeCalendarMonth() {
+    const monthSelector = document.getElementById('monthSelector');
+    if (monthSelector) {
+        currentCalendarMonth = parseInt(monthSelector.value);
+        refreshCalendar();
+    }
+}
+
+function changeCalendarYear() {
+    const yearSelector = document.getElementById('yearSelector');
+    if (yearSelector) {
+        currentCalendarYear = parseInt(yearSelector.value);
+        refreshCalendar();
+    }
+}
+
+function refreshCalendar() {
+    const calendarSection = document.querySelector('.attendance-tracking-section');
+    if (calendarSection) {
+        const newCalendarHTML = generateAttendanceTrackingCalendar(currentCalendarMonth, currentCalendarYear);
+        calendarSection.outerHTML = newCalendarHTML;
+    }
+}
+
+function goToCurrentMonth() {
+    const today = new Date();
+    currentCalendarMonth = today.getMonth();
+    currentCalendarYear = today.getFullYear();
+    refreshCalendar();
+}
+
+function generateCalendarDays(year, month, startDayOfWeek, daysInMonth) {
+    let calendarHTML = '';
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // Ensure global variables are initialized
+    if (!window.attendance) {
+        window.attendance = {};
+    }
+    if (!window.holidays) {
+        window.holidays = [];
+    }
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startDayOfWeek; i++) {
+        calendarHTML += '<div class="calendar-day empty"></div>';
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+        
+        let dayClass = 'calendar-day';
+        let dayTitle = dateStr;
+        
+        // Check if it's a future date
+        if (date > today) {
+            dayClass += ' future-day';
+            dayTitle = 'Future date';
+        }
+        // Check if it's a holiday
+        else if (isHoliday(dateStr)) {
+            dayClass += ' holiday-day';
+            const holidayName = getHolidayName(dateStr);
+            dayTitle = `Holiday: ${holidayName}`;
+        }
+        // Check if it's weekend (Friday/Saturday in Islamic context, or Saturday/Sunday)
+        else if (dayOfWeek === 5 || dayOfWeek === 6) { // Friday/Saturday
+            dayClass += ' weekend-day';
+            dayTitle = 'Weekend';
+        }
+        // Check if attendance was taken
+        else if (attendance[dateStr] && Object.keys(attendance[dateStr]).length > 0) {
+            dayClass += ' attendance-taken';
+            dayTitle = `Attendance taken on ${dateStr}`;
+        }
+        // School day but no attendance taken
+        else {
+            dayClass += ' attendance-missed';
+            dayTitle = `Attendance NOT taken on ${dateStr}`;
+        }
+        
+        calendarHTML += `
+            <div class="${dayClass}" title="${dayTitle}">
+                <span class="day-number">${day}</span>
+            </div>
+        `;
+    }
+    
+    return calendarHTML;
+}
+
+function generateAttendanceSummary(year, month) {
+    const today = new Date();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Ensure global variables are initialized
+    if (!window.attendance) {
+        window.attendance = {};
+    }
+    if (!window.holidays) {
+        window.holidays = [];
+    }
+    
+    let totalSchoolDays = 0;
+    let attendanceTakenDays = 0;
+    let missedDays = 0;
+    let holidayDays = 0;
+    let weekendDays = 0;
+    
+    // Count each type of day in the month
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayOfWeek = date.getDay();
+        
+        // Skip future dates
+        if (date > today) continue;
+        
+        // Check day type
+        if (isHoliday(dateStr)) {
+            holidayDays++;
+        } else if (dayOfWeek === 5 || dayOfWeek === 6) { // Friday/Saturday
+            weekendDays++;
+        } else {
+            // This is a school day
+            totalSchoolDays++;
+            
+            if (attendance[dateStr] && Object.keys(attendance[dateStr]).length > 0) {
+                attendanceTakenDays++;
+            } else {
+                missedDays++;
+            }
+        }
+    }
+    
+    const completionPercentage = totalSchoolDays > 0 ? Math.round((attendanceTakenDays / totalSchoolDays) * 100) : 0;
+    
+    return `
+        <div class="summary-stats">
+            <h4>📊 Monthly Attendance Summary</h4>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">${totalSchoolDays}</div>
+                    <div class="stat-label">Total School Days</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-number">${attendanceTakenDays}</div>
+                    <div class="stat-label">Attendance Taken</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-number">${missedDays}</div>
+                    <div class="stat-label">Missed Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${completionPercentage}%</div>
+                    <div class="stat-label">Completion Rate</div>
+                </div>
+            </div>
+            <div class="additional-stats">
+                <p><strong>Holidays this month:</strong> ${holidayDays} days</p>
+                <p><strong>Weekends this month:</strong> ${weekendDays} days</p>
+            </div>
+        </div>
+    `;
+}
+
+// Helper functions for calendar - removed duplicates, keeping the more flexible version below
+
+function showAttendanceCalendar() {
+    try {
+        console.log('Starting showAttendanceCalendar function...');
+        
+        const reportsSection = document.getElementById('reports');
+        if (!reportsSection) {
+            console.error('Reports section not found');
+            return;
+        }
+        
+        const existingCalendar = reportsSection.querySelector('.attendance-tracking-section');
+        const toggleButton = reportsSection.querySelector('.calendar-toggle button');
+        
+        if (!toggleButton) {
+            console.error('Toggle button not found');
+            return;
+        }
+        
+        if (existingCalendar) {
+            // If calendar exists, toggle its visibility
+            console.log('Calendar exists, toggling visibility...');
+            if (existingCalendar.style.display === 'none') {
+                existingCalendar.style.display = 'block';
+                toggleButton.innerHTML = '📅 Hide Attendance Calendar';
+                console.log('Calendar shown');
+            } else {
+                existingCalendar.style.display = 'none';
+                toggleButton.innerHTML = '📅 Show Attendance Tracking Calendar';
+                console.log('Calendar hidden');
+            }
+        } else {
+            // Create new calendar
+            console.log('Creating new calendar...');
+            console.log('Attendance data:', Object.keys(attendance).length, 'dates');
+            console.log('Holidays data:', holidays.length, 'holidays');
+            
+            const calendarHTML = generateAttendanceTrackingCalendar();
+            const calendarToggle = reportsSection.querySelector('.calendar-toggle');
+            
+            if (calendarToggle) {
+                calendarToggle.insertAdjacentHTML('afterend', calendarHTML);
+                toggleButton.innerHTML = '📅 Hide Attendance Calendar';
+                console.log('Calendar created and inserted successfully');
+            } else {
+                console.error('Calendar toggle section not found');
+            }
+        }
+    } catch (error) {
+        console.error('Error in showAttendanceCalendar:', error);
+        showModal('Error', 'Failed to load attendance calendar. Please try again.');
+    }
+}
+
 function generateReport() {
     const startDate = document.getElementById('reportStartDate').value;
     const endDate = document.getElementById('reportEndDate').value;
@@ -1394,6 +1944,23 @@ function generateReport() {
     
     // Generate date range
     const dateRange = getDateRange(startDate, endDate);
+    
+    // Check if attendance has been taken for any date in the range
+    const nonHolidayDates = dateRange.filter(date => !isHoliday(date));
+    const hasAttendanceData = nonHolidayDates.some(date => attendance[date] && Object.keys(attendance[date]).length > 0);
+    
+    if (!hasAttendanceData) {
+        // Show message if no attendance data exists for the selected period
+        document.getElementById('reportResults').innerHTML = `
+            <div class="holiday-notice">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Attendance not taken for this date</h3>
+                <p>No attendance records found for the selected date range. Please take attendance first before generating reports.</p>
+                <p><strong>Selected period:</strong> ${startDate} to ${endDate}</p>
+            </div>
+        `;
+        return;
+    }
     
     // Check if the entire date range consists only of holidays
     const holidaysInRange = dateRange.filter(date => isHoliday(date));
@@ -1442,17 +2009,17 @@ function generateReport() {
         const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
         
         return {
-            id: student.idNumber || student.id,
+            id: student.rollNumber || 'N/A',
             name: student.name,
-            fullName: `${student.idNumber || student.id} - ${student.name}`,
+            fullName: `Roll: ${student.rollNumber || 'N/A'} - ${student.name} bin ${student.fatherName}`,
             presentDays,
             absentDays,
             attendancePercentage
         };
     });
     
-    // Reset filters and sort direction
-    columnFilters = {};
+    // Reset filters and sort direction only when generating new report
+    columnFilters = { fullName: '' }; // Only reset fullName filter
     sortDirection = {};
     
     renderReportTable(startDate, endDate);
@@ -1460,15 +2027,15 @@ function generateReport() {
 }
 
 function renderReportTable(startDate, endDate) {
-    // Apply filters
+    // Apply filters - only filter by student name (fullName column)
     let filteredData = currentReportData.filter(row => {
-        return Object.keys(columnFilters).every(column => {
-            const filterValue = columnFilters[column].toLowerCase();
-            if (!filterValue) return true;
-            
-            const cellValue = row[column].toString().toLowerCase();
+        // Only filter by fullName column
+        if (columnFilters.fullName && columnFilters.fullName.trim() !== '') {
+            const filterValue = columnFilters.fullName.toLowerCase();
+            const cellValue = row.fullName.toString().toLowerCase();
             return cellValue.includes(filterValue);
-        });
+        }
+        return true;
     });
     
     // Generate report HTML with filterable/sortable table
@@ -1487,9 +2054,14 @@ function renderReportTable(startDate, endDate) {
                                     <button class="sort-btn" onclick="sortTable('fullName')">
                                         <i class="fas fa-sort"></i>
                                     </button>
-                                    <input type="text" class="column-filter" placeholder="Filter..." 
+                                    <input type="text" 
+                                           id="nameFilter" 
+                                           class="column-filter" 
+                                           placeholder="Filter by name..." 
                                            onkeyup="filterColumn('fullName', this.value)" 
-                                           onclick="event.stopPropagation()">
+                                           onclick="event.stopPropagation();"
+                                           style="width: 150px; padding: 4px; font-size: 12px; border: 1px solid #ccc; background: white; color: black; z-index: 1001; position: relative;"
+                                           >
                                 </div>
                             </div>
                         </th>
@@ -1500,9 +2072,6 @@ function renderReportTable(startDate, endDate) {
                                     <button class="sort-btn" onclick="sortTable('presentDays')">
                                         <i class="fas fa-sort"></i>
                                     </button>
-                                    <input type="text" class="column-filter" placeholder="Filter..." 
-                                           onkeyup="filterColumn('presentDays', this.value)" 
-                                           onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </th>
@@ -1513,9 +2082,6 @@ function renderReportTable(startDate, endDate) {
                                     <button class="sort-btn" onclick="sortTable('absentDays')">
                                         <i class="fas fa-sort"></i>
                                     </button>
-                                    <input type="text" class="column-filter" placeholder="Filter..." 
-                                           onkeyup="filterColumn('absentDays', this.value)" 
-                                           onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </th>
@@ -1526,9 +2092,6 @@ function renderReportTable(startDate, endDate) {
                                     <button class="sort-btn" onclick="sortTable('attendancePercentage')">
                                         <i class="fas fa-sort"></i>
                                     </button>
-                                    <input type="text" class="column-filter" placeholder="Filter..." 
-                                           onkeyup="filterColumn('attendancePercentage', this.value)" 
-                                           onclick="event.stopPropagation()">
                                 </div>
                             </div>
                         </th>
@@ -1595,12 +2158,37 @@ function sortTable(column) {
 }
 
 function filterColumn(column, value) {
+    // Only handle fullName column filtering
+    if (column === 'fullName') {
+        // Don't re-render if value hasn't changed
+        if (columnFilters[column] === value) {
+            return;
+        }
+        
     columnFilters[column] = value;
+        
+        // Store cursor position before re-render
+        const filterInput = document.getElementById('nameFilter');
+        const cursorPosition = filterInput ? filterInput.selectionStart : 0;
     
     // Re-render table with filters
     const startDate = document.getElementById('reportStartDate').value;
     const endDate = document.getElementById('reportEndDate').value;
     renderReportTable(startDate, endDate);
+        
+        // Restore focus and cursor position after re-render
+        setTimeout(() => {
+            const newFilterInput = document.getElementById('nameFilter');
+            if (newFilterInput) {
+                newFilterInput.value = value;
+                newFilterInput.focus();
+                // Restore cursor position
+                if (cursorPosition >= 0) {
+                    newFilterInput.setSelectionRange(cursorPosition, cursorPosition);
+                }
+            }
+        }, 50);
+    }
 }
 
 function updateSortIcons(activeColumn) {
@@ -1733,61 +2321,70 @@ function displayHolidays() {
 }
 
 function isHoliday(date) {
+    if (!holidays || holidays.length === 0) return false;
+    
     return holidays.some(h => {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
-        const checkDate = new Date(date);
         
-        return checkDate >= new Date(startDate) && checkDate <= new Date(endDate);
+        // Handle both date strings and date objects
+        let checkDate;
+        if (typeof date === 'string') {
+            checkDate = new Date(date);
+        } else {
+            checkDate = date;
+        }
+        
+        // Convert to date strings for comparison (YYYY-MM-DD format)
+        const checkDateStr = checkDate.toISOString().split('T')[0];
+        const startDateStr = new Date(startDate).toISOString().split('T')[0];
+        const endDateStr = new Date(endDate).toISOString().split('T')[0];
+        
+        return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
     });
 }
 
 function getHolidayName(date) {
+    if (!holidays || holidays.length === 0) return '';
+    
     const holiday = holidays.find(h => {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
-        const checkDate = new Date(date);
         
-        return checkDate >= new Date(startDate) && checkDate <= new Date(endDate);
+        // Handle both date strings and date objects
+        let checkDate;
+        if (typeof date === 'string') {
+            checkDate = new Date(date);
+        } else {
+            checkDate = date;
+        }
+        
+        // Convert to date strings for comparison (YYYY-MM-DD format)
+        const checkDateStr = checkDate.toISOString().split('T')[0];
+        const startDateStr = new Date(startDate).toISOString().split('T')[0];
+        const endDateStr = new Date(endDate).toISOString().split('T')[0];
+        
+        return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
     });
-    return holiday ? holiday.name : null;
+    return holiday ? holiday.name : '';
 }
 
 async function saveDataToDatabase() {
     try {
-        // Save attendance to PostgreSQL database (send each record individually)
-        const attendancePromises = [];
-        
-        for (const [date, dateAttendance] of Object.entries(attendance)) {
-            for (const [studentId, record] of Object.entries(dateAttendance)) {
-                // Skip unmarked attendance
-                if (record.status === 'unmarked') continue;
-                
-                const promise = fetch('/api/attendance', {
+        // Save attendance to JSON server (send entire attendance object)
+        const attendanceResponse = await fetch('/api/attendance', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        student_id: studentId,
-                        date: date,
-                        status: record.status,
-                        reason: record.reason || ''
-                    })
-                });
-                attendancePromises.push(promise);
-            }
+            body: JSON.stringify(attendance)
+        });
+        
+        if (!attendanceResponse.ok) {
+            throw new Error(`Attendance save failed: ${attendanceResponse.status}`);
         }
         
-        // Wait for all attendance records to save
-        const attendanceResponses = await Promise.all(attendancePromises);
-        for (const response of attendanceResponses) {
-            if (!response.ok) {
-                throw new Error(`Attendance save failed: ${response.status}`);
-            }
-        }
-        
-        // Save holidays to PostgreSQL database (send each holiday individually)
+        // Save holidays to JSON server (send each holiday individually)  
         const holidayPromises = holidays.map(holiday => {
             return fetch('/api/holidays', {
                 method: 'POST',
@@ -1804,11 +2401,12 @@ async function saveDataToDatabase() {
         const holidayResponses = await Promise.all(holidayPromises);
         for (const response of holidayResponses) {
             if (!response.ok) {
-                throw new Error(`Holiday save failed: ${response.status}`);
+                console.warn(`Holiday save failed: ${response.status}`);
+                // Don't throw error for holidays, just warn
             }
         }
         
-        console.log('Data saved to PostgreSQL successfully');
+        console.log('Data saved to JSON server successfully');
         
     } catch (error) {
         console.error('Error saving data to database:', error);

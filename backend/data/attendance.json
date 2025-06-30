@@ -1,0 +1,206 @@
+{
+  "2025-06-29": {
+    "ST001": {
+      "status": "present",
+      "reason": ""
+    },
+    "ST002": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST003": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST004": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST005": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST006": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST007": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST008": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST009": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST010": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST011": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST012": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST013": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST014": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST015": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST016": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST017": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST018": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST019": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST020": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST021": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST022": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST023": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST024": {
+      "reason": "",
+      "status": "present"
+    },
+    "ST025": {
+      "reason": "",
+      "status": "present"
+    }
+  },
+  "2025-06-30": {
+    "ST001": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST002": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST003": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST004": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST005": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST006": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST007": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST008": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST009": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST010": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST011": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST012": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST013": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST014": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST015": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST016": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST017": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST018": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST019": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST020": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST021": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST022": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST023": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST024": {
+      "reason": "",
+      "status": "unmarked"
+    },
+    "ST025": {
+      "reason": "",
+      "status": "unmarked"
+    }
+  }
+}
