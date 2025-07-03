@@ -13,7 +13,9 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-text">
-                    <h1><i class="fas fa-graduation-cap"></i> Madani Maktab</h1>
+                    <h1 onclick="showSection('dashboard')" style="cursor: pointer;" title="Go to Dashboard">
+                        <i class="fas fa-graduation-cap"></i> Madani Maktab
+                    </h1>
                     <p>Student Attendance Management System</p>
                 </div>
                 <div class="language-selector">
@@ -291,6 +293,11 @@
             <!-- Daily Attendance Section -->
             <section id="attendance" class="section">
                 <h2>Daily Attendance</h2>
+                <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                    <p style="margin: 0; font-size: 0.9rem;">
+                        📌 <strong>Sticky Attendance:</strong> When you select a date, each student's most recent attendance status is automatically applied. Students who were absent will remain absent until you manually change them. Just toggle any changes and click "Save Attendance" once!
+                    </p>
+                </div>
                 <div class="attendance-controls">
                     <div class="controls-row">
                         <div class="date-selector">
@@ -318,9 +325,7 @@
                         <button onclick="showMarkAllAbsentModal()" class="btn btn-danger btn-bulk">
                             <i class="fas fa-times-circle"></i> Mark All Absent
                         </button>
-                        <button onclick="copyFromPreviousDay()" class="btn btn-primary btn-bulk">
-                            <i class="fas fa-copy"></i> Copy Previous Day
-                        </button>
+
                     </div>
                     <div class="bulk-info">
                         <p><span id="filteredStudentCount">0</span> students shown</p>

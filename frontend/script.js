@@ -99,7 +99,9 @@ async function initializeAppWithDatabase() {
             loadAttendanceForDate();
             updateAttendancePageHijri();
         });
-        document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
+        document.getElementById('classFilter').addEventListener('change', function() {
+            loadAttendanceForDate();
+        });
         
         // Initialize student list display
         displayStudentsList();
@@ -171,7 +173,7 @@ function toggleMobileMenu() {
 }
 
 // Navigation Functions
-function showSection(sectionId) {
+async function showSection(sectionId) {
     // Hide all sections
     const sections = document.querySelectorAll('.section');
     sections.forEach(section => section.classList.remove('active'));
@@ -198,7 +200,7 @@ function showSection(sectionId) {
     if (sectionId === 'dashboard') {
         updateDashboard();
     } else if (sectionId === 'attendance') {
-        loadAttendanceForDate();
+        await loadAttendanceForDate();
     } else if (sectionId === 'registration') {
         displayStudentsList();
         // Show student list by default, hide form
@@ -647,6 +649,9 @@ function displayClasses() {
             </div>
         </div>
     `).join('');
+    
+    // Update class filter options in student registration table
+    updateClassFilterOptions();
 }
 
 function editClass(oldClassName) {
@@ -881,13 +886,13 @@ function initializeTodayAttendance() {
     saveData();
 }
 
-function loadTodayAttendance() {
+async function loadTodayAttendance() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('attendanceDate').value = today;
-    loadAttendanceForDate();
+    await loadAttendanceForDate();
 }
 
-function loadAttendanceForDate() {
+async function loadAttendanceForDate() {
     const selectedDate = document.getElementById('attendanceDate').value;
     const attendanceList = document.getElementById('attendanceList');
     
@@ -899,6 +904,11 @@ function loadAttendanceForDate() {
     // Initialize attendance record for the day if it doesn't exist
     if (!attendance[selectedDate]) {
         attendance[selectedDate] = {};
+    }
+    
+    // Auto-copy from previous day if no attendance exists for this date
+    if (Object.keys(attendance[selectedDate]).length === 0) {
+        await autoCopyFromPreviousDay(selectedDate);
     }
     
     let filteredStudents = getFilteredStudents();
@@ -954,7 +964,7 @@ function loadAttendanceForDate() {
     }).join('');
 }
 
-function toggleAttendance(studentId, date, status) {
+async function toggleAttendance(studentId, date, status) {
     // Prevent attendance marking on holidays
     if (isHoliday(date)) {
         showModal(t('error'), 'Cannot mark attendance on holidays');
@@ -972,7 +982,7 @@ function toggleAttendance(studentId, date, status) {
     };
     
     // Refresh the display without saving to database
-    loadAttendanceForDate();
+    await loadAttendanceForDate();
     
     // Show visual indication that changes are pending
     const saveButton = document.querySelector('.btn-save-attendance');
@@ -1029,28 +1039,42 @@ async function saveAttendance() {
     console.log('Current attendance object before save:', attendance);
     
     try {
-        // Save to JSON database
-        await saveDataToDatabase();
-        console.log('Attendance saved successfully to database');
+        // Save to JSON database via API
+        const response = await fetch('/api/attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(attendance)
+        });
         
-        // Reset save button appearance
-        const saveButton = document.querySelector('.btn-save-attendance');
-        if (saveButton) {
-            saveButton.style.background = '#27ae60';
-            saveButton.textContent = 'Saved!';
-            setTimeout(() => {
-                saveButton.textContent = 'Save Attendance';
-            }, 2000);
-        }
-        
-        // Force dashboard update after saving attendance
-        if (typeof forceUpdateDashboard === 'function') {
-            forceUpdateDashboard();
+        if (response.ok) {
+            console.log('Attendance saved successfully to database');
+            
+            // Reset save button appearance
+            const saveButton = document.querySelector('.btn-save-attendance');
+            if (saveButton) {
+                saveButton.style.background = '#27ae60';
+                saveButton.textContent = 'Saved!';
+                setTimeout(() => {
+                    saveButton.textContent = 'Save Attendance';
+                }, 2000);
+            }
+            
+            // Force dashboard update after saving attendance
+            if (typeof forceUpdateDashboard === 'function') {
+                forceUpdateDashboard();
+            } else {
+                updateDashboard();
+            }
+            
+            const totalStudents = getFilteredStudents().length;
+            const presentCount = totalStudents - markedCount;
+            showModal(t('success'), `Attendance saved successfully! ${presentCount} present, ${markedCount} absent (${totalStudents} total).`);
         } else {
-            updateDashboard();
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save attendance');
         }
-        
-        showModal(t('success'), `Attendance saved successfully! ${markedCount} students marked absent.`);
     } catch (error) {
         console.error('Error saving attendance:', error);
         showModal(t('error'), 'Failed to save attendance. Please try again.');
@@ -1074,7 +1098,7 @@ function getFilteredStudents() {
     return filteredStudents;
 }
 
-function markAllPresent() {
+async function markAllPresent() {
     const selectedDate = document.getElementById('attendanceDate').value;
     if (!selectedDate) {
         showModal(t('error'), t('pleaseSelectDate'));
@@ -1107,7 +1131,7 @@ function markAllPresent() {
     });
     
     // Refresh display without saving to database
-    loadAttendanceForDate();
+    await loadAttendanceForDate();
     
     // Show visual indication that changes are pending
     const saveButton = document.querySelector('.btn-save-attendance');
@@ -1143,7 +1167,7 @@ function closeBulkAbsentModal() {
     document.getElementById('bulkAbsentModal').style.display = 'none';
 }
 
-function confirmMarkAllAbsent() {
+async function confirmMarkAllAbsent() {
     const selectedDate = document.getElementById('attendanceDate').value;
     const reason = document.getElementById('bulkAbsentReason').value.trim();
     
@@ -1175,7 +1199,7 @@ function confirmMarkAllAbsent() {
     });
     
     // Refresh display without saving to database
-    loadAttendanceForDate();
+    await loadAttendanceForDate();
     closeBulkAbsentModal();
     
     // Show visual indication that changes are pending
@@ -1188,81 +1212,103 @@ function confirmMarkAllAbsent() {
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedAbsent')}`);
 }
 
-function copyFromPreviousDay() {
-    const selectedDate = document.getElementById('attendanceDate').value;
-    if (!selectedDate) {
-        showModal(t('error'), t('pleaseSelectDate'));
-        return;
-    }
-    
-    // Prevent copying to holidays
-    if (isHoliday(selectedDate)) {
-        showModal(t('error'), 'Cannot mark attendance on holidays');
+async function autoCopyFromPreviousDay(targetDate) {
+    // Don't auto-copy to holidays
+    if (isHoliday(targetDate)) {
         return;
     }
     
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
-        showModal(t('error'), t('noStudentsFound'));
         return;
     }
     
-    // Find previous non-holiday day with attendance data
-    let currentDate = new Date(selectedDate);
-    let previousDate;
-    let foundNonHoliday = false;
+    // Find the most recent attendance for each student (sticky behavior)
+    const targetDateObj = new Date(targetDate);
+    let mostRecentAttendance = {};
+    let foundAnyAttendance = false;
+    let copyFromDate = null;
     
-    for (let i = 1; i <= 7; i++) {
-        currentDate.setDate(currentDate.getDate() - 1);
-        const checkDate = currentDate.toISOString().split('T')[0];
+    // Look back up to 30 days for attendance data
+    for (let i = 1; i <= 30; i++) {
+        const checkDate = new Date(targetDateObj);
+        checkDate.setDate(targetDateObj.getDate() - i);
+        const checkDateStr = checkDate.toISOString().split('T')[0];
         
-        if (!isHoliday(checkDate) && attendance[checkDate]) {
-            previousDate = checkDate;
-            foundNonHoliday = true;
-            break;
+        if (!isHoliday(checkDateStr) && attendance[checkDateStr] && 
+            Object.keys(attendance[checkDateStr]).length > 0) {
+            
+            if (!foundAnyAttendance) {
+                copyFromDate = checkDateStr;
+                foundAnyAttendance = true;
+            }
+            
+            // For each student, use their most recent attendance status
+            filteredStudents.forEach(student => {
+                if (attendance[checkDateStr][student.id] && !mostRecentAttendance[student.id]) {
+                    mostRecentAttendance[student.id] = {
+                        status: attendance[checkDateStr][student.id].status,
+                        reason: attendance[checkDateStr][student.id].reason || ''
+                    };
+                }
+            });
+            
+            // If we have attendance for all students, no need to look further back
+            if (Object.keys(mostRecentAttendance).length >= filteredStudents.length) {
+                break;
+            }
         }
     }
     
-    if (!foundNonHoliday) {
-        showModal(t('error'), 'No non-holiday attendance data found in the last 7 days');
-        return;
-    }
-    
-    // Initialize attendance for current date if it doesn't exist
-    if (!attendance[selectedDate]) {
-        attendance[selectedDate] = {};
-    }
-    
-    let copiedCount = 0;
-    
-    // Copy attendance from previous day for filtered students
-    filteredStudents.forEach(student => {
-        if (attendance[previousDate][student.id]) {
-            attendance[selectedDate][student.id] = {
-                status: attendance[previousDate][student.id].status,
-                reason: attendance[previousDate][student.id].reason
-            };
-            copiedCount++;
+    if (foundAnyAttendance) {
+        // Initialize the target date
+        if (!attendance[targetDate]) {
+            attendance[targetDate] = {};
+        }
+        
+        // Apply the most recent attendance status for each student (sticky behavior)
+        let absentCount = 0;
+        filteredStudents.forEach(student => {
+            if (mostRecentAttendance[student.id]) {
+                attendance[targetDate][student.id] = {
+                    status: mostRecentAttendance[student.id].status,
+                    reason: mostRecentAttendance[student.id].reason || ''
+                };
+                if (mostRecentAttendance[student.id].status === 'absent') {
+                    absentCount++;
+                }
+            } else {
+                // Default to present for students with no previous attendance
+                attendance[targetDate][student.id] = {
+                    status: 'present',
+                    reason: ''
+                };
+            }
+        });
+        
+        // Show visual indication that changes are pending
+        const saveButton = document.querySelector('.btn-save-attendance');
+        if (saveButton) {
+            saveButton.style.background = '#e67e22';
+            saveButton.textContent = 'Save Changes*';
+        }
+        
+        // Show sticky attendance notification
+        const presentCount = filteredStudents.length - absentCount;
+        if (absentCount > 0) {
+            showModal(t('success'), `📌 Sticky attendance applied! ${presentCount} present, ${absentCount} still absent from last time. Change any student's status as needed.`);
         } else {
-            // If no previous attendance record, mark as present
-            attendance[selectedDate][student.id] = {
+            showModal(t('success'), `📌 Sticky attendance applied! All ${presentCount} students present. Change any student's status as needed.`);
+        }
+    } else {
+        // No previous attendance found, default all to present
+        filteredStudents.forEach(student => {
+            attendance[targetDate][student.id] = {
                 status: 'present',
                 reason: ''
             };
-        }
-    });
-    
-    // Refresh display without saving to database
-    loadAttendanceForDate();
-    
-    // Show visual indication that changes are pending
-    const saveButton = document.querySelector('.btn-save-attendance');
-    if (saveButton) {
-        saveButton.style.background = '#e67e22';
-        saveButton.textContent = 'Save Changes*';
+        });
     }
-    
-    showModal(t('success'), `${t('attendanceCopiedFrom')} ${previousDate} for ${copiedCount} students`);
 }
 
 // Class-wise Dashboard Functions
@@ -1364,7 +1410,9 @@ function updateStudentFilter(filterType, value) {
     } else {
         studentFilters[filterType] = value.toLowerCase();
     }
-    displayStudentsList();
+    
+    // Only update the table body, not the entire table
+    updateStudentTableBody();
 }
 
 function clearStudentFilters() {
@@ -1375,6 +1423,70 @@ function clearStudentFilters() {
         mobile: ''
     };
     displayStudentsList();
+}
+
+function updateStudentTableBody() {
+    const tbody = document.querySelector('#studentsListContainer .students-table tbody');
+    const studentCount = document.querySelector('#studentsListContainer .students-list-header h3');
+    
+    if (!tbody || !studentCount) {
+        // If table doesn't exist yet, create the full table
+        displayStudentsList();
+        return;
+    }
+    
+    // Sort students by class and roll number
+    const sortedStudents = [...students].sort((a, b) => {
+        const classA = getClassNumber(a.class);
+        const classB = getClassNumber(b.class);
+        if (classA !== classB) return classA - classB;
+        
+        const rollA = parseRollNumber(a.rollNumber);
+        const rollB = parseRollNumber(b.rollNumber);
+        return rollA - rollB;
+    });
+    
+    // Apply search filters
+    const filteredStudents = applyStudentFilters(sortedStudents);
+    
+    // Update student count
+    studentCount.innerHTML = `<i class="fas fa-list"></i> ${t('allRegisteredStudents')} (${filteredStudents.length}/${students.length})`;
+    
+    // Update table body
+    tbody.innerHTML = filteredStudents.map(student => `
+        <tr>
+            <td><strong>${student.rollNumber || 'N/A'}</strong></td>
+            <td>
+                <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'registration')" title="Click to view details">
+                    ${student.name} বিন ${student.fatherName}
+                </span>
+            </td>
+            <td><span class="class-badge">${student.class}</span></td>
+            <td>${student.mobileNumber}</td>
+            <td class="actions">
+                <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteStudent('${student.id}')" class="btn btn-sm btn-danger" title="${t('deleteStudent')}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateClassFilterOptions() {
+    const classFilterSelect = document.querySelector('#classFilterReg');
+    if (!classFilterSelect) return;
+    
+    const currentValue = classFilterSelect.value;
+    
+    classFilterSelect.innerHTML = `
+        <option value="">${t('allClasses')}</option>
+        ${classes.map(className => 
+            `<option value="${className}" ${currentValue === className ? 'selected' : ''}>${className}</option>`
+        ).join('')}
+    `;
 }
 
 // Student Detail Functions
