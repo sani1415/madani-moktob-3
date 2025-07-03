@@ -47,14 +47,32 @@ class JSONDatabase:
             json.dump(data, f, indent=2, ensure_ascii=False, default=str)
     
     def get_class_number(self, class_name):
-        """Extract class number from class name (e.g., 'Class 1' -> 1)"""
+        """Extract class number from class name (e.g., 'প্রথম শ্রেণি' -> 1)"""
         try:
+            # Handle Bengali class names
+            bengali_class_map = {
+                'প্রথম শ্রেণি': 1,
+                'দ্বিতীয় শ্রেণি': 2,
+                'তৃতীয় শ্রেণি': 3,
+                'চতুর্থ শ্রেণি': 4,
+                'পঞ্চম শ্রেণি': 5,
+                'ষষ্ঠ শ্রেণি': 6,
+                'সপ্তম শ্রেণি': 7,
+                'অষ্টম শ্রেণি': 8,
+                'নবম শ্রেণি': 9,
+                'দশম শ্রেণি': 10
+            }
+            
+            if class_name in bengali_class_map:
+                return bengali_class_map[class_name]
+            
+            # Fallback for English class names
             return int(class_name.split()[-1])
         except:
             return 1  # Default to class 1 if parsing fails
     
     def generate_roll_number(self, class_name):
-        """Generate next roll number for a class (Class 1 = 101+, Class 2 = 201+, etc.)"""
+        """Generate next roll number for a class (প্রথম শ্রেণি = 101+, দ্বিতীয় শ্রেণি = 201+, etc.)"""
         students = self.get_students()
         class_number = self.get_class_number(class_name)
         base_number = class_number * 100
@@ -96,9 +114,7 @@ class JSONDatabase:
         """Add or update a student"""
         students = self.get_students()
         
-        # Generate roll number if not provided
-        if 'rollNumber' not in student_data and 'class' in student_data:
-            student_data['rollNumber'] = str(self.generate_roll_number(student_data['class']))
+        # Roll number should be provided manually, no automatic generation
         
         # Check if student exists
         existing_index = None
@@ -176,39 +192,39 @@ class JSONDatabase:
         """Create sample students data with proper roll numbers"""
         sample_students = [
             # Class 1 students (Roll 101-105)
-            {"id": "ST001", "name": "Abdullah Rahman", "fatherName": "Rahman Ahmed", "mobileNumber": "01711234567", "district": "Dhaka", "upazila": "Dhanmondi", "class": "Class 1", "rollNumber": "101", "registrationDate": "2025-01-01"},
-            {"id": "ST002", "name": "Fatima Khatun", "fatherName": "Karim Uddin", "mobileNumber": "01811234567", "district": "Dhaka", "upazila": "Gulshan", "class": "Class 1", "rollNumber": "102", "registrationDate": "2025-01-02"},
-            {"id": "ST011", "name": "Ibrahim Khalil", "fatherName": "Khalil Ahmed", "mobileNumber": "01712345678", "district": "Rajshahi", "upazila": "Boalia", "class": "Class 1", "rollNumber": "103", "registrationDate": "2025-01-11"},
-            {"id": "ST012", "name": "Hafsa Begum", "fatherName": "Begum Saheb", "mobileNumber": "01812345678", "district": "Rajshahi", "upazila": "Motihar", "class": "Class 1", "rollNumber": "104", "registrationDate": "2025-01-12"},
-            {"id": "ST021", "name": "Zakaria Hasan", "fatherName": "Hasan Uddin", "mobileNumber": "01713456789", "district": "Comilla", "upazila": "Sadar", "class": "Class 1", "rollNumber": "105", "registrationDate": "2025-01-21"},
+            {"id": "ST001", "name": "Abdullah Rahman", "fatherName": "Rahman Ahmed", "mobileNumber": "01711234567", "district": "Dhaka", "upazila": "Dhanmondi", "class": "পরথম শরণ", "rollNumber": "101", "registrationDate": "2025-01-01"},
+            {"id": "ST002", "name": "Fatima Khatun", "fatherName": "Karim Uddin", "mobileNumber": "01811234567", "district": "Dhaka", "upazila": "Gulshan", "class": "পরথম শরণ", "rollNumber": "102", "registrationDate": "2025-01-02"},
+            {"id": "ST011", "name": "Ibrahim Khalil", "fatherName": "Khalil Ahmed", "mobileNumber": "01712345678", "district": "Rajshahi", "upazila": "Boalia", "class": "পরথম শরণ", "rollNumber": "103", "registrationDate": "2025-01-11"},
+            {"id": "ST012", "name": "Hafsa Begum", "fatherName": "Begum Saheb", "mobileNumber": "01812345678", "district": "Rajshahi", "upazila": "Motihar", "class": "পরথম শরণ", "rollNumber": "104", "registrationDate": "2025-01-12"},
+            {"id": "ST021", "name": "Zakaria Hasan", "fatherName": "Hasan Uddin", "mobileNumber": "01713456789", "district": "Comilla", "upazila": "Sadar", "class": "পরথম শরণ", "rollNumber": "105", "registrationDate": "2025-01-21"},
             
             # Class 2 students (Roll 201-205)
-            {"id": "ST003", "name": "Muhammad Hasan", "fatherName": "Hasan Ali", "mobileNumber": "01911234567", "district": "Dhaka", "upazila": "Mirpur", "class": "Class 2", "rollNumber": "201", "registrationDate": "2025-01-03"},
-            {"id": "ST004", "name": "Aisha Begum", "fatherName": "Ahmed Hossain", "mobileNumber": "01611234567", "district": "Dhaka", "upazila": "Wari", "class": "Class 2", "rollNumber": "202", "registrationDate": "2025-01-04"},
-            {"id": "ST013", "name": "Hamza Ali", "fatherName": "Ali Akbar", "mobileNumber": "01912345678", "district": "Barisal", "upazila": "Kotwali", "class": "Class 2", "rollNumber": "203", "registrationDate": "2025-01-13"},
-            {"id": "ST014", "name": "Sakinah Khatun", "fatherName": "Khatun Ahmad", "mobileNumber": "01612345678", "district": "Barisal", "upazila": "Babuganj", "class": "Class 2", "rollNumber": "204", "registrationDate": "2025-01-14"},
-            {"id": "ST022", "name": "Aminah Begum", "fatherName": "Begum Ali", "mobileNumber": "01813456789", "district": "Comilla", "upazila": "Laksam", "class": "Class 2", "rollNumber": "205", "registrationDate": "2025-01-22"},
+            {"id": "ST003", "name": "Muhammad Hasan", "fatherName": "Hasan Ali", "mobileNumber": "01911234567", "district": "Dhaka", "upazila": "Mirpur", "class": "দবতয শরণ", "rollNumber": "201", "registrationDate": "2025-01-03"},
+            {"id": "ST004", "name": "Aisha Begum", "fatherName": "Ahmed Hossain", "mobileNumber": "01611234567", "district": "Dhaka", "upazila": "Wari", "class": "দবতয শরণ", "rollNumber": "202", "registrationDate": "2025-01-04"},
+            {"id": "ST013", "name": "Hamza Ali", "fatherName": "Ali Akbar", "mobileNumber": "01912345678", "district": "Barisal", "upazila": "Kotwali", "class": "দবতয শরণ", "rollNumber": "203", "registrationDate": "2025-01-13"},
+            {"id": "ST014", "name": "Sakinah Khatun", "fatherName": "Khatun Ahmad", "mobileNumber": "01612345678", "district": "Barisal", "upazila": "Babuganj", "class": "দবতয শরণ", "rollNumber": "204", "registrationDate": "2025-01-14"},
+            {"id": "ST022", "name": "Aminah Begum", "fatherName": "Begum Ali", "mobileNumber": "01813456789", "district": "Comilla", "upazila": "Laksam", "class": "দবতয শরণ", "rollNumber": "205", "registrationDate": "2025-01-22"},
             
             # Class 3 students (Roll 301-305)
-            {"id": "ST005", "name": "Omar Faruk", "fatherName": "Faruk Miah", "mobileNumber": "01511234567", "district": "Dhaka", "upazila": "Ramna", "class": "Class 3", "rollNumber": "301", "registrationDate": "2025-01-05"},
-            {"id": "ST006", "name": "Maryam Siddiqui", "fatherName": "Siddiqui Saheb", "mobileNumber": "01411234567", "district": "Chittagong", "upazila": "Kotwali", "class": "Class 3", "rollNumber": "302", "registrationDate": "2025-01-06"},
-            {"id": "ST015", "name": "Ismail Hossain", "fatherName": "Hossain Miah", "mobileNumber": "01512345678", "district": "Khulna", "upazila": "Daulatpur", "class": "Class 3", "rollNumber": "303", "registrationDate": "2025-01-15"},
-            {"id": "ST016", "name": "Ruqayyah Begum", "fatherName": "Begum Hossain", "mobileNumber": "01412345678", "district": "Khulna", "upazila": "Khalishpur", "class": "Class 3", "rollNumber": "304", "registrationDate": "2025-01-16"},
-            {"id": "ST023", "name": "Sulaiman Ahmed", "fatherName": "Ahmed Molla", "mobileNumber": "01913456789", "district": "Jessore", "upazila": "Sadar", "class": "Class 3", "rollNumber": "305", "registrationDate": "2025-01-23"},
+            {"id": "ST005", "name": "Omar Faruk", "fatherName": "Faruk Miah", "mobileNumber": "01511234567", "district": "Dhaka", "upazila": "Ramna", "class": "ততয শরণ", "rollNumber": "301", "registrationDate": "2025-01-05"},
+            {"id": "ST006", "name": "Maryam Siddiqui", "fatherName": "Siddiqui Saheb", "mobileNumber": "01411234567", "district": "Chittagong", "upazila": "Kotwali", "class": "ততয শরণ", "rollNumber": "302", "registrationDate": "2025-01-06"},
+            {"id": "ST015", "name": "Ismail Hossain", "fatherName": "Hossain Miah", "mobileNumber": "01512345678", "district": "Khulna", "upazila": "Daulatpur", "class": "ততয শরণ", "rollNumber": "303", "registrationDate": "2025-01-15"},
+            {"id": "ST016", "name": "Ruqayyah Begum", "fatherName": "Begum Hossain", "mobileNumber": "01412345678", "district": "Khulna", "upazila": "Khalishpur", "class": "ততয শরণ", "rollNumber": "304", "registrationDate": "2025-01-16"},
+            {"id": "ST023", "name": "Sulaiman Ahmed", "fatherName": "Ahmed Molla", "mobileNumber": "01913456789", "district": "Jessore", "upazila": "Sadar", "class": "ততয শরণ", "rollNumber": "305", "registrationDate": "2025-01-23"},
             
             # Class 4 students (Roll 401-405)
-            {"id": "ST007", "name": "Ali Hasan", "fatherName": "Hasan Mahmud", "mobileNumber": "01311234567", "district": "Chittagong", "upazila": "Pahartali", "class": "Class 4", "rollNumber": "401", "registrationDate": "2025-01-07"},
-            {"id": "ST008", "name": "Khadija Rahman", "fatherName": "Rahman Molla", "mobileNumber": "01211234567", "district": "Chittagong", "upazila": "Panchlaish", "class": "Class 4", "rollNumber": "402", "registrationDate": "2025-01-08"},
-            {"id": "ST017", "name": "Tariq Rahman", "fatherName": "Rahman Sheikh", "mobileNumber": "01312345678", "district": "Rangpur", "upazila": "Sadar", "class": "Class 4", "rollNumber": "403", "registrationDate": "2025-01-17"},
-            {"id": "ST018", "name": "Umm Kulsum", "fatherName": "Kulsum Miah", "mobileNumber": "01212345678", "district": "Rangpur", "upazila": "Mithapukur", "class": "Class 4", "rollNumber": "404", "registrationDate": "2025-01-18"},
-            {"id": "ST024", "name": "Umm Habibah", "fatherName": "Habibah Miah", "mobileNumber": "01613456789", "district": "Jessore", "upazila": "Jhikargachha", "class": "Class 4", "rollNumber": "405", "registrationDate": "2025-01-24"},
+            {"id": "ST007", "name": "Ali Hasan", "fatherName": "Hasan Mahmud", "mobileNumber": "01311234567", "district": "Chittagong", "upazila": "Pahartali", "class": "চতরথ শরণ", "rollNumber": "401", "registrationDate": "2025-01-07"},
+            {"id": "ST008", "name": "Khadija Rahman", "fatherName": "Rahman Molla", "mobileNumber": "01211234567", "district": "Chittagong", "upazila": "Panchlaish", "class": "চতরথ শরণ", "rollNumber": "402", "registrationDate": "2025-01-08"},
+            {"id": "ST017", "name": "Tariq Rahman", "fatherName": "Rahman Sheikh", "mobileNumber": "01312345678", "district": "Rangpur", "upazila": "Sadar", "class": "চতরথ শরণ", "rollNumber": "403", "registrationDate": "2025-01-17"},
+            {"id": "ST018", "name": "Umm Kulsum", "fatherName": "Kulsum Miah", "mobileNumber": "01212345678", "district": "Rangpur", "upazila": "Mithapukur", "class": "চতরথ শরণ", "rollNumber": "404", "registrationDate": "2025-01-18"},
+            {"id": "ST024", "name": "Umm Habibah", "fatherName": "Habibah Miah", "mobileNumber": "01613456789", "district": "Jessore", "upazila": "Jhikargachha", "class": "চতরথ শরণ", "rollNumber": "405", "registrationDate": "2025-01-24"},
             
             # Class 5 students (Roll 501-505)
-            {"id": "ST009", "name": "Yusuf Ahmed", "fatherName": "Ahmed Karim", "mobileNumber": "01111234567", "district": "Sylhet", "upazila": "Sylhet Sadar", "class": "Class 5", "rollNumber": "501", "registrationDate": "2025-01-09"},
-            {"id": "ST010", "name": "Zainab Khatun", "fatherName": "Khatun Miah", "mobileNumber": "01012345678", "district": "Sylhet", "upazila": "Companiganj", "class": "Class 5", "rollNumber": "502", "registrationDate": "2025-01-10"},
-            {"id": "ST019", "name": "Bilal Ahmed", "fatherName": "Ahmed Haque", "mobileNumber": "01112345678", "district": "Mymensingh", "upazila": "Sadar", "class": "Class 5", "rollNumber": "503", "registrationDate": "2025-01-19"},
-            {"id": "ST020", "name": "Safiyyah Khatun", "fatherName": "Khatun Rahman", "mobileNumber": "01013456789", "district": "Mymensingh", "upazila": "Trishal", "class": "Class 5", "rollNumber": "504", "registrationDate": "2025-01-20"},
-            {"id": "ST025", "name": "Dawud Rahman", "fatherName": "Rahman Hossain", "mobileNumber": "01513456789", "district": "Bogra", "upazila": "Sadar", "class": "Class 5", "rollNumber": "505", "registrationDate": "2025-01-25"}
+            {"id": "ST009", "name": "Yusuf Ahmed", "fatherName": "Ahmed Karim", "mobileNumber": "01111234567", "district": "Sylhet", "upazila": "Sylhet Sadar", "class": "পঞচম শরণ", "rollNumber": "501", "registrationDate": "2025-01-09"},
+            {"id": "ST010", "name": "Zainab Khatun", "fatherName": "Khatun Miah", "mobileNumber": "01012345678", "district": "Sylhet", "upazila": "Companiganj", "class": "পঞচম শরণ", "rollNumber": "502", "registrationDate": "2025-01-10"},
+            {"id": "ST019", "name": "Bilal Ahmed", "fatherName": "Ahmed Haque", "mobileNumber": "01112345678", "district": "Mymensingh", "upazila": "Sadar", "class": "পঞচম শরণ", "rollNumber": "503", "registrationDate": "2025-01-19"},
+            {"id": "ST020", "name": "Safiyyah Khatun", "fatherName": "Khatun Rahman", "mobileNumber": "01013456789", "district": "Mymensingh", "upazila": "Trishal", "class": "পঞচম শরণ", "rollNumber": "504", "registrationDate": "2025-01-20"},
+            {"id": "ST025", "name": "Dawud Rahman", "fatherName": "Rahman Hossain", "mobileNumber": "01513456789", "district": "Bogra", "upazila": "Sadar", "class": "পঞচম শরণ", "rollNumber": "505", "registrationDate": "2025-01-25"}
         ]
         
         self.save_students(sample_students)

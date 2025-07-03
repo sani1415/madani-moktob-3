@@ -42,14 +42,17 @@ def add_student():
         if not student_data:
             return jsonify({'error': 'No data provided'}), 400
             
-        required_fields = ['id', 'name']
+        required_fields = ['id', 'name', 'rollNumber']
         for field in required_fields:
             if field not in student_data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        # Generate roll number if class is provided and roll number is not
-        if 'class' in student_data and 'rollNumber' not in student_data:
-            student_data['rollNumber'] = str(db.generate_roll_number(student_data['class']))
+        # Check for duplicate roll number
+        existing_students = db.get_students()
+        if any(s.get('rollNumber') == student_data['rollNumber'] for s in existing_students):
+            return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
+        
+        # Mobile numbers are now allowed to be duplicate - removed this check
         
         db.add_student(student_data)
         return jsonify({'success': True, 'student': student_data})
@@ -62,6 +65,15 @@ def update_student(student_id):
         student_data = request.json
         if not student_data:
             return jsonify({'error': 'No data provided'}), 400
+            
+        # Check for duplicate roll number (excluding current student)
+        existing_students = db.get_students()
+        for student in existing_students:
+            if (student.get('rollNumber') == student_data.get('rollNumber') and 
+                student.get('id') != student_id):
+                return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
+        
+        # Mobile numbers are now allowed to be duplicate - removed this check
             
         student_data['id'] = student_id  # Ensure ID matches URL
         db.add_student(student_data)  # add_student handles updates too

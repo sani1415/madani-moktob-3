@@ -113,9 +113,9 @@ class DatabaseAdapter {
         
         if (this.useDatabase) {
             const data = await this.getFromIndexedDB('classes');
-            return data || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+            return data || ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
         } else {
-            return JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+            return JSON.parse(localStorage.getItem('madaniMaktabClasses')) || ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
         }
     }
 

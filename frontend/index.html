@@ -109,6 +109,116 @@
             <section id="registration" class="section">
                 <h2>Student Management</h2>
                 
+                <!-- Bulk Import Section (Hidden by default) -->
+                <div id="bulkImportSection" class="bulk-import-section" style="display:none;">
+                    <div class="bulk-import-header">
+                        <h3>📊 Bulk Import Students from CSV</h3>
+                        <button onclick="hideBulkImport()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </button>
+                    </div>
+                    
+                    <div class="bulk-import-instructions">
+                        <h4>📋 File Format Required:</h4>
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
+                            <p style="margin: 0; color: #1565c0; font-weight: 600;">
+                                💡 <strong>Important for Bengali/Unicode text:</strong> Save as <strong>CSV UTF-8</strong> format
+                            </p>
+                            <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
+                                <strong>Excel:</strong> File → Save As → Choose <strong>"CSV UTF-8 (Comma delimited) (*.csv)"</strong>
+                            </p>
+                            <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
+                                <strong>Google Sheets:</strong> File → Download → Comma-separated values (.csv)
+                            </p>
+                        </div>
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                            <p style="margin: 0; color: #856404; font-weight: 600;">
+                                🔤 <strong>Bengali/Unicode Support:</strong> Your Bengali text will display correctly if saved as CSV UTF-8
+                            </p>
+                            <p style="margin: 8px 0 0 0; color: #856404; font-size: 0.9em;">
+                                <strong>Example:</strong> Name should look like "মোহাম্মদ আলী" not "à¦®à§‹à¦¹à¦¾à¦®à§à¦®à¦¦ à¦†à¦²à§€"
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <button onclick="downloadAllStudentsCSV()" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> Download All Students Data
+                            </button>
+                        </div>
+                        <div class="format-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>id</th>
+                                        <th>name</th>
+                                        <th>fatherName</th>
+                                        <th>rollNumber</th>
+                                        <th>mobileNumber</th>
+                                        <th>district</th>
+                                        <th>upazila</th>
+                                        <th>class</th>
+                                        <th>registrationDate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>ST001</td>
+                                        <td>Abdullah Rahman</td>
+                                        <td>Rahman Ahmed</td>
+                                        <td>101</td>
+                                        <td>01711234567</td>
+                                        <td>Dhaka</td>
+                                        <td>Dhanmondi</td>
+                                        <td>প্রথম শ্রেণি</td>
+                                        <td>2025-01-01</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ST002</td>
+                                        <td>Fatima Khatun</td>
+                                        <td>Karim Uddin</td>
+                                        <td>102</td>
+                                        <td>01811234567</td>
+                                        <td>Dhaka</td>
+                                        <td>Gulshan</td>
+                                        <td>দ্বিতীয় শ্রেণি</td>
+                                        <td>2025-01-02</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="import-notes">
+                            <p><strong>⚠️ Important:</strong></p>
+                            <ul>
+                                <li>First row must be headers (exactly as shown above)</li>
+                                <li>All fields are required - no empty cells</li>
+                                <li>Students with same ID will be replaced/updated</li>
+                                <li>Roll numbers must be unique (except for updates)</li>
+                                <li>Class names must match your existing classes</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="bulk-import-upload">
+                        <div class="upload-area">
+                            <input type="file" id="excelFile" accept=".csv" style="display:none;">
+                            <div class="upload-drop-zone" onclick="document.getElementById('excelFile').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to select CSV file</p>
+                                <p class="file-types">Supports .csv files (Excel saved as CSV)</p>
+                            </div>
+                        </div>
+                        <div class="upload-actions">
+                            <button onclick="processExcelFile()" class="btn btn-primary" id="uploadBtn" disabled>
+                                <i class="fas fa-upload"></i> Upload & Import Students
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="importResults" class="import-results" style="display:none;">
+                        <!-- Import results will be shown here -->
+                    </div>
+                </div>
+                
                 <!-- Students List Container -->
                 <div id="studentsListContainer" class="students-management">
                     <!-- Student list will be populated here by JavaScript -->
@@ -136,6 +246,19 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
+                                <label for="rollNumber">Roll Number *</label>
+                                <input type="text" id="rollNumber" required placeholder="Enter roll number (e.g., 101, 201)">
+                                <small style="color: #666; font-size: 0.8em;">Each roll number must be unique</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentClass">Class *</label>
+                                <select id="studentClass" required>
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="district">District *</label>
                                 <input type="text" id="district" required>
                             </div>
@@ -150,10 +273,7 @@
                                 <input type="tel" id="mobile" required>
                             </div>
                             <div class="form-group">
-                                <label for="studentClass">Class *</label>
-                                <select id="studentClass" required>
-                                    <option value="">Select Class</option>
-                                </select>
+                                <!-- Empty space for form balance -->
                             </div>
                         </div>
                         <div class="form-actions">

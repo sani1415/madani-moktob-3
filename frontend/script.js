@@ -1,6 +1,6 @@
 // Application State
 let students = [];
-let classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+let classes = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
 let attendance = {};
 let holidays = [];
 
@@ -12,6 +12,40 @@ let currentCalendarYear = new Date().getFullYear();
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB');
+}
+
+function convertBengaliToEnglishNumbers(str) {
+    if (!str) return str;
+    const bengaliToEnglish = {
+        '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+        '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+    return str.toString().replace(/[০-৯]/g, match => bengaliToEnglish[match]);
+}
+
+function parseRollNumber(rollNumber) {
+    if (!rollNumber) return 0;
+    const englishNumber = convertBengaliToEnglishNumbers(rollNumber);
+    return parseInt(englishNumber) || 0;
+}
+
+function getClassNumber(className) {
+    if (!className) return 0;
+    const bengaliClassMap = {
+        'প্রথম শ্রেণি': 1,
+        'দ্বিতীয় শ্রেণি': 2,
+        'তৃতীয় শ্রেণি': 3,
+        'চতুর্থ শ্রেণি': 4,
+        'পঞ্চম শ্রেণি': 5
+    };
+    
+    if (bengaliClassMap[className]) {
+        return bengaliClassMap[className];
+    }
+    
+    // Fallback to extracting number from class name
+    const match = className.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 0;
 }
 
 // Initialize Application
@@ -31,16 +65,8 @@ async function initializeAppWithDatabase() {
     try {
         console.log('Starting app initialization...');
         
-        // Load data from database
-        const databaseSuccess = await loadDataFromDatabase();
-        
-        // Only try to migrate if database is available and we have few students
-        if (databaseSuccess && (!students || students.length < 25)) {
-            console.log(`Found ${students.length} students, migrating all 25 to PostgreSQL...`);
-            await migrateSampleData();
-            // Reload data after migration
+        // Load data from database only
             await loadDataFromDatabase();
-        }
         
         console.log('Data loaded successfully, initializing UI...');
         
@@ -82,192 +108,51 @@ async function initializeAppWithDatabase() {
         
     } catch (error) {
         console.error('App initialization failed:', error);
-        
-        // Final UI initialization regardless of data source
-        updateClassDropdowns();
-        displayClasses();
-        displayHolidays();
-        
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('attendanceDate').value = today;
-        document.getElementById('reportStartDate').value = today;
-        document.getElementById('reportEndDate').value = today;
-        
-        if (!attendance[today]) {
-            initializeTodayAttendance();
-        }
-        
-        loadTodayAttendance();
-        updateDashboard();
-        
-        document.getElementById('attendanceDate').addEventListener('change', loadAttendanceForDate);
-        document.getElementById('classFilter').addEventListener('change', loadAttendanceForDate);
-        
-        console.log('App initialized with fallback data');
+        showModal('Database Error', 'Failed to connect to the database. Please ensure the server is running and try refreshing the page.');
     }
 }
 
 async function loadDataFromDatabase() {
     try {
-        // Load data from JSON file database
+        // Load students from JSON database
         const studentsResponse = await fetch('/api/students');
         if (studentsResponse.ok) {
             students = await studentsResponse.json();
         } else {
-            console.error('Failed to load students from JSON database');
-            students = [];
+            throw new Error('Failed to load students from database');
         }
         
+        // Load attendance from JSON database
         const attendanceResponse = await fetch('/api/attendance');
         if (attendanceResponse.ok) {
             const attendanceData = await attendanceResponse.json();
-            console.log('Loaded attendance data from JSON database:', attendanceData);
-            
-            // JSON database returns object format directly
+            console.log('Loaded attendance data from database:', attendanceData);
             attendance = attendanceData || {};
             console.log('Final attendance object:', attendance);
         } else {
-            console.error('Failed to load attendance from JSON database');
-            attendance = {};
+            throw new Error('Failed to load attendance from database');
         }
         
+        // Load holidays from JSON database
         const holidaysResponse = await fetch('/api/holidays');
         if (holidaysResponse.ok) {
             holidays = await holidaysResponse.json();
         } else {
-            console.error('Failed to load holidays from JSON database');
-            holidays = [];
+            throw new Error('Failed to load holidays from database');
         }
         
-        classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
+        // Set default classes
+        classes = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
         
-        console.log(`Loaded ${students.length} students from JSON database`);
+        console.log(`Loaded ${students.length} students from database`);
         
-        // Update dashboard immediately after data load
+        // Update dashboard after data load
         updateDashboard();
         
     } catch (error) {
-        console.error('JSON database connection failed, using fallback data:', error);
-        // Fallback to localStorage if database unavailable
-        students = JSON.parse(localStorage.getItem('madaniMaktabStudents')) || [];
-        classes = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'];
-        attendance = JSON.parse(localStorage.getItem('madaniMaktabAttendance')) || {};
-        holidays = JSON.parse(localStorage.getItem('madaniMaktabHolidays')) || [];
-        
-        // If no data in localStorage, add sample data
-        if (students.length === 0) {
-            console.log('No data found, adding sample students to localStorage');
-            addSampleDataFallback();
-        }
-        
-        // Update dashboard with fallback data
-        updateDashboard();
-        return false; // Indicate fallback was used
+        console.error('Database connection failed:', error);
+        throw error; // Re-throw to be handled by calling function
     }
-    return true; // Indicate database was used successfully
-}
-
-async function migrateSampleData() {
-    console.log('Creating 25 sample students in JSON database...');
-    
-    try {
-        const response = await fetch('/api/create_sample_data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            console.log(result.message);
-            // Reload data from database
-            await loadDataFromDatabase();
-        } else {
-            console.log('JSON database creation failed, using localStorage');
-            addSampleDataFallback();
-        }
-    } catch (error) {
-        console.error('JSON database creation failed, using fallback:', error);
-        addSampleDataFallback();
-    }
-}
-
-function addSampleDataFallback() {
-    // Complete 25 student dataset for localStorage fallback
-    const sampleStudents = [
-        // Class 1 students (IDs: 101-105)
-        { id: '101', name: 'Ali Hassan', fatherName: 'Md. Mostofa Hassan', mobileNumber: '01712345101', district: 'Dhaka', upazila: 'Savar', class: 'Class 1', registrationDate: '2025-01-01' },
-        { id: '102', name: 'Hafsa Khatun', fatherName: 'Md. Shahidul Islam', mobileNumber: '01812345102', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 1', registrationDate: '2025-01-02' },
-        { id: '103', name: 'Hamza Ahmed', fatherName: 'Md. Rafiqul Alam', mobileNumber: '01912345103', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 1', registrationDate: '2025-01-03' },
-        { id: '104', name: 'Sumaya Begum', fatherName: 'Md. Kamal Uddin', mobileNumber: '01612345104', district: 'Rajshahi', upazila: 'Paba', class: 'Class 1', registrationDate: '2025-01-04' },
-        { id: '105', name: 'Usman Khan', fatherName: 'Md. Liaquat Ali', mobileNumber: '01512345105', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 1', registrationDate: '2025-01-05' },
-        
-        // Class 2 students (IDs: 201-205)
-        { id: '201', name: 'Ruqayyah Rahman', fatherName: 'Md. Abdur Rahman', mobileNumber: '01712345201', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 2', registrationDate: '2025-02-01' },
-        { id: '202', name: 'Bilal Ahmed', fatherName: 'Md. Shahjahan', mobileNumber: '01812345202', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 2', registrationDate: '2025-02-02' },
-        { id: '203', name: 'Sakinah Khatun', fatherName: 'Md. Nurul Haque', mobileNumber: '01912345203', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 2', registrationDate: '2025-02-03' },
-        { id: '204', name: 'Ismail Hossain', fatherName: 'Md. Shamsul Huda', mobileNumber: '01612345204', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 2', registrationDate: '2025-02-04' },
-        { id: '205', name: 'Ayesha Siddique', fatherName: 'Md. Abdul Quddus', mobileNumber: '01512345205', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 2', registrationDate: '2025-02-05' },
-        
-        // Class 3 students (IDs: 301-305)
-        { id: '301', name: 'Salman Farisi', fatherName: 'Md. Abdul Halim', mobileNumber: '01712345301', district: 'Dhaka', upazila: 'Keraniganj', class: 'Class 3', registrationDate: '2025-03-01' },
-        { id: '302', name: 'Zaynab Sultana', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01812345302', district: 'Chittagong', upazila: 'Sitakunda', class: 'Class 3', registrationDate: '2025-03-02' },
-        { id: '303', name: 'Khalid Ibn Walid', fatherName: 'Md. Mahfuzul Haque', mobileNumber: '01912345303', district: 'Sylhet', upazila: 'Golapganj', class: 'Class 3', registrationDate: '2025-03-03' },
-        { id: '304', name: 'Umm Salamah', fatherName: 'Md. Anisul Haque', mobileNumber: '01612345304', district: 'Rajshahi', upazila: 'Godagari', class: 'Class 3', registrationDate: '2025-03-04' },
-        { id: '305', name: 'Abu Bakr Siddique', fatherName: 'Md. Nazrul Islam', mobileNumber: '01512345305', district: 'Rangpur', upazila: 'Kurigram', class: 'Class 3', registrationDate: '2025-03-05' },
-        
-        // Class 4 students (IDs: 401-405)
-        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-04-01' },
-        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-04-02' },
-        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-04-03' },
-        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-04-04' },
-        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-04-05' },
-        
-        // Class 5 students (IDs: 501-505)
-        { id: '501', name: 'Zainab Rahman', fatherName: 'Md. Abdul Rahman', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-05-01' },
-        { id: '502', name: 'Yusuf Ahmed', fatherName: 'Md. Kamal Ahmed', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-05-02' },
-        { id: '503', name: 'Maryam Khatun', fatherName: 'Md. Mizanur Rahman', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Beanibazar', class: 'Class 5', registrationDate: '2025-05-03' },
-        { id: '504', name: 'Omar Faruk', fatherName: 'Md. Abdus Salam', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-05-04' },
-        { id: '505', name: 'Khadija Begum', fatherName: 'Md. Nurul Islam', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Badarganj', class: 'Class 5', registrationDate: '2025-05-05' }
-    ];
-
-    students = sampleStudents;
-    localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
-    console.log('25 sample students added to localStorage');
-}
-
-// Sample Data Generation - Empty by default
-function addSampleData() {
-    // Add students for Class 4 (IDs: 401-405)
-    const class4Students = [
-        { id: '401', name: 'Abdul Karim', fatherName: 'Md. Aminul Islam', mobileNumber: '01712345401', district: 'Dhaka', upazila: 'Savar', class: 'Class 4', registrationDate: '2025-06-01' },
-        { id: '402', name: 'Fatima Khatun', fatherName: 'Md. Rafiqul Islam', mobileNumber: '01812345402', district: 'Chittagong', upazila: 'Hathazari', class: 'Class 4', registrationDate: '2025-06-02' },
-        { id: '403', name: 'Mohammad Hasan', fatherName: 'Md. Khalilur Rahman', mobileNumber: '01912345403', district: 'Sylhet', upazila: 'Osmaninagar', class: 'Class 4', registrationDate: '2025-06-03' },
-        { id: '404', name: 'Aisha Begum', fatherName: 'Md. Shamsul Haque', mobileNumber: '01612345404', district: 'Rajshahi', upazila: 'Paba', class: 'Class 4', registrationDate: '2025-06-04' },
-        { id: '405', name: 'Ibrahim Khan', fatherName: 'Md. Delwar Hossain', mobileNumber: '01512345405', district: 'Rangpur', upazila: 'Mithapukur', class: 'Class 4', registrationDate: '2025-06-05' }
-    ];
-
-    // Add students for Class 5 (IDs: 501-505)
-    const class5Students = [
-        { id: '501', name: 'Hafez Abdullah', fatherName: 'Md. Nurul Islam', mobileNumber: '01712345501', district: 'Dhaka', upazila: 'Dhamrai', class: 'Class 5', registrationDate: '2025-06-06' },
-        { id: '502', name: 'Mariam Sultana', fatherName: 'Md. Golam Mostafa', mobileNumber: '01812345502', district: 'Chittagong', upazila: 'Rangunia', class: 'Class 5', registrationDate: '2025-06-07' },
-        { id: '503', name: 'Yusuf Ahmed', fatherName: 'Md. Rezaul Karim', mobileNumber: '01912345503', district: 'Sylhet', upazila: 'Zakiganj', class: 'Class 5', registrationDate: '2025-06-08' },
-        { id: '504', name: 'Zainab Rahman', fatherName: 'Md. Mokhlesur Rahman', mobileNumber: '01612345504', district: 'Rajshahi', upazila: 'Charghat', class: 'Class 5', registrationDate: '2025-06-09' },
-        { id: '505', name: 'Ismail Hossain', fatherName: 'Md. Abdur Rashid', mobileNumber: '01512345505', district: 'Rangpur', upazila: 'Gangachara', class: 'Class 5', registrationDate: '2025-06-10' }
-    ];
-
-    // Add all new students to the students array
-    const newStudents = [...class4Students, ...class5Students];
-    
-    newStudents.forEach(student => {
-        const existingStudent = students.find(s => s.id === student.id);
-        if (!existingStudent) {
-            students.push(student);
-        }
-    });
-    
-    saveData();
 }
 
 // Mobile Menu Functions
@@ -332,11 +217,29 @@ document.getElementById('studentForm').addEventListener('submit', function(e) {
     registerStudent();
 });
 
+function generateStudentId() {
+    // Generate clean sequential internal ID (ST026, ST027, etc.)
+    let maxIdNumber = 0;
+    
+    students.forEach(student => {
+        if (student.id && student.id.startsWith('ST')) {
+            const idNumber = parseInt(student.id.substring(2));
+            if (!isNaN(idNumber) && idNumber > maxIdNumber) {
+                maxIdNumber = idNumber;
+            }
+        }
+    });
+    
+    const nextId = maxIdNumber + 1;
+    return `ST${nextId.toString().padStart(3, '0')}`; // ST026, ST027, ST028...
+}
+
 async function registerStudent() {
     const formData = {
-        id: `ST${Date.now().toString().slice(-6)}`, // Generate student ID
+        id: generateStudentId(), // Generate internal ID (invisible to users)
         name: document.getElementById('studentName').value.trim(),
         fatherName: document.getElementById('fatherName').value.trim(),
+        rollNumber: document.getElementById('rollNumber').value.trim(),
         mobileNumber: document.getElementById('mobile').value.trim(),
         district: document.getElementById('district').value.trim(),
         upazila: document.getElementById('upazila').value.trim(),
@@ -345,20 +248,22 @@ async function registerStudent() {
     };
     
     // Validation
-    if (!formData.name || !formData.fatherName || !formData.mobileNumber || 
+    if (!formData.name || !formData.fatherName || !formData.rollNumber || !formData.mobileNumber || 
         !formData.district || !formData.upazila || !formData.class) {
         showModal(t('error'), t('fillAllFields'));
         return;
     }
     
-    // Check for duplicate mobile number
-    if (students.some(student => student.mobileNumber === formData.mobileNumber)) {
-        showModal(t('error'), t('duplicateMobile'));
+
+    
+    // Check for duplicate roll number
+    if (students.some(student => student.rollNumber === formData.rollNumber)) {
+        showModal(t('error'), `Roll number ${formData.rollNumber} already exists. Please choose a different roll number.`);
         return;
     }
     
     try {
-        // Register student with backend (will auto-generate roll number)
+        // Register student with backend (with manual roll number)
         const response = await fetch('/api/students', {
             method: 'POST',
             headers: {
@@ -399,9 +304,22 @@ function displayStudentsList() {
     
     if (students.length === 0) {
         studentsListContainer.innerHTML = `
-            <div class="no-students-message">
-                <i class="fas fa-user-graduate"></i>
-                <p>No students registered yet. Click "Register New Student" to add students.</p>
+            <div class="students-list">
+                <div class="students-list-header">
+                    <h3><i class="fas fa-list"></i> ${t('allRegisteredStudents')} (0)</h3>
+                    <div class="students-list-buttons">
+                        <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> ${t('registerNewStudent')}
+                        </button>
+                        <button onclick="showBulkImport()" class="btn btn-secondary">
+                            <i class="fas fa-upload"></i> ${t('bulkImport')}
+                        </button>
+                    </div>
+                </div>
+                <div class="no-students-message">
+                    <i class="fas fa-user-graduate"></i>
+                    <p>${t('noStudentsRegisteredYet')}</p>
+                </div>
             </div>
         `;
         return;
@@ -409,43 +327,88 @@ function displayStudentsList() {
     
     // Sort students by class and roll number
     const sortedStudents = [...students].sort((a, b) => {
-        const classA = parseInt(a.class?.split(' ')[1] || 0);
-        const classB = parseInt(b.class?.split(' ')[1] || 0);
+        const classA = getClassNumber(a.class);
+        const classB = getClassNumber(b.class);
         if (classA !== classB) return classA - classB;
-        return parseInt(a.rollNumber || 0) - parseInt(b.rollNumber || 0);
+        
+        const rollA = parseRollNumber(a.rollNumber);
+        const rollB = parseRollNumber(b.rollNumber);
+        return rollA - rollB;
     });
     
+    // Apply search filters
+    let filteredStudents = applyStudentFilters(sortedStudents);
+
     studentsListContainer.innerHTML = `
         <div class="students-list">
             <div class="students-list-header">
-                <h3><i class="fas fa-list"></i> All Registered Students (${students.length})</h3>
-                <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Register New Student
-                </button>
+                <h3><i class="fas fa-list"></i> ${t('allRegisteredStudents')} (${filteredStudents.length}/${students.length})</h3>
+                <div class="students-list-buttons">
+                    <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> ${t('registerNewStudent')}
+                    </button>
+                    <button onclick="showBulkImport()" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i> ${t('bulkImport')}
+                    </button>
+                </div>
             </div>
             <div class="students-table-container">
                 <table class="students-table">
                     <thead>
                         <tr>
-                            <th>Roll No.</th>
-                            <th>Full Name</th>
-                            <th>Class</th>
-                            <th>Mobile</th>
-                            <th>Actions</th>
+                            <th>${t('rollNo')}</th>
+                            <th>${t('fullName')}</th>
+                            <th>${t('class')}</th>
+                            <th>${t('mobile')}</th>
+                            <th>${t('actions')}</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th>
+                                <input type="text" id="rollFilter" placeholder="${t('searchRoll')}" 
+                                       value="${studentFilters.roll}" 
+                                       oninput="updateStudentFilter('roll', this.value)" class="column-filter">
+                            </th>
+                            <th>
+                                <input type="text" id="nameFilter" placeholder="${t('searchName')}" 
+                                       value="${studentFilters.name}" 
+                                       oninput="updateStudentFilter('name', this.value)" class="column-filter">
+                            </th>
+                            <th>
+                                <select id="classFilterReg" onchange="updateStudentFilter('class', this.value)" class="column-filter">
+                                    <option value="">${t('allClasses')}</option>
+                                    ${classes.map(className => 
+                                        `<option value="${className}" ${studentFilters.class === className ? 'selected' : ''}>${className}</option>`
+                                    ).join('')}
+                                </select>
+                            </th>
+                            <th>
+                                <input type="text" id="mobileFilter" placeholder="${t('searchMobile')}" 
+                                       value="${studentFilters.mobile}" 
+                                       oninput="updateStudentFilter('mobile', this.value)" class="column-filter">
+                            </th>
+                            <th>
+                                <button onclick="clearStudentFilters()" class="btn btn-sm btn-secondary" title="${t('clearAllFilters')}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${sortedStudents.map(student => `
+                        ${filteredStudents.map(student => `
                             <tr>
                                 <td><strong>${student.rollNumber || 'N/A'}</strong></td>
-                                <td>${student.name} bin ${student.fatherName}</td>
+                                <td>
+                                    <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'registration')" title="Click to view details">
+                                        ${student.name} বিন ${student.fatherName}
+                                    </span>
+                                </td>
                                 <td><span class="class-badge">${student.class}</span></td>
                                 <td>${student.mobileNumber}</td>
                                 <td class="actions">
-                                    <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="Edit Student">
+                                    <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="deleteStudent('${student.id}')" class="btn btn-sm btn-danger" title="Delete Student">
+                                    <button onclick="deleteStudent('${student.id}')" class="btn btn-sm btn-danger" title="${t('deleteStudent')}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -476,6 +439,7 @@ async function editStudent(studentId) {
     // Populate form with student data
     document.getElementById('studentName').value = student.name || '';
     document.getElementById('fatherName').value = student.fatherName || '';
+    document.getElementById('rollNumber').value = student.rollNumber || '';
     document.getElementById('mobile').value = student.mobileNumber || '';
     document.getElementById('district').value = student.district || '';
     document.getElementById('upazila').value = student.upazila || '';
@@ -492,8 +456,8 @@ async function editStudent(studentId) {
     };
     
     // Update form title and button
-    document.querySelector('#studentRegistrationForm h3').textContent = 'Edit Student';
-    document.querySelector('#studentRegistrationForm .btn-primary').textContent = 'Update Student';
+    document.querySelector('#studentRegistrationForm h3').textContent = t('editStudent');
+    document.querySelector('#studentRegistrationForm .btn-primary').textContent = t('updateStudent');
 }
 
 async function updateStudent(studentId) {
@@ -501,11 +465,25 @@ async function updateStudent(studentId) {
         id: studentId,
         name: document.getElementById('studentName').value.trim(),
         fatherName: document.getElementById('fatherName').value.trim(),
+        rollNumber: document.getElementById('rollNumber').value.trim(),
         mobileNumber: document.getElementById('mobile').value.trim(),
         district: document.getElementById('district').value.trim(),
         upazila: document.getElementById('upazila').value.trim(),
         class: document.getElementById('studentClass').value,
     };
+    
+    // Validation
+    if (!formData.name || !formData.fatherName || !formData.rollNumber || !formData.mobileNumber || 
+        !formData.district || !formData.upazila || !formData.class) {
+        showModal(t('error'), t('fillAllFields'));
+        return;
+    }
+    
+    // Check for duplicate roll number (excluding current student)
+    if (students.some(student => student.rollNumber === formData.rollNumber && student.id !== studentId)) {
+        showModal(t('error'), `Roll number ${formData.rollNumber} already exists. Please choose a different roll number.`);
+        return;
+    }
     
     try {
         const response = await fetch(`/api/students/${studentId}`, {
@@ -542,7 +520,7 @@ async function deleteStudent(studentId) {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    if (confirm(`Are you sure you want to delete ${student.name} bin ${student.fatherName}? This action cannot be undone.`)) {
+    if (confirm(`${t('confirmDeleteStudent')} ${student.name} বিন ${student.fatherName}? ${t('actionCannotBeUndone')}`)) {
         try {
             const response = await fetch(`/api/students/${studentId}`, {
                 method: 'DELETE'
@@ -573,8 +551,8 @@ function resetStudentForm() {
         registerStudent();
     };
     
-    document.querySelector('#studentRegistrationForm h3').textContent = 'Register New Student';
-    document.querySelector('#studentRegistrationForm .btn-primary').textContent = 'Register Student';
+    document.querySelector('#studentRegistrationForm h3').textContent = t('registerNewStudent');
+    document.querySelector('#studentRegistrationForm .btn-primary').textContent = t('registerStudentBtn');
 }
 
 // Class Management Functions
@@ -871,7 +849,7 @@ function updateTodayOverview() {
         absentStudents.forEach(student => {
             const reason = todayAttendance[student.id].reason || t('noReasonProvided');
             const displayRoll = student.rollNumber || 'N/A';
-            html += `<li>Roll: ${displayRoll} - ${student.name} bin ${student.fatherName} - ${reason}</li>`;
+            html += `<li>Roll: ${displayRoll} - ${student.name} বিন ${student.fatherName} - ${reason}</li>`;
         });
         
         html += `
@@ -911,55 +889,35 @@ function loadTodayAttendance() {
 
 function loadAttendanceForDate() {
     const selectedDate = document.getElementById('attendanceDate').value;
-    const selectedClass = document.getElementById('classFilter').value;
+    const attendanceList = document.getElementById('attendanceList');
     
     if (!selectedDate) {
-        document.getElementById('attendanceList').innerHTML = `<p>${t('pleaseSelectDate')}</p>`;
-        updateFilteredStudentCount(0);
+        showModal(t('error'), t('pleaseSelectDate'));
         return;
     }
     
-    // Check if selected date is a holiday
-    if (isHoliday(selectedDate)) {
-        const holidayName = getHolidayName(selectedDate);
-        document.getElementById('attendanceList').innerHTML = `
-            <div class="holiday-notice">
-                <i class="fas fa-calendar-times"></i>
-                <h3>Holiday: ${holidayName}</h3>
-                <p>Attendance is not recorded on holidays. Students are automatically marked as present for holidays.</p>
-            </div>
-        `;
-        updateFilteredStudentCount(0);
-        return;
-    }
-    
-    // Initialize attendance for the selected date if it doesn't exist
+    // Initialize attendance record for the day if it doesn't exist
     if (!attendance[selectedDate]) {
         attendance[selectedDate] = {};
-        students.forEach(student => {
-            attendance[selectedDate][student.id] = {
-                status: 'present', // Default to present instead of unmarked
-                reason: ''
-            };
-        });
-        // Don't auto-save here - wait for user to click Save button
     }
     
-    // Filter students
-    let filteredStudents = students;
-    if (selectedClass) {
-        filteredStudents = students.filter(student => student.class === selectedClass);
-    }
+    let filteredStudents = getFilteredStudents();
+    
+    // Sort students by class and then roll number
+    filteredStudents.sort((a, b) => {
+        const classA = getClassNumber(a.class);
+        const classB = getClassNumber(b.class);
+        if (classA !== classB) return classA - classB;
+        return parseRollNumber(a.rollNumber) - parseRollNumber(b.rollNumber);
+    });
     
     updateFilteredStudentCount(filteredStudents.length);
     
     if (filteredStudents.length === 0) {
-        document.getElementById('attendanceList').innerHTML = `<p>${t('noStudentsFound')}</p>`;
+        attendanceList.innerHTML = `<p>${t('noStudentsFound')}</p>`;
         return;
     }
     
-    // Generate attendance list
-    const attendanceList = document.getElementById('attendanceList');
     attendanceList.innerHTML = filteredStudents.map(student => {
         const studentAttendance = attendance[selectedDate][student.id] || { status: 'present', reason: '' };
         const status = studentAttendance.status;
@@ -974,7 +932,7 @@ function loadAttendanceForDate() {
             <div class="student-row">
                 <div class="student-info-with-toggle">
                     <div class="student-info">
-                        <h4>Roll: ${student.rollNumber || 'N/A'} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name} bin ${student.fatherName}</span></h4>
+                        <h4>Roll: ${student.rollNumber || 'N/A'} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name} বিন ${student.fatherName}</span></h4>
                     </div>
                     <div class="attendance-toggle">
                         <div class="toggle-switch ${toggleClass}" 
@@ -987,7 +945,7 @@ function loadAttendanceForDate() {
                     <div class="absence-reason">
                         <input type="text" 
                                placeholder="${t('reasonForAbsence')}"
-                               value="${studentAttendance.reason}"
+                               value="${studentAttendance.reason || ''}"
                                onchange="updateAbsenceReason('${student.id}', '${selectedDate}', this.value)">
                     </div>
                 ` : ''}
@@ -1351,7 +1309,6 @@ function updateClassWiseStats() {
     const classWiseGrid = document.getElementById('classWiseGrid');
     if (classWiseGrid) {
         classWiseGrid.innerHTML = Object.keys(classSummary)
-            .filter(className => classSummary[className].total > 0)
             .map(className => {
                 const data = classSummary[className];
                 return `
@@ -1376,13 +1333,62 @@ function updateClassWiseStats() {
     }
 }
 
+// Student Filter State
+let studentFilters = {
+    roll: '',
+    name: '',
+    class: '',
+    mobile: ''
+};
+
+// Student Filter Functions
+function applyStudentFilters(students) {
+    if (!studentFilters.roll && !studentFilters.name && !studentFilters.class && !studentFilters.mobile) {
+        return students;
+    }
+    
+    return students.filter(student => {
+        const rollMatch = !studentFilters.roll || (student.rollNumber || '').toLowerCase().includes(studentFilters.roll);
+        const nameMatch = !studentFilters.name || 
+            (student.name + ' বিন ' + student.fatherName).toLowerCase().includes(studentFilters.name);
+        const classMatch = !studentFilters.class || student.class === studentFilters.class;
+        const mobileMatch = !studentFilters.mobile || student.mobileNumber.toLowerCase().includes(studentFilters.mobile);
+        
+        return rollMatch && nameMatch && classMatch && mobileMatch;
+    });
+}
+
+function updateStudentFilter(filterType, value) {
+    if (filterType === 'class') {
+        studentFilters[filterType] = value; // Don't convert class to lowercase
+    } else {
+        studentFilters[filterType] = value.toLowerCase();
+    }
+    displayStudentsList();
+}
+
+function clearStudentFilters() {
+    studentFilters = {
+        roll: '',
+        name: '',
+        class: '',
+        mobile: ''
+    };
+    displayStudentsList();
+}
+
 // Student Detail Functions
-function showStudentDetail(studentId) {
+let studentDetailSource = 'attendance'; // Track where student detail was opened from
+
+function showStudentDetail(studentId, source = 'attendance') {
     const student = students.find(s => s.id === studentId);
     if (!student) {
         showModal(t('error'), t('studentNotFound'));
         return;
     }
+    
+    // Store the source for navigation back
+    studentDetailSource = source;
     
     // Hide all sections and show student detail as separate page
     document.querySelectorAll('.section').forEach(section => {
@@ -1393,6 +1399,16 @@ function showStudentDetail(studentId) {
     // Update page title
     document.getElementById('studentDetailTitle').textContent = `${student.name} - ${t('studentDetails')}`;
     
+    // Update back button text based on source
+    const backButton = document.querySelector('#student-detail .btn-secondary');
+    if (backButton) {
+        if (source === 'registration') {
+            backButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToRegistration')}`;
+        } else {
+            backButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToReports')}`;
+        }
+    }
+    
     // Generate student detail content
     generateStudentDetailContent(student);
     
@@ -1402,15 +1418,37 @@ function showStudentDetail(studentId) {
 
 function backToReports() {
     document.getElementById('student-detail').classList.remove('active');
-    document.getElementById('attendance').classList.add('active');
-    window.location.hash = 'attendance';
+    
+    // Navigate back to the correct section based on where we came from
+    if (studentDetailSource === 'registration') {
+        document.getElementById('registration').classList.add('active');
+        window.location.hash = 'registration';
+    } else {
+        document.getElementById('attendance').classList.add('active');
+        window.location.hash = 'attendance';
+    }
 }
+
+// Global variables for student detail calendar
+let currentStudentDetailMonth = new Date().getMonth();
+let currentStudentDetailYear = new Date().getFullYear();
+let currentStudentData = null;
 
 function generateStudentDetailContent(student) {
     const detailContent = document.getElementById('studentDetailContent');
     
-    // Calculate attendance statistics
-    const attendanceStats = calculateStudentAttendanceStats(student);
+    // Store current student data for calendar navigation
+    currentStudentData = student;
+    
+    // Calculate attendance statistics for last 30 days
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDateStr = today.toISOString().split('T')[0];
+    
+    const attendanceStats = calculateStudentAttendanceStats(student, startDateStr, endDateStr);
     
     detailContent.innerHTML = `
         <div class="student-info-card">
@@ -1418,15 +1456,15 @@ function generateStudentDetailContent(student) {
                 <div class="info-group">
                     <h4>${t('personalInformation')}</h4>
                     <div class="info-item">
-                        <span class="info-label">Full Name:</span>
-                        <span class="info-value">${student.name} bin ${student.fatherName}</span>
+                        <span class="info-label">${t('fullName')}:</span>
+                        <span class="info-value">${student.name} বিন ${student.fatherName}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Roll Number:</span>
+                        <span class="info-label">${t('rollNumber')}:</span>
                         <span class="info-value">${student.rollNumber || 'N/A'}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Class:</span>
+                        <span class="info-label">${t('class')}:</span>
                         <span class="info-value">${student.class}</span>
                     </div>
                 </div>
@@ -1434,15 +1472,15 @@ function generateStudentDetailContent(student) {
                 <div class="info-group">
                     <h4>${t('contactInformation')}</h4>
                     <div class="info-item">
-                        <span class="info-label">Mobile Number:</span>
+                        <span class="info-label">${t('mobileNumber')}:</span>
                         <span class="info-value">${student.mobileNumber}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">District:</span>
+                        <span class="info-label">${t('district')}:</span>
                         <span class="info-value">${student.district}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Sub-district:</span>
+                        <span class="info-label">${t('subDistrict')}:</span>
                         <span class="info-value">${student.upazila}</span>
                     </div>
                 </div>
@@ -1450,99 +1488,130 @@ function generateStudentDetailContent(student) {
                 <div class="info-group">
                     <h4>${t('academicInformation')}</h4>
                     <div class="info-item">
-                        <span class="info-label">Registration Date:</span>
+                        <span class="info-label">${t('registrationDate')}:</span>
                         <span class="info-value">${student.registrationDate}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Roll Number:</span>
+                        <span class="info-label">${t('rollNumber')}:</span>
                         <span class="info-value">${student.rollNumber || 'N/A'}</span>
                     </div>
                 </div>
             </div>
             
             <div class="attendance-history">
-                <h4>${t('attendanceSummary')}</h4>
+                <h4>${t('attendanceSummary')} (Last 30 Days)</h4>
                 <div class="attendance-summary">
                     <div class="summary-item present">
                         <h5>${t('totalPresent')}</h5>
-                        <div class="number">${attendanceStats.totalPresent}</div>
+                        <div class="number">${attendanceStats.present}</div>
                     </div>
                     <div class="summary-item absent">
                         <h5>${t('totalAbsent')}</h5>
-                        <div class="number">${attendanceStats.totalAbsent}</div>
+                        <div class="number">${attendanceStats.absent}</div>
+                    </div>
+                    <div class="summary-item">
+                        <h5>${t('leaveDays')}</h5>
+                        <div class="number">${attendanceStats.leave}</div>
                     </div>
                     <div class="summary-item">
                         <h5>${t('attendanceRate')}</h5>
                         <div class="number">${attendanceStats.attendanceRate}%</div>
                     </div>
-                    <div class="summary-item">
-                        <h5>${t('totalDays')}</h5>
-                        <div class="number">${attendanceStats.totalDays}</div>
-                    </div>
                 </div>
                 
                 <div class="attendance-calendar">
                     <div class="calendar-header">
-                        <h5>${t('recentAttendance')}</h5>
+                        <h5>${t('attendanceCalendar')}</h5>
                     </div>
-                    ${generateAttendanceCalendar(student, attendanceStats.recentAttendance)}
+                    <div class="student-calendar-navigation">
+                        <button onclick="navigateStudentCalendar(-1)" class="nav-btn" title="Previous Month">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="month-year-display">
+                            <select id="studentMonthSelector" onchange="changeStudentCalendarMonth()" class="month-selector">
+                                ${generateMonthOptions()}
+                            </select>
+                            <input type="number" id="studentYearSelector" value="${currentStudentDetailYear}" min="2020" max="2030" 
+                                   onchange="changeStudentCalendarYear()" class="year-selector">
+                </div>
+                        <button onclick="navigateStudentCalendar(1)" class="nav-btn" title="Next Month">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button onclick="goToCurrentMonthStudent()" class="nav-btn today-btn" title="Go to Current Month">
+                            <i class="fas fa-calendar-day"></i>
+                        </button>
+                    </div>
+                    <div id="studentCalendarContainer">
+                        ${generateStudentAttendanceCalendar(student, currentStudentDetailMonth, currentStudentDetailYear)}
+                    </div>
                 </div>
             </div>
         </div>
     `;
 }
 
-function calculateStudentAttendanceStats(student) {
-    let totalPresent = 0;
-    let totalAbsent = 0;
-    const recentAttendance = {};
-    
-    // Get last 30 days
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        // Skip holidays - they don't count toward attendance calculations
+function calculateStudentAttendanceStats(student, startDate, endDate) {
+    let present = 0;
+    let absent = 0;
+    let leave = 0;
+    let totalSchoolDays = 0;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+
         if (isHoliday(dateStr)) {
-            recentAttendance[dateStr] = {
-                status: 'holiday',
-                reason: getHolidayName(dateStr)
-            };
             continue;
         }
         
-        if (attendance[dateStr] && attendance[dateStr][student.id]) {
-            const status = attendance[dateStr][student.id].status;
-            recentAttendance[dateStr] = {
-                status: status,
-                reason: attendance[dateStr][student.id].reason || ''
-            };
-            
-            if (status === 'present') {
-                totalPresent++;
-            } else {
-                totalAbsent++;
+        totalSchoolDays++;
+
+        const record = attendance[dateStr] ? attendance[dateStr][student.id] : null;
+
+        if (record) {
+            if (record.status === 'present') {
+                present++;
+            } else if (record.status === 'absent') {
+                absent++;
+            } else if (record.status === 'leave') {
+                leave++;
             }
+            } else {
+            absent++; // Assume absent if no record found for a school day
         }
     }
     
-    const totalDays = totalPresent + totalAbsent;
-    const attendanceRate = totalDays > 0 ? Math.round((totalPresent / totalDays) * 100) : 100;
+    const attendanceRate = totalSchoolDays > 0 ? Math.round((present / (totalSchoolDays - leave)) * 100) : 0;
     
     return {
-        totalPresent,
-        totalAbsent,
-        totalDays,
-        attendanceRate,
-        recentAttendance
+        present,
+        absent,
+        leave,
+        attendanceRate: isNaN(attendanceRate) ? 0 : attendanceRate
     };
 }
 
-function generateAttendanceCalendar(student, recentAttendance) {
-    const today = new Date();
+function generateMonthOptions() {
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return monthNames.map((month, index) => 
+        `<option value="${index}" ${index === currentStudentDetailMonth ? 'selected' : ''}>${month}</option>`
+    ).join('');
+}
+
+function generateStudentAttendanceCalendar(student, month, year) {
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Get first day of the month and days in month
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
     
     let calendarHTML = '<div class="calendar-grid">';
     
@@ -1551,34 +1620,99 @@ function generateAttendanceCalendar(student, recentAttendance) {
         calendarHTML += `<div class="calendar-day header">${day}</div>`;
     });
     
-    // Add last 30 days
-    for (let i = 29; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        calendarHTML += '<div class="calendar-day empty"></div>';
+    }
+    
+    // Generate calendar days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
         const dateStr = date.toISOString().split('T')[0];
-        const dayOfMonth = date.getDate();
+        const today = new Date();
         
         let className = 'calendar-day no-data';
         let title = `${dateStr} - No data`;
         
-        if (recentAttendance[dateStr]) {
-            if (recentAttendance[dateStr].status === 'holiday') {
+        // Check if it's a future date
+        if (date > today) {
+            className = 'calendar-day future-day';
+            title = `${dateStr} - Future date`;
+        } else if (isHoliday(dateStr)) {
                 className = 'calendar-day holiday';
-                title = `${dateStr} - Holiday: ${recentAttendance[dateStr].reason}`;
-            } else {
-                className = `calendar-day ${recentAttendance[dateStr].status}`;
-                title = `${dateStr} - ${recentAttendance[dateStr].status}`;
-                if (recentAttendance[dateStr].reason) {
-                    title += ` (${recentAttendance[dateStr].reason})`;
-                }
+            title = `${dateStr} - Holiday: ${getHolidayName(dateStr)}`;
+        } else if (attendance[dateStr] && attendance[dateStr][student.id]) {
+            const record = attendance[dateStr][student.id];
+            className = `calendar-day ${record.status}`;
+            title = `${dateStr} - ${record.status}`;
+            if (record.reason) {
+                title += ` (${record.reason})`;
             }
         }
         
-        calendarHTML += `<div class="${className}" title="${title}">${dayOfMonth}</div>`;
+        calendarHTML += `<div class="${className}" title="${title}">${day}</div>`;
     }
     
     calendarHTML += '</div>';
     return calendarHTML;
+}
+
+// Student calendar navigation functions
+function navigateStudentCalendar(direction) {
+    currentStudentDetailMonth += direction;
+    
+    if (currentStudentDetailMonth > 11) {
+        currentStudentDetailMonth = 0;
+        currentStudentDetailYear++;
+    } else if (currentStudentDetailMonth < 0) {
+        currentStudentDetailMonth = 11;
+        currentStudentDetailYear--;
+    }
+    
+    refreshStudentCalendar();
+}
+
+function changeStudentCalendarMonth() {
+    const monthSelector = document.getElementById('studentMonthSelector');
+    if (monthSelector) {
+        currentStudentDetailMonth = parseInt(monthSelector.value);
+        refreshStudentCalendar();
+    }
+}
+
+function changeStudentCalendarYear() {
+    const yearSelector = document.getElementById('studentYearSelector');
+    if (yearSelector) {
+        currentStudentDetailYear = parseInt(yearSelector.value);
+        refreshStudentCalendar();
+    }
+}
+
+function refreshStudentCalendar() {
+    if (currentStudentData) {
+        const calendarContainer = document.getElementById('studentCalendarContainer');
+        const monthSelector = document.getElementById('studentMonthSelector');
+        const yearSelector = document.getElementById('studentYearSelector');
+        
+        if (calendarContainer) {
+            calendarContainer.innerHTML = generateStudentAttendanceCalendar(currentStudentData, currentStudentDetailMonth, currentStudentDetailYear);
+        }
+        
+        if (monthSelector) {
+            monthSelector.innerHTML = generateMonthOptions();
+        }
+        
+        if (yearSelector) {
+            yearSelector.value = currentStudentDetailYear;
+        }
+    }
+}
+
+function goToCurrentMonthStudent() {
+    const today = new Date();
+    currentStudentDetailMonth = today.getMonth();
+    currentStudentDetailYear = today.getFullYear();
+    refreshStudentCalendar();
 }
 
 // Report Functions
@@ -1799,75 +1933,83 @@ function generateCalendarDays(year, month, startDayOfWeek, daysInMonth) {
 }
 
 function generateAttendanceSummary(year, month) {
-    const today = new Date();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // Ensure global variables are initialized
-    if (!window.attendance) {
-        window.attendance = {};
-    }
-    if (!window.holidays) {
-        window.holidays = [];
-    }
-    
-    let totalSchoolDays = 0;
-    let attendanceTakenDays = 0;
-    let missedDays = 0;
-    let holidayDays = 0;
-    // let weekendDays = 0; // Removed - weekends now treated as school days
-    
-    // Count each type of day in the month
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(year, month, day);
-        const dateStr = date.toISOString().split('T')[0];
-        const dayOfWeek = date.getDay();
-        
-        // Skip future dates
-        if (date > today) continue;
-        
-        // Check day type
-        if (isHoliday(dateStr)) {
-            holidayDays++;
+    const summaryDiv = document.getElementById('attendance-summary');
+    if (!summaryDiv) return;
+
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
+
+    let totalTaken = 0;
+    let totalMissed = 0;
+    let holidaysCount = 0;
+    const missedDates = [];
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateString = d.toISOString().split('T')[0];
+        const dayOfWeek = d.getDay();
+        const isWeekend = dayOfWeek === 5; // Assuming Friday is the weekend
+
+        if (isHoliday(dateString)) {
+            holidaysCount++;
+        } else if (!isWeekend) {
+            if (attendance[dateString] && Object.keys(attendance[dateString]).length > 0) {
+                totalTaken++;
         } else {
-            // This is a school day (now includes former weekend days)
-            totalSchoolDays++;
-            
-            if (attendance[dateStr] && Object.keys(attendance[dateStr]).length > 0) {
-                attendanceTakenDays++;
-            } else {
-                missedDays++;
+                if (d < new Date()) { // Only count missed days in the past
+                    totalMissed++;
+                    missedDates.push(new Date(d));
+                }
             }
         }
     }
+
+    const totalDays = totalTaken + totalMissed;
+    const takenPercentage = totalDays > 0 ? ((totalTaken / totalDays) * 100).toFixed(0) : 0;
+    const missedPercentage = totalDays > 0 ? ((totalMissed / totalDays) * 100).toFixed(0) : 0;
     
-    const completionPercentage = totalSchoolDays > 0 ? Math.round((attendanceTakenDays / totalSchoolDays) * 100) : 0;
-    
-    return `
-        <div class="summary-stats">
-            <h4>📊 Monthly Attendance Summary</h4>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">${totalSchoolDays}</div>
-                    <div class="stat-label">Total School Days</div>
-                </div>
-                <div class="stat-card success">
-                    <div class="stat-number">${attendanceTakenDays}</div>
-                    <div class="stat-label">Attendance Taken</div>
-                </div>
-                <div class="stat-card danger">
-                    <div class="stat-number">${missedDays}</div>
-                    <div class="stat-label">Missed Days</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${completionPercentage}%</div>
-                    <div class="stat-label">Completion Rate</div>
-                </div>
-            </div>
-            <div class="additional-stats">
-                <p><strong>Holidays this month:</strong> ${holidayDays} days</p>
-            </div>
+    const monthName = startDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    summaryDiv.innerHTML = `
+        <div class="summary-header">
+            <h4>Attendance Summary for ${monthName}</h4>
         </div>
+        <div class="summary-stats">
+            <div class="stat-item">
+                <span class="stat-value">${totalTaken}</span>
+                <span class="stat-label">Days Taken</span>
+                </div>
+            <div class="stat-item">
+                <span class="stat-value">${totalMissed}</span>
+                <span class="stat-label">Days Missed</span>
+                </div>
+            <div class="stat-item">
+                <span class="stat-value">${holidaysCount}</span>
+                <span class="stat-label">Holidays</span>
+                </div>
+                </div>
+        <div class="summary-chart">
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${takenPercentage}%; background-color: #28a745;" title="Taken: ${takenPercentage}%"></div>
+                <div class="progress-bar" style="width: ${missedPercentage}%; background-color: #dc3545;" title="Missed: ${missedPercentage}%"></div>
+            </div>
+            </div>
+        ${missedDates.length > 0 ? `
+            <div class="missed-dates">
+                <h5><i class="fas fa-exclamation-triangle"></i> Missed Attendance Dates:</h5>
+                <ul>
+                    ${missedDates.map(date => {
+                        const dateString = date.toISOString().split('T')[0];
+                        const hijriDate = getHijriDate(dateString, hijriAdjustment);
+                        return `<li>${date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })} 
+                                    <span class="hijri-date-small">${hijriDate.day} ${hijriDate.monthName}, ${hijriDate.year}</span></li>`;
+                    }).join('')}
+                </ul>
+        </div>
+        ` : `
+            <div class="no-missed-dates">
+                <p><i class="fas fa-check-circle"></i> Great job! No missed attendance this month.</p>
+            </div>
+        `}
     `;
 }
 
@@ -1927,301 +2069,97 @@ function showAttendanceCalendar() {
 }
 
 function generateReport() {
+    console.log("Generating report...");
     const startDate = document.getElementById('reportStartDate').value;
     const endDate = document.getElementById('reportEndDate').value;
+    const reportResults = document.getElementById('reportResults');
+    const reportClassElement = document.getElementById('reportClass');
+    const selectedClass = reportClassElement ? reportClassElement.value : '';
+    
+    console.log(`Date Range: ${startDate} to ${endDate}, Class: ${selectedClass || 'All'}`);
     
     if (!startDate || !endDate) {
-        showModal(t('error'), t('selectBothDates'));
+        showModal(t('error'), 'Please select both a start and end date.');
         return;
     }
     
-    if (new Date(startDate) > new Date(endDate)) {
-        showModal(t('error'), t('startDateAfterEnd'));
-        return;
-    }
+    reportResults.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Generating report...</p>';
     
-    if (students.length === 0) {
-        document.getElementById('reportResults').innerHTML = `<p>${t('noStudentsFound')}</p>`;
-        return;
-    }
-    
-    // Generate date range
-    const dateRange = getDateRange(startDate, endDate);
-    
-    // Check if attendance has been taken for any date in the range
-    const nonHolidayDates = dateRange.filter(date => !isHoliday(date));
-    const hasAttendanceData = nonHolidayDates.some(date => attendance[date] && Object.keys(attendance[date]).length > 0);
-    
-    if (!hasAttendanceData) {
-        // Show message if no attendance data exists for the selected period
-        document.getElementById('reportResults').innerHTML = `
-            <div class="holiday-notice">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Attendance not taken for this date</h3>
-                <p>No attendance records found for the selected date range. Please take attendance first before generating reports.</p>
-                <p><strong>Selected period:</strong> ${startDate} to ${endDate}</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Check if the entire date range consists only of holidays
-    const holidaysInRange = dateRange.filter(date => isHoliday(date));
-    const nonHolidaysInRange = dateRange.filter(date => !isHoliday(date));
-    
-    if (nonHolidaysInRange.length === 0) {
-        // Show holiday message if all dates in range are holidays
-        document.getElementById('reportResults').innerHTML = `
-            <div class="holiday-notice">
-                <i class="fas fa-calendar-times"></i>
-                <h3>Holiday Period Selected</h3>
-                <p>The selected date range contains only holidays. No attendance data is available for holidays.</p>
-                <p><strong>Holidays in range:</strong> ${holidaysInRange.map(date => {
-                    const holidayName = getHolidayName(date);
-                    return `${formatDate(date)} (${holidayName})`;
-                }).join(', ')}</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Calculate attendance for each student
-    currentReportData = students.map(student => {
-        let presentDays = 0;
-        let absentDays = 0;
-        
-        dateRange.forEach(date => {
-            // Skip holidays in report calculations
-            if (isHoliday(date)) {
+    // Use a short timeout to allow the UI to update before processing
+    setTimeout(() => {
+        try {
+            console.log("Filtering students...");
+            let filteredStudents = students;
+            if (selectedClass) {
+                filteredStudents = students.filter(student => student.class === selectedClass);
+            }
+            console.log(`${filteredStudents.length} students to process.`);
+            
+            const reportData = filteredStudents.map(student => {
+                const stats = calculateStudentAttendanceStats(student, startDate, endDate);
+        return {
+                    ...student,
+                    presentDays: stats.present,
+                    absentDays: stats.absent,
+                    leaveDays: stats.leave,
+                    attendanceRate: stats.attendanceRate
+                };
+            }).sort((a, b) => {
+                const classA = getClassNumber(a.class);
+                const classB = getClassNumber(b.class);
+                if (classA !== classB) return classA - classB;
+                return parseRollNumber(a.rollNumber) - parseRollNumber(b.rollNumber);
+            });
+            
+            console.log("Report data calculated:", reportData);
+
+            if (reportData.length === 0) {
+                reportResults.innerHTML = '<p>No attendance data found for the selected criteria.</p>';
                 return;
             }
             
-            if (attendance[date] && attendance[date][student.id]) {
-                if (attendance[date][student.id].status === 'present') {
-                    presentDays++;
-                } else {
-                    absentDays++;
-                }
-            } else {
-                // If no attendance record exists, consider as present
-                presentDays++;
-            }
-        });
-        
-        const totalDays = presentDays + absentDays;
-        const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
-        
-        return {
-            id: student.rollNumber || 'N/A',
-            name: student.name,
-            fullName: `Roll: ${student.rollNumber || 'N/A'} - ${student.name} bin ${student.fatherName}`,
-            presentDays,
-            absentDays,
-            attendancePercentage
-        };
-    });
-    
-    // Reset filters and sort direction only when generating new report
-    columnFilters = { fullName: '' }; // Only reset fullName filter
-    sortDirection = {};
-    
-    renderReportTable(startDate, endDate);
-    addHijriToReports();
-}
-
-function renderReportTable(startDate, endDate) {
-    // Apply filters - only filter by student name (fullName column)
-    let filteredData = currentReportData.filter(row => {
-        // Only filter by fullName column
-        if (columnFilters.fullName && columnFilters.fullName.trim() !== '') {
-            const filterValue = columnFilters.fullName.toLowerCase();
-            const cellValue = row.fullName.toString().toLowerCase();
-            return cellValue.includes(filterValue);
-        }
-        return true;
-    });
-    
-    // Generate report HTML with filterable/sortable table
-    const reportResults = document.getElementById('reportResults');
     reportResults.innerHTML = `
-        <h3>${t('attendanceReport')}</h3>
-        <p><strong>${t('period')}:</strong> ${startDate} ${t('to')} ${endDate}</p>
+                <div class="report-header">
+                    <h4>${t('attendanceReport')} (${formatDate(startDate)} ${t('to')} ${formatDate(endDate)})</h4>
+                </div>
         <div class="report-table-container">
-            <table class="report-table sortable-table">
+                    <table class="report-table">
                 <thead>
                     <tr>
-                        <th class="sortable-header" data-column="fullName">
-                            <div class="header-content">
-                                <span>${t('studentNameCol')}</span>
-                                <div class="header-controls">
-                                    <button class="sort-btn" onclick="sortTable('fullName')">
-                                        <i class="fas fa-sort"></i>
-                                    </button>
-                                    <input type="text" 
-                                           id="nameFilter" 
-                                           class="column-filter" 
-                                           placeholder="Filter by name..." 
-                                           onkeyup="filterColumn('fullName', this.value)" 
-                                           onclick="event.stopPropagation();"
-                                           style="width: 150px; padding: 4px; font-size: 12px; border: 1px solid #ccc; background: white; color: black; z-index: 1001; position: relative;"
-                                           >
-                                </div>
-                            </div>
-                        </th>
-                        <th class="sortable-header" data-column="presentDays">
-                            <div class="header-content">
-                                <span>${t('presentDays')}</span>
-                                <div class="header-controls">
-                                    <button class="sort-btn" onclick="sortTable('presentDays')">
-                                        <i class="fas fa-sort"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </th>
-                        <th class="sortable-header" data-column="absentDays">
-                            <div class="header-content">
-                                <span>${t('absentDays')}</span>
-                                <div class="header-controls">
-                                    <button class="sort-btn" onclick="sortTable('absentDays')">
-                                        <i class="fas fa-sort"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </th>
-                        <th class="sortable-header" data-column="attendancePercentage">
-                            <div class="header-content">
-                                <span>${t('attendancePercent')}</span>
-                                <div class="header-controls">
-                                    <button class="sort-btn" onclick="sortTable('attendancePercentage')">
-                                        <i class="fas fa-sort"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </th>
+                                <th>${t('roll')}</th>
+                                <th>${t('name')}</th>
+                                <th>${t('class')}</th>
+                                <th>${t('present')}</th>
+                                <th>${t('absent')}</th>
+                                <th>${t('leaveDays')}</th>
+                                <th>${t('rate')}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${filteredData.map(data => `
+                            ${reportData.map(data => `
                         <tr>
-                            <td>${data.fullName}</td>
+                                    <td>${data.rollNumber}</td>
+                                    <td><span class="clickable-name" onclick="showStudentDetail('${data.id}')">${data.name} বিন ${data.fatherName}</span></td>
+                                    <td>${data.class}</td>
                             <td class="status-present">${data.presentDays}</td>
                             <td class="status-absent">${data.absentDays}</td>
-                            <td>${data.attendancePercentage}%</td>
+                                    <td>${data.leaveDays}</td>
+                                    <td><strong>${data.attendanceRate}%</strong></td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
     `;
-}
-
-function sortTable(column) {
-    // Toggle sort direction
-    if (sortDirection[column] === 'asc') {
-        sortDirection[column] = 'desc';
-    } else {
-        sortDirection[column] = 'asc';
-    }
-    
-    // Clear other sort directions
-    Object.keys(sortDirection).forEach(key => {
-        if (key !== column) {
-            delete sortDirection[key];
-        }
-    });
-    
-    // Sort the data
-    currentReportData.sort((a, b) => {
-        let aValue = a[column];
-        let bValue = b[column];
-        
-        // Handle numeric values
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-            return sortDirection[column] === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-        
-        // Handle string values
-        aValue = aValue.toString().toLowerCase();
-        bValue = bValue.toString().toLowerCase();
-        
-        if (sortDirection[column] === 'asc') {
-            return aValue.localeCompare(bValue);
-        } else {
-            return bValue.localeCompare(aValue);
-        }
-    });
-    
-    // Update sort icon
-    updateSortIcons(column);
-    
-    // Re-render table
-    const startDate = document.getElementById('reportStartDate').value;
-    const endDate = document.getElementById('reportEndDate').value;
-    renderReportTable(startDate, endDate);
-}
-
-function filterColumn(column, value) {
-    // Only handle fullName column filtering
-    if (column === 'fullName') {
-        // Don't re-render if value hasn't changed
-        if (columnFilters[column] === value) {
-            return;
-        }
-        
-    columnFilters[column] = value;
-        
-        // Store cursor position before re-render
-        const filterInput = document.getElementById('nameFilter');
-        const cursorPosition = filterInput ? filterInput.selectionStart : 0;
-    
-    // Re-render table with filters
-    const startDate = document.getElementById('reportStartDate').value;
-    const endDate = document.getElementById('reportEndDate').value;
-    renderReportTable(startDate, endDate);
-        
-        // Restore focus and cursor position after re-render
-        setTimeout(() => {
-            const newFilterInput = document.getElementById('nameFilter');
-            if (newFilterInput) {
-                newFilterInput.value = value;
-                newFilterInput.focus();
-                // Restore cursor position
-                if (cursorPosition >= 0) {
-                    newFilterInput.setSelectionRange(cursorPosition, cursorPosition);
-                }
+            
+            // Add Hijri date to the report
+            addHijriToReports(startDate, endDate);
+            console.log("Report display updated.");
+        } catch (error) {
+            console.error("Error generating report:", error);
+            reportResults.innerHTML = '<p class="text-danger">An error occurred while generating the report. Please check the console for details.</p>';
             }
         }, 50);
-    }
-}
-
-function updateSortIcons(activeColumn) {
-    // Update all sort icons
-    document.querySelectorAll('.sort-btn i').forEach(icon => {
-        icon.className = 'fas fa-sort';
-    });
-    
-    // Update active column icon
-    const activeHeader = document.querySelector(`[data-column="${activeColumn}"] .sort-btn i`);
-    if (activeHeader) {
-        if (sortDirection[activeColumn] === 'asc') {
-            activeHeader.className = 'fas fa-sort-up';
-        } else {
-            activeHeader.className = 'fas fa-sort-down';
-        }
-    }
-}
-
-function getDateRange(startDate, endDate) {
-    const dates = [];
-    const currentDate = new Date(startDate);
-    const end = new Date(endDate);
-    
-    while (currentDate <= end) {
-        dates.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    return dates;
 }
 
 // Utility Functions
@@ -2372,62 +2310,12 @@ function getHolidayName(date) {
     return holiday ? holiday.name : '';
 }
 
-async function saveDataToDatabase() {
-    try {
-        // Save attendance to JSON server (send entire attendance object)
-        const attendanceResponse = await fetch('/api/attendance', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-            body: JSON.stringify(attendance)
-        });
-        
-        if (!attendanceResponse.ok) {
-            throw new Error(`Attendance save failed: ${attendanceResponse.status}`);
-        }
-        
-        // Save holidays to JSON server (send each holiday individually)  
-        const holidayPromises = holidays.map(holiday => {
-            return fetch('/api/holidays', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    date: holiday.date || holiday.startDate,
-                    name: holiday.name
-                })
-            });
-        });
-        
-        const holidayResponses = await Promise.all(holidayPromises);
-        for (const response of holidayResponses) {
-            if (!response.ok) {
-                console.warn(`Holiday save failed: ${response.status}`);
-                // Don't throw error for holidays, just warn
-            }
-        }
-        
-        console.log('Data saved to JSON server successfully');
-        
-    } catch (error) {
-        console.error('Error saving data to database:', error);
-        // Fallback to localStorage
-        try {
-            localStorage.setItem('madaniMaktabStudents', JSON.stringify(students));
-            localStorage.setItem('madaniMaktabClasses', JSON.stringify(classes));
-            localStorage.setItem('madaniMaktabAttendance', JSON.stringify(attendance));
-            localStorage.setItem('madaniMaktabHolidays', JSON.stringify(holidays));
-            console.log('Data saved to localStorage as fallback');
-        } catch (localError) {
-            showModal('Error', 'Failed to save data. Your browser storage might be full.');
-        }
-    }
-}
+// Database-only approach - no localStorage functions needed
 
 function saveData() {
-    saveDataToDatabase();
+    // Database-only approach - data is automatically saved to database via API calls
+    // No localStorage saving needed
+    console.log('Data saved to database via API calls');
 }
 
 function showModal(title, message) {
@@ -2445,6 +2333,30 @@ function showModal(title, message) {
 
 function closeModal() {
     document.getElementById('modal').style.display = 'none';
+}
+
+function showEncodingErrorModal(message) {
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modalBody');
+    
+    modalBody.innerHTML = `
+        <h3 style="color: #e74c3c;">🔤 Bengali Text Encoding Error</h3>
+        <div style="
+            background: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            border-radius: 8px; 
+            padding: 15px; 
+            margin: 15px 0;
+            white-space: pre-line;
+            line-height: 1.6;
+            text-align: left;
+            font-size: 14px;
+            color: #856404;
+        ">${message}</div>
+        <button onclick="closeModal()" class="btn btn-primary">${t('ok')}</button>
+    `;
+    
+    modal.style.display = 'block';
 }
 
 // Hijri Date Functions
@@ -2702,5 +2614,500 @@ window.onclick = function(event) {
     const modal = document.getElementById('modal');
     if (event.target === modal) {
         modal.style.display = 'none';
+    }
+}
+
+// Bulk Import Functions
+function showBulkImport() {
+    document.getElementById('studentsListContainer').style.display = 'none';
+    document.getElementById('studentRegistrationForm').style.display = 'none';
+    document.getElementById('bulkImportSection').style.display = 'block';
+    
+    // Setup file input listener
+    const fileInput = document.getElementById('excelFile');
+    fileInput.addEventListener('change', handleFileSelect);
+}
+
+function hideBulkImport() {
+    document.getElementById('studentsListContainer').style.display = 'block';
+    document.getElementById('bulkImportSection').style.display = 'none';
+    
+    // Reset file input
+    document.getElementById('excelFile').value = '';
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('importResults').style.display = 'none';
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    if (file) {
+        // Check file type
+        const fileType = file.name.split('.').pop().toLowerCase();
+        if (fileType === 'csv') {
+            uploadBtn.disabled = false;
+            updateUploadZone(file.name, file.size);
+        } else {
+            showModal('Error', 'Please select a valid CSV file. Save your Excel file as CSV first.');
+            uploadBtn.disabled = true;
+        }
+    } else {
+        uploadBtn.disabled = true;
+        resetUploadZone();
+    }
+}
+
+function updateUploadZone(fileName, fileSize) {
+    const dropZone = document.querySelector('.upload-drop-zone');
+    const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+    
+    dropZone.innerHTML = `
+        <i class="fas fa-file-excel" style="color: #27ae60;"></i>
+        <p><strong>${fileName}</strong></p>
+        <p class="file-types">File size: ${fileSizeMB} MB</p>
+        <p style="color: #27ae60; font-size: 0.9em;">✅ Ready to upload</p>
+    `;
+}
+
+function resetUploadZone() {
+    const dropZone = document.querySelector('.upload-drop-zone');
+    dropZone.innerHTML = `
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>Click to select CSV file</p>
+        <p class="file-types">Supports .csv files (Excel saved as CSV)</p>
+    `;
+}
+
+async function processExcelFile() {
+    const fileInput = document.getElementById('excelFile');
+    const file = fileInput.files[0];
+    
+            if (!file) {
+        showModal('Error', 'Please select a CSV file first');
+        return;
+    }
+    
+    // Show progress
+    showImportProgress();
+    
+    try {
+        // Read Excel file
+        const studentsData = await readExcelFile(file);
+        
+        if (studentsData.length === 0) {
+            showModal('Error', 'No student data found in the CSV file. Please check the format.');
+            hideImportProgress();
+            return;
+        }
+        
+        // Validate and import students
+        await importStudentsBatch(studentsData);
+        
+    } catch (error) {
+        console.error('Import error:', error);
+        hideImportProgress();
+        
+        // Show better error message for encoding issues
+        if (error.message.includes('এনকোডিং') || error.message.includes('encoding')) {
+            showEncodingErrorModal(error.message);
+        } else {
+            showModal('Import Error', error.message);
+        }
+    }
+}
+
+function showImportProgress() {
+    const resultsDiv = document.getElementById('importResults');
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = `
+        <div class="import-progress">
+            <h4>📤 Processing CSV File...</h4>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <p id="progressText">Preparing to read file...</p>
+        </div>
+    `;
+}
+
+function updateProgress(percentage, text) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressFill) progressFill.style.width = percentage + '%';
+    if (progressText) progressText.textContent = text;
+}
+
+function hideImportProgress() {
+    const progressDiv = document.querySelector('.import-progress');
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
+}
+
+async function readExcelFile(file) {
+    updateProgress(10, 'Reading CSV file...');
+    
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                updateProgress(30, 'Parsing CSV data...');
+                
+                const text = e.target.result;
+                
+                // Check for potential encoding issues with Bengali/Unicode text
+                if (text.includes('Ã') || text.includes('â‚¬') || text.includes('ï¿½') || 
+                    text.includes('�') || text.includes('Â') || text.includes('à¦') || text.includes('à§')) {
+                    reject(new Error('❌ ফাইলে এনকোডিং সমস্যা পাওয়া গেছে!\n\n' +
+                        '🔧 সমাধান:\n' +
+                        '1️⃣ Excel এ: File → Save As → "CSV UTF-8 (Comma delimited)" নির্বাচন করুন\n' +
+                        '2️⃣ Google Sheets এ: File → Download → CSV ব্যবহার করুন\n' +
+                        '3️⃣ সাধারণ CSV ফরম্যাট বাংলা টেক্সট সঠিকভাবে সংরক্ষণ করে না।\n\n' +
+                        '💡 নিশ্চিত করুন যে আপনার ফাইলটি UTF-8 এনকোডিং এ সেভ করা হয়েছে।'));
+                    return;
+                }
+                
+                const lines = text.split('\n');
+                const students = [];
+                
+                if (lines.length < 2) {
+                    reject(new Error('File appears to be empty or invalid format'));
+                    return;
+                }
+                
+                // Parse header row
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+                const requiredHeaders = ['name', 'fathername', 'mobilenumber', 'district', 'upazila', 'class'];
+                
+                // Check if all required headers are present
+                const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+                if (missingHeaders.length > 0) {
+                    reject(new Error(`Missing required columns: ${missingHeaders.join(', ')}`));
+                    return;
+                }
+                
+                // Parse data rows
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line === '') continue;
+                    
+                    const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                    
+                    if (values.length >= headers.length) {
+                        const student = {};
+                        headers.forEach((header, index) => {
+                            student[header] = values[index] || '';
+                        });
+                        
+                        // Validate required fields
+                        if (student.name && student.fathername && student.rollnumber && student.mobilenumber && 
+                            student.district && student.upazila && student.class) {
+                            students.push(student);
+                        }
+                    }
+                }
+                
+                updateProgress(50, `Found ${students.length} students in file`);
+                resolve(students);
+                
+            } catch (error) {
+                // Check if it's an encoding-related error
+                if (error.message.includes('encoding') || error.message.includes('এনকোডিং')) {
+                    reject(error);
+                } else {
+                    reject(new Error('CSV ফাইল পড়তে ত্রুটি: ' + error.message + 
+                        '\n\n💡 নিশ্চিত করুন যে:\n' +
+                        '- ফাইলটি CSV UTF-8 ফরম্যাটে সেভ করা হয়েছে\n' +
+                        '- সকল কলাম সঠিকভাবে আছে (name, fatherName, mobileNumber, district, upazila, class)'));
+                }
+            }
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Failed to read file'));
+        };
+        
+        // Read as text for CSV with UTF-8 encoding for Bengali/Unicode support
+        reader.readAsText(file, 'UTF-8');
+    });
+}
+
+async function importStudentsBatch(studentsData) {
+    const total = studentsData.length;
+    let successful = 0;
+    let failed = 0;
+    let updated = 0;
+    let duplicateRolls = 0;
+    const errors = [];
+    
+    updateProgress(60, `Importing ${total} students...`);
+    
+    for (let i = 0; i < studentsData.length; i++) {
+        const studentData = studentsData[i];
+        const progress = 60 + Math.round((i / total) * 30);
+        
+        updateProgress(progress, `Processing student ${i + 1} of ${total}: ${studentData.name}`);
+        
+        try {
+            // Generate ID if not provided
+            const studentId = studentData.id || `ST${Date.now().toString().slice(-6)}_${i}`;
+            
+            // Check if student with this ID already exists
+            const existingStudent = students.find(s => s.id === studentId);
+            const isUpdate = !!existingStudent;
+            
+            // Check for duplicate roll number (only for new students or different students)
+            const rollNumberConflict = students.find(s => 
+                s.rollNumber === studentData.rollnumber && s.id !== studentId
+            );
+            
+            if (rollNumberConflict) {
+                duplicateRolls++;
+                errors.push(`Row ${i + 2}: Roll number ${studentData.rollnumber} already exists for another student (${rollNumberConflict.name})`);
+                continue;
+            }
+            
+            // Prepare student data
+            const formData = {
+                id: studentId,
+                name: studentData.name,
+                fatherName: studentData.fathername,
+                rollNumber: studentData.rollnumber,
+                mobileNumber: studentData.mobilenumber,
+                district: studentData.district,
+                upazila: studentData.upazila,
+                class: studentData.class,
+                registrationDate: studentData.registrationdate || new Date().toISOString().split('T')[0]
+            };
+            
+            let response;
+            if (isUpdate) {
+                // Update existing student
+                response = await fetch(`/api/students/${studentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                // Add new student
+                response = await fetch('/api/students', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            }
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (isUpdate) {
+                    // Update existing student in local array
+                    const index = students.findIndex(s => s.id === studentId);
+                    if (index !== -1) {
+                        students[index] = result.student;
+                    }
+                    updated++;
+                } else {
+                    // Add new student to local array
+                students.push(result.student);
+                successful++;
+                }
+            } else {
+                const error = await response.json();
+                failed++;
+                errors.push(`Row ${i + 2}: ${error.error || (isUpdate ? 'Update failed' : 'Registration failed')} (${studentData.name})`);
+            }
+            
+        } catch (error) {
+            failed++;
+            errors.push(`Row ${i + 2}: Network error - ${error.message} (${studentData.name})`);
+        }
+        
+        // Small delay to prevent overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    updateProgress(100, 'Import completed!');
+    
+    // Show results
+    showImportResults(total, successful, failed, updated, duplicateRolls, errors);
+    
+    // Refresh the student list
+    displayStudentsList();
+    updateDashboard();
+}
+
+function showImportResults(total, successful, failed, updated, duplicateRolls, errors) {
+    const resultsDiv = document.getElementById('importResults');
+    
+    resultsDiv.innerHTML = `
+        <div class="import-summary">
+            <div class="summary-card success">
+                <h4>${successful}</h4>
+                <p>New Students Added</p>
+            </div>
+            <div class="summary-card info">
+                <h4>${updated}</h4>
+                <p>Students Updated</p>
+            </div>
+            <div class="summary-card error">
+                <h4>${failed}</h4>
+                <p>Failed to Process</p>
+            </div>
+            <div class="summary-card warning">
+                <h4>${duplicateRolls}</h4>
+                <p>Duplicate Roll Numbers</p>
+            </div>
+            <div class="summary-card info">
+                <h4>${total}</h4>
+                <p>Total Records Processed</p>
+            </div>
+        </div>
+        
+        ${(successful > 0 || updated > 0) ? `
+            <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h5 style="color: #155724; margin: 0 0 5px 0;">✅ Import Successful!</h5>
+                <p style="color: #155724; margin: 0;">
+                    ${successful > 0 ? `Added ${successful} new students. ` : ''}
+                    ${updated > 0 ? `Updated ${updated} existing students. ` : ''}
+                    All changes are now available in your student list.
+                </p>
+            </div>
+        ` : ''}
+        
+        ${errors.length > 0 ? `
+            <div class="error-list">
+                <h5>❌ Import Errors (${errors.length}):</h5>
+                <ul>
+                    ${errors.slice(0, 20).map(error => `<li>${error}</li>`).join('')}
+                    ${errors.length > 20 ? `<li><em>... and ${errors.length - 20} more errors</em></li>` : ''}
+                </ul>
+            </div>
+        ` : ''}
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <button onclick="hideBulkImport()" class="btn btn-primary">
+                <i class="fas fa-list"></i> View Student List
+            </button>
+            <button onclick="resetBulkImport()" class="btn btn-secondary">
+                <i class="fas fa-upload"></i> Import Another File
+            </button>
+        </div>
+    `;
+}
+
+function resetBulkImport() {
+    document.getElementById('excelFile').value = '';
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('importResults').style.display = 'none';
+    resetUploadZone();
+}
+
+function downloadAllStudentsCSV() {
+    // Prepare CSV data with all existing students
+    const csvData = [
+        ['id', 'name', 'fatherName', 'rollNumber', 'mobileNumber', 'district', 'upazila', 'class', 'registrationDate']
+    ];
+    
+    // Add all existing students to CSV data
+    students.forEach(student => {
+        csvData.push([
+            student.id || '',
+            student.name || '',
+            student.fatherName || '',
+            student.rollNumber || '',
+            student.mobileNumber || '',
+            student.district || '',
+            student.upazila || '',
+            student.class || '',
+            student.registrationDate || ''
+        ]);
+    });
+    
+    // If no students exist, add a sample row to show format
+    if (students.length === 0) {
+        csvData.push([
+            'ST001',
+            'মোহাম্মদ আহমেদ',
+            'মোহাম্মদ রহিম',
+            '501',
+            '01712345678',
+            'ঢাকা',
+            'ধামরাই',
+            'পঞ্চম শ্রেণি',
+            '2025-01-01'
+        ]);
+    }
+    
+    // Convert to CSV format with UTF-8 BOM for Excel compatibility
+    const csvContent = '\uFEFF' + csvData.map(row => 
+        row.map(field => `"${field}"`).join(',')
+    ).join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        const fileName = students.length > 0 ? 
+            `madani_maktab_all_students_${new Date().toISOString().split('T')[0]}.csv` : 
+            'madani_maktab_sample_template.csv';
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        const message = students.length > 0 ? 
+            `সফলভাবে ${students.length}টি ছাত্রের তথ্য CSV ফাইলে ডাউনলোড হয়েছে! আপনি এই ফাইলটি সম্পাদনা করে আবার আপলোড করতে পারেন।` :
+            'নমুনা CSV টেমপ্লেট ডাউনলোড হয়েছে! এই ফাইলটি খুলে আপনার ছাত্রদের তথ্য দিয়ে পূরণ করুন।';
+        
+        showModal('CSV Downloaded', message);
+    }
+}
+
+function updateRegistrationTexts() {
+    document.querySelector('#registration h2').textContent = t('studentRegistration');
+    
+    const labels = document.querySelectorAll('#studentForm label');
+    const labelMap = {
+        'studentName': 'studentName',
+        'fatherName': 'fatherName',
+        'rollNumber': 'rollNumber',
+        'studentClass': 'class',
+        'district': 'district',
+        'upazila': 'subDistrict',
+        'mobile': 'mobileNumber'
+    };
+    
+    labels.forEach(label => {
+        const key = label.getAttribute('for');
+        if (labelMap[key]) {
+            label.textContent = t(labelMap[key]) + ' *';
+        }
+    });
+    
+    const submitBtn = document.querySelector('#studentForm button[type="submit"]');
+    if (submitBtn) {
+        // Clear existing content and append new content
+        submitBtn.innerHTML = ''; 
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-plus';
+        submitBtn.appendChild(icon);
+        submitBtn.appendChild(document.createTextNode(` ${t('registerStudentBtn')}`));
+    }
+    
+    const selectOption = document.querySelector('#studentClass option[value=""]');
+    if (selectOption) {
+        selectOption.textContent = t('selectClass');
     }
 }

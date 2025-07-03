@@ -30,6 +30,7 @@ const translations = {
         studentRegistration: "Student Registration",
         studentName: "Student Name",
         fatherName: "Father's Name",
+        rollNumber: "Roll Number",
         address: "Address",
         district: "District",
         subDistrict: "Sub-district (Upazila)",
@@ -107,7 +108,7 @@ const translations = {
         error: "Error",
         fillAllFields: "Please fill in all required fields.",
         duplicateId: "A student with this ID number already exists.",
-        duplicateMobile: "A student with this mobile number already exists.",
+        duplicateRollNumber: "A student with this roll number already exists.",
         studentRegistered: "has been registered successfully.",
         attendanceSaved: "Attendance has been saved successfully.",
         
@@ -139,7 +140,6 @@ const translations = {
         holidayEndDate: "To Date",
         holidayName: "Holiday Name",
         studentManagement: "Student Management",
-        addSampleStudents: "Add Sample Students (Classes 4-5)",
         
         // Dashboard Labels
         totalStudentsLabel: "Total Students",
@@ -152,17 +152,44 @@ const translations = {
         attendanceSummary: "Attendance Summary",
         totalPresent: "Total Present",
         totalAbsent: "Total Absent",
+        attendanceRate: "Attendance Rate",
         totalDays: "Total Days",
         recentAttendance: "Recent Attendance (Last 30 Days)",
+        attendanceCalendar: "Attendance Calendar",
         registrationDate: "Registration Date",
         studentNotFound: "Student not found",
+        attendanceLabel: "Attendance",
+        backToRegistration: "Back to Registration",
         
-        // Class-wise Dashboard
-        classWiseInformation: "Class-wise Information",
-        totalStudentsLabel: "Total Students",
-        presentLabel: "Present",
-        absentLabel: "Absent",
-        attendanceLabel: "Attendance"
+        // Student List and Management
+        rollNo: "Roll No.",
+        fullName: "Full Name",
+        actions: "Actions",
+        allRegisteredStudents: "All Registered Students",
+        registerNewStudent: "Register New Student",
+        bulkImport: "Bulk Import",
+        editStudent: "Edit Student",
+        updateStudent: "Update Student",
+        deleteStudent: "Delete Student",
+        noStudentsRegisteredYet: "No students registered yet. Click \"Register New Student\" to add students.",
+        backToList: "Back to List",
+        leaveDays: "Leave Days",
+        
+        // Report Table Headers
+        roll: "Roll",
+        name: "Name",
+        rate: "Rate",
+        
+        // Confirmation Messages
+        confirmDeleteStudent: "Are you sure you want to delete",
+        actionCannotBeUndone: "This action cannot be undone.",
+        clearAllFilters: "Clear all filters",
+        searchRoll: "Search roll...",
+        searchName: "Search name...",
+        searchMobile: "Search mobile...",
+        
+        // Mobile Table Headers (for responsive)
+        mobile: "Mobile"
     },
     
     bn: {
@@ -195,6 +222,7 @@ const translations = {
         studentRegistration: "ছাত্র নিবন্ধন",
         studentName: "ছাত্রের নাম",
         fatherName: "পিতার নাম",
+        rollNumber: "রোল নম্বর",
         address: "ঠিকানা",
         district: "জেলা",
         subDistrict: "উপজেলা",
@@ -268,13 +296,12 @@ const translations = {
         holidayEndDate: "শেষের তারিখ",
         holidayName: "ছুটির নাম",
         studentManagement: "ছাত্র ব্যবস্থাপনা",
-        addSampleStudents: "নমুনা ছাত্র যোগ করুন (ক্লাস ৪-৫)",
         
         // Dashboard Labels
         totalStudentsLabel: "মোট ছাত্র",
         presentLabel: "উপস্থিত",
         absentLabel: "অনুপস্থিত",
-        classWiseInformation: "ক্লাসভিত্তিক তথ্য",
+        classWiseInformation: "শ্রেণীভিত্তিক তথ্য",
         personalInformation: "ব্যক্তিগত তথ্য",
         contactInformation: "যোগাযোগের তথ্য",
         academicInformation: "একাডেমিক তথ্য",
@@ -284,61 +311,43 @@ const translations = {
         attendanceRate: "উপস্থিতির হার",
         totalDays: "মোট দিন",
         recentAttendance: "সাম্প্রতিক উপস্থিতি (গত ৩০ দিন)",
+        attendanceCalendar: "উপস্থিতি ক্যালেন্ডার",
         studentDetails: "ছাত্রের বিবরণ",
         backToReports: "উপস্থিতিতে ফিরে যান",
-        
-        // Common buttons and actions
-        ok: "ঠিক আছে",
-        save: "সংরক্ষণ",
-        cancel: "বাতিল",
-        edit: "সম্পাদনা",
-        add: "যোগ করুন",
-        
-        // Messages
-        success: "সফল",
-        error: "ত্রুটি",
-        fillAllFields: "অনুগ্রহ করে সব প্রয়োজনীয় তথ্য পূরণ করুন।",
-        duplicateId: "এই পরিচয় নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
-        duplicateMobile: "এই মোবাইল নম্বর সহ একজন ছাত্র ইতিমধ্যে বিদ্যমান।",
-        studentRegistered: "সফলভাবে নিবন্ধিত হয়েছে।",
-        attendanceSaved: "উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে।",
-        
-        // Bulk Actions
-        markAllPresent: "সবাইকে উপস্থিত চিহ্নিত করুন",
-        markAllAbsent: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
-        copyPreviousDay: "পূর্ববর্তী দিন কপি করুন",
-        studentsShown: "ছাত্র দেখানো হচ্ছে",
-        bulkAbsentTitle: "সকল ছাত্রকে অনুপস্থিত চিহ্নিত করুন",
-        bulkAbsentReason: "অনুপস্থিতির কারণ (সকল ছাত্রের জন্য প্রযোজ্য):",
-        bulkAbsentPlaceholder: "যেমন: স্কুল বন্ধ, ধর্মঘট, ইত্যাদি",
-        bulkAbsentConfirm: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
-        cancel: "বাতিল",
-        pleaseProvideReason: "অনুগ্রহ করে অনুপস্থিতির কারণ প্রদান করুন",
-        studentsMarkedPresent: "ছাত্রকে উপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
-        studentsMarkedAbsent: "ছাত্রকে অনুপস্থিত হিসেবে চিহ্নিত করা হয়েছে",
-        noAttendanceDataFound: "এর জন্য কোন উপস্থিতির তথ্য পাওয়া যায়নি",
-        attendanceCopiedFrom: "থেকে উপস্থিতি কপি করা হয়েছে",
-        
-        // Student Detail
-        studentDetails: "ছাত্রের বিবরণ",
-        backToReports: "রিপোর্টে ফিরুন",
-        personalInformation: "ব্যক্তিগত তথ্য",
-        contactInformation: "যোগাযোগের তথ্য",
-        academicInformation: "একাডেমিক তথ্য",
-        attendanceSummary: "উপস্থিতির সংক্ষিপ্ত বিবরণ",
-        totalPresent: "মোট উপস্থিত",
-        totalAbsent: "মোট অনুপস্থিত",
-        totalDays: "মোট দিন",
-        recentAttendance: "সাম্প্রতিক উপস্থিতি (গত ৩০ দিন)",
         registrationDate: "নিবন্ধনের তারিখ",
         studentNotFound: "ছাত্র পাওয়া যায়নি",
+        attendanceLabel: "উপস্থিতি",
+        backToRegistration: "নিবন্ধনে ফিরে যান",
         
-        // Class-wise Dashboard
-        classWiseInformation: "শ্রেণী অনুযায়ী তথ্য",
-        totalStudentsLabel: "মোট ছাত্র",
-        presentLabel: "উপস্থিত",
-        absentLabel: "অনুপস্থিত",
-        attendanceLabel: "উপস্থিতি"
+        // Student List and Management
+        rollNo: "রোল নং",
+        fullName: "পূর্ণ নাম",
+        actions: "কার্যক্রম",
+        allRegisteredStudents: "সকল নিবন্ধিত ছাত্র",
+        registerNewStudent: "নতুন ছাত্র নিবন্ধন",
+        bulkImport: "বাল্ক ইমপোর্ট",
+        editStudent: "ছাত্র সম্পাদনা",
+        updateStudent: "ছাত্র আপডেট",
+        deleteStudent: "ছাত্র মুছুন",
+        noStudentsRegisteredYet: "এখনো কোন ছাত্র নিবন্ধিত হয়নি। ছাত্র যোগ করতে \"নতুন ছাত্র নিবন্ধন\" ক্লিক করুন।",
+        backToList: "তালিকায় ফিরে যান",
+        leaveDays: "ছুটির দিন",
+        
+        // Report Table Headers
+        roll: "রোল",
+        name: "নাম",
+        rate: "হার",
+        
+        // Confirmation Messages
+        confirmDeleteStudent: "আপনি কি নিশ্চিত যে আপনি মুছে দিতে চান",
+        actionCannotBeUndone: "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+        clearAllFilters: "সব ফিল্টার মুছুন",
+        searchRoll: "রোল অনুসন্ধান...",
+        searchName: "নাম অনুসন্ধান...",
+        searchMobile: "মোবাইল অনুসন্ধান...",
+        
+        // Mobile Table Headers (for responsive)
+        mobile: "মোবাইল"
     }
 };
 
@@ -376,6 +385,7 @@ function updateAllTexts() {
     updateAttendanceTexts();
     updateReportsTexts();
     updateSettingsTexts();
+    updateStudentListTexts();
 }
 
 // Update header texts
@@ -426,10 +436,10 @@ function updateDashboardTexts() {
 
 // Update registration texts
 function updateRegistrationTexts() {
-    document.querySelector('#registration h2').textContent = t('studentRegistration');
+    document.querySelector('#registration h2').textContent = t('studentManagement');
     
     const labels = document.querySelectorAll('#registration label');
-    const labelTexts = ['studentName', 'fatherName', 'address', 'district', 'subDistrict', 'mobileNumber', 'class', 'uniqueId'];
+    const labelTexts = ['studentName', 'fatherName', 'rollNumber', 'address', 'district', 'subDistrict', 'mobileNumber', 'class', 'uniqueId'];
     
     labels.forEach((label, index) => {
         if (labelTexts[index]) {
@@ -583,8 +593,12 @@ function updateSettingsTexts() {
     if (addHolidayBtn) {
         addHolidayBtn.innerHTML = `<i class="fas fa-calendar-plus"></i> ${t('addHoliday')}`;
     }
-    
+}
 
+// Update student list texts
+function updateStudentListTexts() {
+    // This will be called when the student list is displayed
+    // The actual translation happens in displayStudentsList function
 }
 
 // Update student detail texts
