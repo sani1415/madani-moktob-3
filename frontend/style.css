@@ -850,6 +850,15 @@ body {
     background: #c0392b;
 }
 
+.btn-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #e67e22;
+}
+
 .btn-small {
     padding: 8px 15px;
     font-size: 14px;
@@ -1077,18 +1086,22 @@ body {
     position: relative;
     width: 60px;
     height: 30px;
-    background: #27ae60;
+    background: #6c757d; /* Default gray background for neutral */
     border-radius: 15px;
     cursor: pointer;
     transition: background 0.3s ease;
 }
 
-.toggle-switch.absent {
-    background: #e74c3c;
+.toggle-switch.neutral {
+    background: #6c757d; /* Gray background for not set */
 }
 
 .toggle-switch.present {
     background: #27ae60; /* Green background for present status */
+}
+
+.toggle-switch.absent {
+    background: #e74c3c; /* Red background for absent status */
 }
 
 .toggle-switch::after {
@@ -1103,13 +1116,19 @@ body {
     transition: transform 0.3s ease;
 }
 
-.toggle-switch.absent::after {
-    transform: translateX(30px);
+.toggle-switch.neutral::after {
+    transform: translateX(15px); /* Position in middle for neutral state */
+    background: white;
 }
 
 .toggle-switch.present::after {
     transform: translateX(2px); /* Position at left for present state */
-    background: white; /* White slider */
+    background: white;
+}
+
+.toggle-switch.absent::after {
+    transform: translateX(30px); /* Position at right for absent state */
+    background: white;
 }
 
 /* Removed unmarked-label as we now default to present */
@@ -1155,6 +1174,74 @@ body {
     color: #6c757d;
     font-size: 14px;
     font-style: italic;
+}
+
+/* Student Detail Summary Period Toggle */
+.attendance-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.summary-period-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.summary-period-toggle label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.period-btn {
+    padding: 8px 16px;
+    border: 2px solid #dee2e6;
+    background: #f8f9fa;
+    color: #495057;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.period-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.period-btn.active {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.period-btn.active:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+    .attendance-summary-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .summary-period-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .period-btn {
+        flex: 1;
+        text-align: center;
+    }
 }
 
 /* Report Controls */

@@ -143,6 +143,8 @@ const translations = {
         pleaseProvideReason: "Please provide a reason for the absence",
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
+        studentsMarkedNeutral: "students cleared to neutral",
+        markAllNeutral: "Clear All",
         noAttendanceDataFound: "No attendance data found for",
         attendanceCopiedFrom: "Attendance copied from",
         
@@ -232,7 +234,38 @@ const translations = {
         searchMobile: "Search mobile...",
         
         // Mobile Table Headers (for responsive)
-        mobile: "Mobile"
+        mobile: "Mobile",
+        
+        // Missing Error/Success Messages
+        cannotSaveAttendanceOnHolidays: "Cannot save attendance on holidays",
+        cannotMarkAttendanceOnHolidays: "Cannot mark attendance on holidays", 
+        failedToSaveAttendance: "Failed to save attendance. Please try again.",
+        noAttendanceDataForPreviousDay: "No attendance data available for the previous day.",
+        successfullyCopiedAttendance: "Successfully copied attendance from the previous day.",
+        attendanceSavedSuccessfully: "Attendance saved successfully!",
+        studentsConfirmedPresent: "students confirmed present",
+        studentsMarkedPresent: "students marked as present",
+        studentsMarkedAbsent: "students marked as absent",
+        rememberToSaveAttendance: "Remember to save attendance after making changes!",
+        selectDateRangeToGenerate: "Select date range and click \"Generate Report\" to view attendance data.",
+        showAttendanceTrackingCalendar: "Show Attendance Tracking Calendar",
+        viewAttendanceStatistics: "View which days attendance was taken vs missed this month with summary statistics",
+        hideAttendanceTrackingCalendar: "Hide Attendance Tracking Calendar",
+        stickyAttendanceApplied: "Sticky attendance applied!",
+        stillAbsentFromLastTime: "still absent from last time. Change any student's status as needed.",
+        allStudentsPresent: "All students present. Change any student's status as needed.",
+        present: "present",
+        absent: "absent",
+        total: "total",
+        
+        // Student Detail Summary Options
+        last30Days: "Last 30 Days",
+        fromBeginning: "From Beginning",
+        summaryPeriod: "Summary Period",
+        
+        // Attendance Status
+        notSet: "Not Set",
+        neutral: "Not Set"
     },
     
     bn: {
@@ -433,7 +466,40 @@ const translations = {
         searchMobile: "মোবাইল অনুসন্ধান...",
         
         // Mobile Table Headers (for responsive)
-        mobile: "মোবাইল"
+        mobile: "মোবাইল",
+        
+        // Missing Error/Success Messages
+        cannotSaveAttendanceOnHolidays: "ছুটির দিনে উপস্থিতি সংরক্ষণ করা যাবে না",
+        cannotMarkAttendanceOnHolidays: "ছুটির দিনে উপস্থিতি চিহ্নিত করা যাবে না",
+        failedToSaveAttendance: "উপস্থিতি সংরক্ষণ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        noAttendanceDataForPreviousDay: "পূর্ববর্তী দিনের জন্য কোন উপস্থিতির তথ্য উপলব্ধ নেই।",
+        successfullyCopiedAttendance: "পূর্ববর্তী দিন থেকে উপস্থিতি সফলভাবে কপি করা হয়েছে।",
+        attendanceSavedSuccessfully: "উপস্থিতি সফলভাবে সংরক্ষণ করা হয়েছে!",
+        studentsConfirmedPresent: "ছাত্র উপস্থিত নিশ্চিত করা হয়েছে",
+        studentsMarkedPresent: "ছাত্র উপস্থিত চিহ্নিত করা হয়েছে",
+        studentsMarkedAbsent: "ছাত্র অনুপস্থিত চিহ্নিত করা হয়েছে",
+        studentsMarkedNeutral: "ছাত্র নিউট্রাল অবস্থায় সাফ করা হয়েছে",
+        markAllNeutral: "সব সাফ করুন",
+        rememberToSaveAttendance: "পরিবর্তন করার পর উপস্থিতি সংরক্ষণ করতে ভুলবেন না!",
+        selectDateRangeToGenerate: "তারিখের পরিসর নির্বাচন করুন এবং উপস্থিতির তথ্য দেখার জন্য \"রিপোর্ট তৈরি করুন\" ক্লিক করুন।",
+        showAttendanceTrackingCalendar: "উপস্থিতি ট্র্যাকিং ক্যালেন্ডার দেখান",
+        viewAttendanceStatistics: "এই মাসে কোন দিন উপস্থিতি নেওয়া হয়েছে বনাম মিস করা হয়েছে তা সারসংক্ষেপ পরিসংখ্যান সহ দেখুন",
+        hideAttendanceTrackingCalendar: "উপস্থিতি ট্র্যাকিং ক্যালেন্ডার লুকান",
+        stickyAttendanceApplied: "স্টিকি উপস্থিতি প্রয়োগ করা হয়েছে!",
+        stillAbsentFromLastTime: "গত বার থেকে এখনও অনুপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
+        allStudentsPresent: "সব ছাত্র উপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
+        present: "উপস্থিত",
+        absent: "অনুপস্থিত", 
+        total: "মোট",
+        
+        // Student Detail Summary Options
+        last30Days: "গত ৩০ দিন",
+        fromBeginning: "শুরু থেকে",
+        summaryPeriod: "সারসংক্ষেপ সময়কাল",
+        
+        // Attendance Status
+        notSet: "নির্ধারিত নয়",
+        neutral: "নির্ধারিত নয়"
     }
 };
 
@@ -570,10 +636,11 @@ function updateAttendanceTexts() {
     
     // Update bulk action buttons
     const bulkButtons = document.querySelectorAll('.bulk-actions .btn');
-    if (bulkButtons.length >= 3) {
+    if (bulkButtons.length >= 4) {
         bulkButtons[0].innerHTML = `<i class="fas fa-check-double"></i> ${t('markAllPresent')}`;
         bulkButtons[1].innerHTML = `<i class="fas fa-user-slash"></i> ${t('markAllAbsent')}`;
-        bulkButtons[2].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
+        bulkButtons[2].innerHTML = `<i class="fas fa-eraser"></i> ${t('markAllNeutral')}`;
+        bulkButtons[3].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
     }
     
     // Update bulk absent modal
@@ -597,6 +664,15 @@ function updateAttendanceTexts() {
         modalButtons[0].innerHTML = `<i class="fas fa-times-circle"></i> ${t('bulkAbsentConfirm')}`;
         modalButtons[1].innerHTML = `<i class="fas fa-times"></i> ${t('cancel')}`;
     }
+    
+    // Update elements with data-translate attributes
+    const translateElements = document.querySelectorAll('[data-translate]');
+    translateElements.forEach(element => {
+        const key = element.getAttribute('data-translate');
+        if (key && t(key) !== key) {
+            element.textContent = t(key);
+        }
+    });
 }
 
 // Update reports texts 

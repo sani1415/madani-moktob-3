@@ -993,14 +993,24 @@ async function loadAttendanceForDate() {
     }
     
     attendanceList.innerHTML = filteredStudents.map(student => {
-        const studentAttendance = attendance[selectedDate][student.id] || { status: 'present', reason: '' };
+        const studentAttendance = attendance[selectedDate][student.id] || { status: 'neutral', reason: '' };
         const status = studentAttendance.status;
         const isAbsent = status === 'absent';
         const isPresent = status === 'present';
+        const isNeutral = status === 'neutral' || !status;
         
-        // Set toggle appearance based on actual status
-        let toggleClass = isAbsent ? 'absent' : 'present';
-        let nextStatus = isAbsent ? 'present' : 'absent';
+        // Set toggle appearance and next status based on current status
+        let toggleClass, nextStatus;
+        if (isNeutral) {
+            toggleClass = 'neutral';
+            nextStatus = 'present';
+        } else if (isPresent) {
+            toggleClass = 'present';
+            nextStatus = 'absent';
+        } else if (isAbsent) {
+            toggleClass = 'absent';
+            nextStatus = 'neutral';
+        }
         
         return `
             <div class="student-row">
@@ -1049,7 +1059,7 @@ async function copyPreviousDayAttendance() {
         // Refresh the attendance list to show the copied data
         await loadAttendanceForDate();
         
-        showModal(t('success'), 'Successfully copied attendance from the previous day.');
+        showModal(t('success'), t('successfullyCopiedAttendance'));
 
         // Show visual indication that changes are pending
         const saveButton = document.querySelector('.btn-save-attendance');
@@ -1058,14 +1068,14 @@ async function copyPreviousDayAttendance() {
             saveButton.textContent = 'Save Changes*';
         }
     } else {
-        showModal(t('error'), 'No attendance data available for the previous day.');
+        showModal(t('error'), t('noAttendanceDataForPreviousDay'));
     }
 }
 
 async function toggleAttendance(studentId, date, status) {
     // Prevent attendance marking on holidays
     if (isHoliday(date)) {
-        showModal(t('error'), 'Cannot mark attendance on holidays');
+        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
         return;
     }
     
@@ -1074,10 +1084,15 @@ async function toggleAttendance(studentId, date, status) {
     }
     
     // Only update in memory, don't save to database yet
-    attendance[date][studentId] = {
-        status: status || 'present',
-        reason: status === 'present' ? '' : (attendance[date][studentId]?.reason || '')
-    };
+    if (status === 'neutral') {
+        // Remove the student from attendance record if setting to neutral
+        delete attendance[date][studentId];
+    } else {
+        attendance[date][studentId] = {
+            status: status || 'neutral',
+            reason: status === 'present' || status === 'neutral' ? '' : (attendance[date][studentId]?.reason || '')
+        };
+    }
     
     // Refresh the display without saving to database
     await loadAttendanceForDate();
@@ -1123,7 +1138,7 @@ async function saveAttendance() {
     
     // Prevent saving attendance on holidays
     if (isHoliday(selectedDate)) {
-        showModal(t('error'), 'Cannot save attendance on holidays');
+        showModal(t('error'), t('cannotSaveAttendanceOnHolidays'));
         return;
     }
     
@@ -1135,15 +1150,14 @@ async function saveAttendance() {
     // Get all filtered students for the current date
     const filteredStudents = getFilteredStudents();
     
-    // Save attendance for ALL students (both present and absent)
-    // Students who haven't been manually changed default to present
+    // Only save attendance for students who have been explicitly marked (not neutral)
+    // Remove neutral/unset students from the attendance record
     filteredStudents.forEach(student => {
-        if (!attendance[selectedDate][student.id]) {
-            // If no attendance record exists, default to present
-            attendance[selectedDate][student.id] = {
-                status: 'present',
-                reason: ''
-            };
+        if (!attendance[selectedDate][student.id] || attendance[selectedDate][student.id].status === 'neutral') {
+            // Remove neutral students from the attendance record
+            if (attendance[selectedDate][student.id]) {
+                delete attendance[selectedDate][student.id];
+            }
         }
     });
     
@@ -1200,7 +1214,7 @@ async function saveAttendance() {
             updateDashboard();
         }
         
-            showModal(t('success'), `Attendance saved successfully! ${presentCount} present, ${absentCount} absent (${filteredStudents.length} total).`);
+            showModal(t('success'), `${t('attendanceSavedSuccessfully')} ${presentCount} ${t('present')}, ${absentCount} ${t('absent')} (${filteredStudents.length} ${t('total')}).`);
             
             // Refresh attendance calendar if it's visible to show updated attendance data
             refreshAttendanceCalendarIfVisible();
@@ -1216,7 +1230,7 @@ async function saveAttendance() {
         }
     } catch (error) {
         console.error('Error saving attendance:', error);
-        showModal(t('error'), 'Failed to save attendance. Please try again.');
+        showModal(t('error'), t('failedToSaveAttendance'));
     }
 }
 
@@ -1326,7 +1340,7 @@ async function markAllPresent() {
     
     // Prevent bulk actions on holidays
     if (isHoliday(selectedDate)) {
-        showModal(t('error'), 'Cannot mark attendance on holidays');
+        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
         return;
     }
     
@@ -1365,7 +1379,7 @@ async function markAllPresent() {
     // Also try force refresh as backup (for debugging)
     setTimeout(() => forceRefreshAttendanceCalendar(), 100);
     
-    showModal(t('success'), `${filteredStudents.length} students confirmed present`);
+    showModal(t('success'), `${filteredStudents.length} ${t('studentsConfirmedPresent')}`);
 }
 
 function showMarkAllAbsentModal() {
@@ -1403,7 +1417,7 @@ async function confirmMarkAllAbsent() {
     
     // Prevent bulk actions on holidays
     if (isHoliday(selectedDate)) {
-        showModal(t('error'), 'Cannot mark attendance on holidays');
+        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
         closeBulkAbsentModal();
         return;
     }
@@ -1438,6 +1452,53 @@ async function confirmMarkAllAbsent() {
     refreshAttendanceCalendarIfVisible();
     
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedAbsent')}`);
+}
+
+async function markAllNeutral() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (!selectedDate) {
+        showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    // Prevent bulk actions on holidays
+    if (isHoliday(selectedDate)) {
+        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    if (filteredStudents.length === 0) {
+        showModal(t('error'), t('noStudentsFound'));
+        return;
+    }
+    
+    // Initialize attendance for the date if it doesn't exist
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
+    }
+    
+    // Remove all filtered students from attendance record (set to neutral)
+    filteredStudents.forEach(student => {
+        if (attendance[selectedDate][student.id]) {
+            delete attendance[selectedDate][student.id];
+        }
+    });
+    
+    // Refresh display without saving to database
+    await loadAttendanceForDate();
+    
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes*';
+    }
+    
+    // Refresh attendance calendar if it's visible to show updated status
+    refreshAttendanceCalendarIfVisible();
+    
+    showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedNeutral')}`);
 }
 
 async function autoCopyFromPreviousDay(targetDate) {
@@ -1801,6 +1862,7 @@ function backToReports() {
 let currentStudentDetailMonth = new Date().getMonth();
 let currentStudentDetailYear = new Date().getFullYear();
 let currentStudentData = null;
+let currentSummaryPeriod = 'last30Days'; // 'last30Days' or 'fromBeginning'
 
 function generateStudentDetailContent(student) {
     const detailContent = document.getElementById('studentDetailContent');
@@ -1808,13 +1870,35 @@ function generateStudentDetailContent(student) {
     // Store current student data for calendar navigation
     currentStudentData = student;
     
-    // Calculate attendance statistics for last 30 days
+    // Calculate attendance statistics based on selected period
+    let startDateStr, endDateStr, periodLabel;
     const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const endDateStr_today = today.toISOString().split('T')[0];
     
-    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
-    const endDateStr = today.toISOString().split('T')[0];
+    if (currentSummaryPeriod === 'last30Days') {
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+        endDateStr = endDateStr_today;
+        periodLabel = t('last30Days');
+    } else {
+        // From beginning - use academic year start date or student registration date
+        const academicStart = academicYearStartDate;
+        const registrationDate = student.registrationDate;
+        
+        if (academicStart) {
+            startDateStr = academicStart;
+        } else if (registrationDate) {
+            startDateStr = registrationDate;
+        } else {
+            // Fallback to 6 months ago if no academic year or registration date
+            const sixMonthsAgo = new Date(today);
+            sixMonthsAgo.setMonth(today.getMonth() - 6);
+            startDateStr = sixMonthsAgo.toISOString().split('T')[0];
+        }
+        endDateStr = endDateStr_today;
+        periodLabel = t('fromBeginning');
+    }
     
     const attendanceStats = calculateStudentAttendanceStats(student, startDateStr, endDateStr);
     
@@ -1867,7 +1951,18 @@ function generateStudentDetailContent(student) {
             </div>
             
             <div class="attendance-history">
-                <h4>${t('attendanceSummary')} (Last 30 Days)</h4>
+                <div class="attendance-summary-header">
+                    <h4>${t('attendanceSummary')} (${periodLabel})</h4>
+                    <div class="summary-period-toggle">
+                        <label>${t('summaryPeriod')}:</label>
+                        <button onclick="changeSummaryPeriod('last30Days')" class="period-btn ${currentSummaryPeriod === 'last30Days' ? 'active' : ''}">
+                            ${t('last30Days')}
+                        </button>
+                        <button onclick="changeSummaryPeriod('fromBeginning')" class="period-btn ${currentSummaryPeriod === 'fromBeginning' ? 'active' : ''}">
+                            ${t('fromBeginning')}
+                        </button>
+                    </div>
+                </div>
                 <div class="attendance-summary">
                     <div class="summary-item present">
                         <h5>${t('totalPresent')}</h5>
@@ -2090,6 +2185,13 @@ function goToCurrentMonthStudent() {
     currentStudentDetailMonth = today.getMonth();
     currentStudentDetailYear = today.getFullYear();
     refreshStudentCalendar();
+}
+
+function changeSummaryPeriod(period) {
+    currentSummaryPeriod = period;
+    if (currentStudentData) {
+        generateStudentDetailContent(currentStudentData);
+    }
 }
 
 // Report Functions
@@ -2557,11 +2659,11 @@ function showAttendanceCalendar() {
             console.log('Calendar exists, toggling visibility...');
             if (existingCalendar.style.display === 'none') {
                 existingCalendar.style.display = 'block';
-                toggleButton.innerHTML = '📅 Hide Attendance Calendar';
+                toggleButton.innerHTML = `📅 ${t('hideAttendanceTrackingCalendar')}`;
                 console.log('Calendar shown');
             } else {
                 existingCalendar.style.display = 'none';
-                toggleButton.innerHTML = '📅 Show Attendance Tracking Calendar';
+                toggleButton.innerHTML = `📅 ${t('showAttendanceTrackingCalendar')}`;
                 console.log('Calendar hidden');
             }
         } else {
@@ -2575,7 +2677,7 @@ function showAttendanceCalendar() {
             
             if (calendarToggle) {
                 calendarToggle.insertAdjacentHTML('afterend', calendarHTML);
-                toggleButton.innerHTML = '📅 Hide Attendance Calendar';
+                toggleButton.innerHTML = `📅 ${t('hideAttendanceTrackingCalendar')}`;
                 console.log('Calendar created and inserted successfully');
             } else {
                 console.error('Calendar toggle section not found');
