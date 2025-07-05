@@ -145,6 +145,10 @@ class JSONDatabase:
     def save_attendance(self, attendance_data):
         """Save attendance data"""
         self.save_json(self.attendance_file, attendance_data)
+
+    def reset_attendance(self):
+        """Reset attendance data to an empty state"""
+        self.save_attendance({})
     
     def update_attendance(self, date, student_id, status, reason=""):
         """Update attendance for a specific student and date"""

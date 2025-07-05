@@ -58,6 +58,8 @@ const translations = {
         toDate: "To Date:",
         to: "to",
         generateReport: "Generate Report",
+        fromBeginningReport: "From Beginning Report",
+        fromBeginningReportDesc: "Generate report from academic year start to today",
         attendanceReport: "Attendance Report",
         period: "Period:",
         studentNameCol: "Student Name",
@@ -69,9 +71,23 @@ const translations = {
         selectDateRange: "Select date range and click \"Generate Report\" to view attendance data.",
         selectBothDates: "Please select both start and end dates.",
         startDateAfterEnd: "Start date cannot be after end date.",
+        noAcademicYearSet: "No academic year start date set. Please set it in Settings first.",
         
         // Settings
         settingsTitle: "Settings",
+        academicYearSettings: "Academic Year Settings",
+        academicYearStartDate: "Academic Year Start Date",
+        academicYearStartDateDesc: "Select the starting date for your academic year",
+        setAcademicYearStartBtn: "Set Academic Year Start",
+        clearAcademicYearStartBtn: "Clear",
+        selectAcademicYearStart: "Please select the academic year start date.",
+        academicYearStartUpdated: "Academic year start date updated successfully.",
+        academicYearStartCleared: "Academic year start date cleared successfully. All date restrictions have been removed.",
+        confirmClearAcademicYear: "Are you sure you want to clear the academic year start date? This will remove all date restrictions.",
+        confirmAction: "Are you sure?",
+        dateRestrictionNotice: "Date selection is restricted to academic year period",
+        dateRestrictionNoticeFrom: "Date selection is restricted to academic year period (from {date})",
+        beforeAcademicYear: "Before Academic Year",
         hijriSettings: "Hijri Date Settings",
         hijriAdjustment: "Hijri Date Adjustment",
         hijriAdjustmentDesc: "Adjust Hijri date for local observation",
@@ -92,6 +108,8 @@ const translations = {
         noClassesAdded: "No classes added yet.",
         confirmDeleteClass: "Are you sure you want to delete the class",
         cannotUndo: "This action cannot be undone.",
+        confirmDeleteClassFinal: "Are you absolutely sure you want to delete the class",
+        finalDeleteClassWarning: "This will also delete all students in this class and their attendance records. This action is permanent and cannot be undone.",
         classExists: "This class already exists.",
         classAdded: "class has been added successfully.",
         classDeleted: "class has been deleted successfully.",
@@ -183,6 +201,31 @@ const translations = {
         // Confirmation Messages
         confirmDeleteStudent: "Are you sure you want to delete",
         actionCannotBeUndone: "This action cannot be undone.",
+        confirmDeleteStudentFinal: "Are you absolutely sure you want to delete this student?",
+        finalDeleteWarning: "This action is permanent and cannot be undone. All attendance records for this student will also be deleted.",
+        deleteAllStudents: "Delete All Students",
+        confirmDeleteAllStudents: "Are you sure you want to delete ALL students?",
+        confirmDeleteAllStudentsFinal: "Are you absolutely sure you want to delete ALL students?",
+        finalDeleteAllWarning: "This will permanently delete ALL students and their attendance records. This action is irreversible and will completely reset your student database.",
+        
+        // Reset Attendance
+        dataManagement: "Data Management",
+        dangerZone: "Danger Zone",
+        dangerZoneWarning: "These actions cannot be undone. Please be careful.",
+        resetAttendanceHistory: "Reset Attendance History",
+        resetAttendanceDescription: "This will permanently delete all attendance records for all students. This action cannot be undone!",
+        resetAllAttendance: "Reset All Attendance",
+        resetAttendanceConfirm: "This will permanently delete all attendance records for all students. This action cannot be undone!",
+        resetAttendanceWarning: "Warning: This action cannot be undone!",
+        resetAttendanceList: "This will permanently delete:",
+        resetAttendanceListItem1: "All attendance records for all students",
+        resetAttendanceListItem2: "All saved attendance dates",
+        resetAttendanceListItem3: "All attendance history from the calendar",
+        typeResetToConfirm: "Type RESET to confirm:",
+        typeResetPlaceholder: "Type RESET to confirm",
+        attendanceResetSuccess: "All attendance history has been reset successfully.",
+        attendanceResetFailed: "Failed to reset attendance. Please try again.",
+        attendanceResetPleaseTypeReset: "Please type \"RESET\" to confirm the action.",
         clearAllFilters: "Clear all filters",
         searchRoll: "Search roll...",
         searchName: "Search name...",
@@ -250,6 +293,8 @@ const translations = {
         toDate: "শেষের তারিখ:",
         to: "থেকে",
         generateReport: "রিপোর্ট তৈরি করুন",
+        fromBeginningReport: "শুরু থেকে রিপোর্ট",
+        fromBeginningReportDesc: "শিক্ষাবর্ষের শুরু থেকে আজ পর্যন্ত রিপোর্ট তৈরি করুন",
         attendanceReport: "উপস্থিতির রিপোর্ট",
         period: "সময়কাল:",
         studentNameCol: "ছাত্রের নাম",
@@ -261,9 +306,23 @@ const translations = {
         selectDateRange: "তারিখের পরিসর নির্বাচন করুন এবং উপস্থিতির তথ্য দেখার জন্য \"রিপোর্ট তৈরি করুন\" ক্লিক করুন।",
         selectBothDates: "অনুগ্রহ করে শুরু এবং শেষ উভয় তারিখ নির্বাচন করুন।",
         startDateAfterEnd: "শুরুর তারিখ শেষের তারিখের পরে হতে পারে না।",
+        noAcademicYearSet: "শিক্ষাবর্ষের শুরুর তারিখ সেট করা হয়নি। অনুগ্রহ করে প্রথমে সেটিংসে এটি সেট করুন।",
         
         // Settings
         settingsTitle: "সেটিংস",
+        academicYearSettings: "শিক্ষাবর্ষের সেটিংস",
+        academicYearStartDate: "শিক্ষাবর্ষের শুরুর তারিখ",
+        academicYearStartDateDesc: "আপনার শিক্ষাবর্ষের শুরুর তারিখ নির্বাচন করুন",
+        setAcademicYearStartBtn: "শিক্ষাবর্ষের শুরু সেট করুন",
+        clearAcademicYearStartBtn: "মুছে ফেলুন",
+        selectAcademicYearStart: "অনুগ্রহ করে শিক্ষাবর্ষের শুরুর তারিখ নির্বাচন করুন।",
+        academicYearStartUpdated: "শিক্ষাবর্ষের শুরুর তারিখ সফলভাবে আপডেট করা হয়েছে।",
+        academicYearStartCleared: "শিক্ষাবর্ষের শুরুর তারিখ সফলভাবে মুছে ফেলা হয়েছে। সমস্ত তারিখের সীমাবদ্ধতা সরানো হয়েছে।",
+        confirmClearAcademicYear: "আপনি কি নিশ্চিত যে শিক্ষাবর্ষের শুরুর তারিখ মুছে ফেলতে চান? এটি সমস্ত তারিখের সীমাবদ্ধতা সরিয়ে দেবে।",
+        confirmAction: "আপনি কি নিশ্চিত?",
+        dateRestrictionNotice: "তারিখ নির্বাচন শিক্ষাবর্ষের সময়কালে সীমাবদ্ধ",
+        dateRestrictionNoticeFrom: "তারিখ নির্বাচন শিক্ষাবর্ষের সময়কালে সীমাবদ্ধ ({date} থেকে)",
+        beforeAcademicYear: "শিক্ষাবর্ষের আগে",
         hijriSettings: "হিজরি তারিখ সেটিংস",
         hijriAdjustment: "হিজরি তারিখ সমন্বয়",
         hijriAdjustmentDesc: "স্থানীয় পর্যবেক্ষণের জন্য হিজরি তারিখ সমন্বয় করুন",
@@ -284,6 +343,8 @@ const translations = {
         noClassesAdded: "এখনো কোন শ্রেণী যোগ করা হয়নি।",
         confirmDeleteClass: "আপনি কি নিশ্চিত যে আপনি শ্রেণী মুছে দিতে চান",
         cannotUndo: "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+        confirmDeleteClassFinal: "আপনি কি সম্পূর্ণ নিশ্চিত যে আপনি শ্রেণী মুছে দিতে চান",
+        finalDeleteClassWarning: "এটি এই শ্রেণীর সব ছাত্র এবং তাদের উপস্থিতি রেকর্ডও মুছে দেবে। এই কাজটি স্থায়ী এবং অপরিবর্তনীয়।",
         classExists: "এই শ্রেণী ইতিমধ্যে বিদ্যমান।",
         classAdded: "শ্রেণী সফলভাবে যোগ করা হয়েছে।",
         classDeleted: "শ্রেণী সফলভাবে মুছে দেওয়া হয়েছে।",
@@ -341,6 +402,31 @@ const translations = {
         // Confirmation Messages
         confirmDeleteStudent: "আপনি কি নিশ্চিত যে আপনি মুছে দিতে চান",
         actionCannotBeUndone: "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+        confirmDeleteStudentFinal: "আপনি কি সম্পূর্ণ নিশ্চিত যে আপনি এই ছাত্রকে মুছে দিতে চান?",
+        finalDeleteWarning: "এই কাজটি স্থায়ী এবং অপরিবর্তনীয়। এই ছাত্রের সব উপস্থিতি রেকর্ডও মুছে যাবে।",
+        deleteAllStudents: "সব ছাত্র মুছুন",
+        confirmDeleteAllStudents: "আপনি কি নিশ্চিত যে আপনি সব ছাত্র মুছে দিতে চান?",
+        confirmDeleteAllStudentsFinal: "আপনি কি সম্পূর্ণ নিশ্চিত যে আপনি সব ছাত্র মুছে দিতে চান?",
+        finalDeleteAllWarning: "এটি সব ছাত্র এবং তাদের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি অপরিবর্তনীয় এবং আপনার ছাত্র ডেটাবেস সম্পূর্ণভাবে রিসেট করবে।",
+        
+        // Reset Attendance
+        dataManagement: "ডেটা ব্যবস্থাপনা",
+        dangerZone: "বিপদজনক এলাকা",
+        dangerZoneWarning: "এই কাজগুলি পূর্বাবস্থায় ফেরানো যাবে না। অনুগ্রহ করে সাবধান থাকুন।",
+        resetAttendanceHistory: "উপস্থিতি ইতিহাস রিসেট করুন",
+        resetAttendanceDescription: "এটি সব ছাত্রের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
+        resetAllAttendance: "সব উপস্থিতি রিসেট করুন",
+        resetAttendanceConfirm: "এটি সব ছাত্রের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
+        resetAttendanceWarning: "সতর্কতা: এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
+        resetAttendanceList: "এটি স্থায়ীভাবে মুছে দেবে:",
+        resetAttendanceListItem1: "সব ছাত্রের উপস্থিতি রেকর্ড",
+        resetAttendanceListItem2: "সব সংরক্ষিত উপস্থিতি তারিখ",
+        resetAttendanceListItem3: "ক্যালেন্ডার থেকে সব উপস্থিতি ইতিহাস",
+        typeResetToConfirm: "নিশ্চিত করতে RESET টাইপ করুন:",
+        typeResetPlaceholder: "নিশ্চিত করতে RESET টাইপ করুন",
+        attendanceResetSuccess: "সব উপস্থিতি ইতিহাস সফলভাবে রিসেট করা হয়েছে।",
+        attendanceResetFailed: "উপস্থিতি রিসেট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        attendanceResetPleaseTypeReset: "কাজটি নিশ্চিত করতে অনুগ্রহ করে \"RESET\" টাইপ করুন।",
         clearAllFilters: "সব ফিল্টার মুছুন",
         searchRoll: "রোল অনুসন্ধান...",
         searchName: "নাম অনুসন্ধান...",
@@ -472,7 +558,7 @@ function updateAttendanceTexts() {
         classLabel.textContent = t('filterByClass');
     }
     
-    const saveBtn = document.querySelector('#attendance .btn-success');
+    const saveBtn = document.querySelector('#attendance .btn-save-attendance');
     if (saveBtn) {
         saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveAttendance')}`;
     }
@@ -483,10 +569,10 @@ function updateAttendanceTexts() {
     }
     
     // Update bulk action buttons
-    const bulkButtons = document.querySelectorAll('.bulk-buttons .btn');
+    const bulkButtons = document.querySelectorAll('.bulk-actions .btn');
     if (bulkButtons.length >= 3) {
-        bulkButtons[0].innerHTML = `<i class="fas fa-check-circle"></i> ${t('markAllPresent')}`;
-        bulkButtons[1].innerHTML = `<i class="fas fa-times-circle"></i> ${t('markAllAbsent')}`;
+        bulkButtons[0].innerHTML = `<i class="fas fa-check-double"></i> ${t('markAllPresent')}`;
+        bulkButtons[1].innerHTML = `<i class="fas fa-user-slash"></i> ${t('markAllAbsent')}`;
         bulkButtons[2].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
     }
     
@@ -549,6 +635,9 @@ function updateSettingsTexts() {
     if (settingsTitles.length >= 4) {
         settingsTitles[3].textContent = t('holidayManagement');
     }
+    if (settingsTitles.length >= 5) {
+        settingsTitles[4].textContent = t('dataManagement');
+    }
 
     
     const classNameInput = document.getElementById('newClassName');
@@ -593,8 +682,17 @@ function updateSettingsTexts() {
     if (addHolidayBtn) {
         addHolidayBtn.innerHTML = `<i class="fas fa-calendar-plus"></i> ${t('addHoliday')}`;
     }
+    
+    // Update data management section texts
+    const dataTranslateElements = document.querySelectorAll('[data-translate]');
+    dataTranslateElements.forEach(element => {
+        const key = element.getAttribute('data-translate');
+        if (translations[currentLanguage][key]) {
+            element.textContent = t(key);
+        }
+    });
 }
-
+    
 // Update student list texts
 function updateStudentListTexts() {
     // This will be called when the student list is displayed

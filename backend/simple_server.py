@@ -91,6 +91,15 @@ def delete_student(student_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/students', methods=['DELETE'])
+def delete_all_students():
+    try:
+        # Clear all students
+        db.save_students([])
+        return jsonify({'success': True, 'message': 'All students deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/roll-number/<class_name>')
 def get_next_roll_number(class_name):
     try:
@@ -112,11 +121,14 @@ def get_attendance():
 def save_attendance():
     try:
         attendance_data = request.json
-        if not attendance_data:
-            return jsonify({'error': 'No data provided'}), 400
+        
+        # If the data is null or an empty dictionary, reset attendance
+        if attendance_data is None or not attendance_data:
+            db.reset_attendance()
+        else:
+            # Save the entire attendance data
+            db.save_attendance(attendance_data)
             
-        # Save the entire attendance data
-        db.save_attendance(attendance_data)
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500

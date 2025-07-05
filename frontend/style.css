@@ -192,6 +192,27 @@ body {
     font-size: 0.9rem;
 }
 
+.date-restriction-notice {
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 6px;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    color: #1976d2;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-restriction-notice i {
+    color: #2196f3;
+}
+
+.date-restriction-notice span {
+    font-weight: 500;
+}
+
 /* Holiday Notice */
 .holiday-notice {
     text-align: center;
@@ -723,6 +744,13 @@ body {
     border: 1px dashed #ddd;
 }
 
+.calendar-day.before-academic-year {
+    background: #f8f9fa;
+    color: #adb5bd;
+    border: 1px dashed #dee2e6;
+    opacity: 0.6;
+}
+
 .clickable-name {
     color: #3498db;
     cursor: pointer;
@@ -972,7 +1000,28 @@ body {
     background: white;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    overflow: hidden;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar styling for attendance list */
+.attendance-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.attendance-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.attendance-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+.attendance-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .student-row {
@@ -1076,6 +1125,36 @@ body {
     border: 2px solid #e74c3c;
     border-radius: 5px;
     font-size: 14px;
+}
+
+/* Attendance Save Section */
+.attendance-save-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+    text-align: center;
+}
+
+.btn-save-attendance {
+    font-size: 16px;
+    padding: 12px 30px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-save-attendance:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.save-note {
+    margin-top: 10px;
+    color: #6c757d;
+    font-size: 14px;
+    font-style: italic;
 }
 
 /* Report Controls */
@@ -1944,6 +2023,11 @@ body {
     color: white;
 }
 
+.calendar-day.attendance-pending {
+    background: #f39c12;
+    color: white;
+}
+
 .calendar-day.attendance-missed {
     background: #e74c3c;
     color: white;
@@ -2005,6 +2089,10 @@ body {
     background: #27ae60;
 }
 
+.legend-color.attendance-pending {
+    background: #f39c12;
+}
+
 .legend-color.attendance-missed {
     background: #e74c3c;
 }
@@ -2021,6 +2109,12 @@ body {
 
 .legend-color.future-day {
     background: #ecf0f1;
+}
+
+.legend-color.before-academic-year {
+    background: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    opacity: 0.6;
 }
 
 .summary-stats {
@@ -2514,5 +2608,89 @@ body {
     
     .import-summary {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Delete All Students Button - Dangerous Action Styling */
+.btn-danger.delete-all {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    border: 2px solid #c0392b;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-danger.delete-all:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    border-color: #a93226;
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-danger.delete-all:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger.delete-all::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-danger.delete-all:hover::before {
+    left: 100%;
+}
+
+.btn-danger.delete-all i {
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+/* Warning icon for delete all button */
+.btn-danger.delete-all .warning-icon {
+    color: #ffd700;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Mobile responsive for delete all button */
+@media (max-width: 768px) {
+    .btn-danger.delete-all {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+    
+    .btn-danger.delete-all i {
+        font-size: 12px;
+        margin-right: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-danger.delete-all {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+    
+    .btn-danger.delete-all i {
+        font-size: 11px;
+        margin-right: 4px;
     }
 }

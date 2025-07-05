@@ -292,48 +292,43 @@
 
             <!-- Daily Attendance Section -->
             <section id="attendance" class="section">
-                <h2>Daily Attendance</h2>
-                <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
-                    <p style="margin: 0; font-size: 0.9rem;">
-                        📌 <strong>Sticky Attendance:</strong> When you select a date, each student's most recent attendance status is automatically applied. Students who were absent will remain absent until you manually change them. Just toggle any changes and click "Save Attendance" once!
-                    </p>
-                </div>
-                <div class="attendance-controls">
-                    <div class="controls-row">
-                        <div class="date-selector">
-                            <label for="attendanceDate">Date:</label>
-                            <input type="date" id="attendanceDate">
-                        </div>
-                        <div class="class-filter">
-                            <label for="classFilter">Filter by Class:</label>
-                            <select id="classFilter">
-                                <option value="">All Classes</option>
-                            </select>
-                        </div>
+                <div class="attendance-header">
+                    <h2><i class="fas fa-check-circle"></i> Daily Attendance</h2>
+                    <div class="attendance-date-selector">
+                        <input type="date" id="attendanceDate">
                     </div>
+                </div>
+
+                <div class="attendance-controls">
+                    <div class="class-filter">
+                        <label for="classFilter">Class:</label>
+                        <select id="classFilter">
+                            <option value="">All Classes</option>
+                        </select>
+                        <span class="student-count">(<span id="filteredStudentCount">0</span> students)</span>
+                    </div>
+                    <div class="bulk-actions">
+                        <button onclick="markAllPresent()" class="btn btn-success">
+                            <i class="fas fa-check-double"></i> Mark All Present
+                        </button>
+                        <button onclick="showMarkAllAbsentModal()" class="btn btn-danger">
+                            <i class="fas fa-user-slash"></i> Mark All Absent
+                        </button>
+                        <button onclick="copyPreviousDayAttendance()" class="btn btn-secondary">
+                            <i class="fas fa-copy"></i> Copy Previous Day
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="attendanceList" class="attendance-list">
+                    <!-- Student attendance rows will be populated here -->
+                </div>
+                
+                <div class="attendance-save-section">
                     <button onclick="saveAttendance()" class="btn btn-success btn-save-attendance">
                         <i class="fas fa-save"></i> Save Attendance
                     </button>
-                </div>
-                
-                <!-- Bulk Actions -->
-                <div class="bulk-actions">
-                    <div class="bulk-buttons">
-                        <button onclick="markAllPresent()" class="btn btn-success btn-bulk">
-                            <i class="fas fa-check-circle"></i> Mark All Present
-                        </button>
-                        <button onclick="showMarkAllAbsentModal()" class="btn btn-danger btn-bulk">
-                            <i class="fas fa-times-circle"></i> Mark All Absent
-                        </button>
-
-                    </div>
-                    <div class="bulk-info">
-                        <p><span id="filteredStudentCount">0</span> students shown</p>
-                    </div>
-                </div>
-
-                <div id="attendanceList" class="attendance-list">
-                    <p>No students found. Please register students first.</p>
+                    <p class="save-note">Remember to save attendance after making changes!</p>
                 </div>
             </section>
 
@@ -352,6 +347,10 @@
                 </div>
                 
                 <div class="report-controls">
+                    <div id="dateRestrictionNotice" class="date-restriction-notice" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-translate="dateRestrictionNotice">Date selection is restricted to academic year period</span>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="reportStartDate">From Date:</label>
@@ -364,6 +363,9 @@
                     </div>
                     <button onclick="generateReport()" class="btn btn-primary">
                         <i class="fas fa-chart-bar"></i> Generate Report
+                    </button>
+                    <button onclick="generateFromBeginningReport()" class="btn btn-success" style="margin-left: 10px;">
+                        <i class="fas fa-calendar-alt"></i> From Beginning Report
                     </button>
                 </div>
                 <div id="reportResults" class="report-results">
@@ -388,6 +390,24 @@
             <section id="settings" class="section">
                 <h2>Settings</h2>
                 <div class="settings-content">
+                    <h3>Academic Year Settings</h3>
+                    <div class="add-class academic-year-setting">
+                        <input type="date" id="academicYearStartInput" placeholder="Select academic year start date">
+                        <button onclick="saveAcademicYearStart()" class="btn btn-primary" id="saveAcademicYearStartBtn" data-translate="setAcademicYearStartBtn">
+                            <i class="fas fa-calendar"></i> Set Academic Year Start
+                        </button>
+                        <button onclick="clearAcademicYearStart()" class="btn btn-secondary" id="clearAcademicYearStartBtn" style="margin-left: 10px;" data-translate="clearAcademicYearStartBtn">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                    <div class="help-text">
+                        <p>Select the starting date for your academic year. This will be used for "From Beginning" reports and will restrict all date selections to this period.</p>
+                        <div id="currentAcademicYearDisplay" style="display: none; margin-top: 10px; padding: 8px; background: #e8f5e8; border-radius: 4px; color: #27ae60;">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Current academic year starts from: <strong id="academicYearStartDisplay"></strong></span>
+                        </div>
+                    </div>
+                    
                     <h3>Application Settings</h3>
                     <div class="add-class app-name-setting">
                         <input type="text" id="appNameInput" placeholder="Enter application name">
@@ -453,6 +473,23 @@
                         </div>
                     </div>
 
+                    <h3 data-translate="dataManagement">Data Management</h3>
+                    <div class="data-management">
+                        <div class="warning-section" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+                            <h4 style="color: #856404; margin-top: 0;">⚠️ <span data-translate="dangerZone">Danger Zone</span></h4>
+                            <p style="color: #856404; margin-bottom: 0;" data-translate="dangerZoneWarning">These actions cannot be undone. Please be careful.</p>
+                        </div>
+                        <div class="reset-attendance-section" style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px;">
+                            <h4 style="color: #721c24; margin-top: 0;">🗑️ <span data-translate="resetAttendanceHistory">Reset Attendance History</span></h4>
+                            <p style="color: #721c24; margin-bottom: 15px;" data-translate="resetAttendanceDescription">
+                                This will permanently delete all attendance records for all students. 
+                                <strong>This action cannot be undone!</strong>
+                            </p>
+                            <button onclick="showResetAttendanceModal()" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> <span data-translate="resetAllAttendance">Reset All Attendance</span>
+                            </button>
+                        </div>
+                    </div>
 
                 </div>
             </section>
@@ -487,6 +524,35 @@
                         <i class="fas fa-times-circle"></i> Mark All Absent
                     </button>
                     <button onclick="closeBulkAbsentModal()" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Attendance Modal -->
+    <div id="resetAttendanceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResetAttendanceModal()">&times;</span>
+            <h3 style="color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> Reset Attendance History</h3>
+            <div class="reset-attendance-form">
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                    <p style="color: #721c24; margin-bottom: 10px;"><strong>⚠️ Warning: This action cannot be undone!</strong></p>
+                    <p style="color: #721c24; margin-bottom: 10px;">This will permanently delete:</p>
+                    <ul style="color: #721c24; margin-bottom: 0;">
+                        <li>All attendance records for all students</li>
+                        <li>All saved attendance dates</li>
+                        <li>All attendance history from the calendar</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 15px;">Type <strong>"RESET"</strong> to confirm:</p>
+                <input type="text" id="resetConfirmationInput" placeholder="Type RESET to confirm" style="margin-bottom: 15px; width: 100%;">
+                <div class="modal-buttons">
+                    <button onclick="confirmResetAttendance()" class="btn btn-danger" id="confirmResetBtn" disabled>
+                        <i class="fas fa-trash-alt"></i> Reset All Attendance
+                    </button>
+                    <button onclick="closeResetAttendanceModal()" class="btn btn-secondary">
                         <i class="fas fa-times"></i> Cancel
                     </button>
                 </div>
