@@ -109,7 +109,10 @@ All your data is stored in simple JSON files in the `backend/data/` folder:
 
 ## 🌐 Deploy to the Web
 
-Want to make your system available online? See **[DEPLOYMENT.md](DEPLOYMENT.md)** for step-by-step instructions to deploy to Render (free hosting).
+Want to make your system available online? Choose your preferred platform:
+
+- **🚀 Render** - See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions (free hosting)
+- **🌐 Google Cloud** - See [DEPLOYMENT-GCP.md](DEPLOYMENT-GCP.md) for Google Cloud Platform deployment (App Engine & Cloud Run)
 
 ## 🤲 Islamic Features
 

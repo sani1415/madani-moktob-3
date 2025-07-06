@@ -1,0 +1,25 @@
+runtime: python39
+service: default
+
+env_variables:
+  PRODUCTION: "true"
+
+# Scale down to zero when not in use (saves costs)
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+
+# Health check configuration
+readiness_check:
+  path: "/api/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+liveness_check:
+  path: "/api/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 4
+  success_threshold: 2 
