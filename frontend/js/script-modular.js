@@ -9,204 +9,189 @@ import { validateConfig } from './core/config.js';
 
 // Feature modules
 import { studentManager } from './modules/students/student-manager.js';
+import { attendanceManager } from './modules/attendance/attendance-manager.js';
+import { dashboardManager } from './modules/dashboard/dashboard.js';
+import { navigationManager } from './modules/ui/navigation.js';
 
 /**
  * Initialize all application modules
  */
 async function initializeModules() {
     try {
-        console.log('Registering application modules...');
-        
-        // Register core modules
-        registerModule('studentManager', studentManager);
-        
-        // Additional modules will be registered here as we extract them:
-        // registerModule('attendanceManager', attendanceManager);
-        // registerModule('reportGenerator', reportGenerator);
-        // registerModule('dashboardManager', dashboardManager);
-        // registerModule('settingsManager', settingsManager);
-        
-        console.log('All modules registered successfully');
-        
-    } catch (error) {
-        console.error('Failed to register modules:', error);
-        throw error;
-    }
-}
-
-/**
- * Setup global functions for backward compatibility
- * These functions maintain the same interface as the original script.js
- */
-function setupGlobalFunctions() {
-    // Student management functions
-    window.registerStudent = () => studentManager.registerStudent();
-    window.updateStudent = (id) => studentManager.updateStudent(id);
-    window.deleteStudent = (id) => studentManager.deleteStudent(id);
-    window.deleteAllStudents = () => studentManager.deleteAllStudents();
-    window.editStudent = (id) => studentManager.editStudent(id);
-    window.showStudentRegistrationForm = () => studentManager.showRegistrationForm();
-    window.hideStudentRegistrationForm = () => studentManager.hideRegistrationForm();
-    window.resetStudentForm = () => studentManager.resetForm();
-    
-    // Navigation functions (these will be moved to navigation module later)
-    window.toggleMobileMenu = toggleMobileMenu;
-    window.showSection = showSection;
-    
-    // Class management functions (these will be moved to settings module later)
-    window.addClass = addClass;
-    window.deleteClass = deleteClass;
-    window.editClass = editClass;
-    
-    // Other functions will be added here as we extract more modules
-    // window.markAllPresent = () => attendanceManager.markAllPresent();
-    // window.generateReport = () => reportGenerator.generate();
-    // etc.
-    
-    console.log('Global functions setup complete');
-}
-
-/**
- * Temporary functions for features not yet modularized
- * These will be removed as we extract them into proper modules
- */
-
-// Mobile Menu Functions (will be moved to navigation module)
-function toggleMobileMenu() {
-    const navList = document.getElementById('navList');
-    const toggleButton = document.querySelector('.mobile-menu-toggle i');
-    
-    navList.classList.toggle('active');
-    
-    // Change icon
-    if (navList.classList.contains('active')) {
-        toggleButton.className = 'fas fa-times';
-    } else {
-        toggleButton.className = 'fas fa-bars';
-    }
-}
-
-// Navigation Functions (will be moved to navigation module)
-async function showSection(sectionId) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(section => section.classList.remove('active'));
-    
-    // Remove active class from nav links
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => link.classList.remove('active'));
-    
-    // Show selected section
-    document.getElementById(sectionId).classList.add('active');
-    
-    // Add active class to clicked nav link
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
-    
-    // Close mobile menu on mobile devices
-    const navList = document.getElementById('navList');
-    const toggleButton = document.querySelector('.mobile-menu-toggle i');
-    if (window.innerWidth <= 768) {
-        navList.classList.remove('active');
-        toggleButton.className = 'fas fa-bars';
-    }
-    
-    // Update content based on section
-    if (sectionId === 'dashboard') {
-        // updateDashboard(); // Will be moved to dashboard module
-    } else if (sectionId === 'attendance') {
-        // await loadAttendanceForDate(); // Will be moved to attendance module
-    } else if (sectionId === 'registration') {
-        // displayStudentsList(); // Already handled by student module
-        // Show student list by default, hide form
-        const studentsListContainer = document.getElementById('studentsListContainer');
-        const studentRegistrationForm = document.getElementById('studentRegistrationForm');
-        if (studentsListContainer && studentRegistrationForm) {
-            studentsListContainer.style.display = 'block';
-            studentRegistrationForm.style.display = 'none';
-        }
-    }
-}
-
-// Class Management Functions (will be moved to settings module)
-function addClass() {
-    const newClassName = document.getElementById('newClassName').value.trim();
-    
-    if (!newClassName) {
-        alert('Please enter a class name.');
-        return;
-    }
-    
-    // Implementation will be moved to settings module
-    console.log('Adding class:', newClassName);
-}
-
-function deleteClass(className) {
-    if (confirm(`Are you sure you want to delete class "${className}"?`)) {
-        // Implementation will be moved to settings module
-        console.log('Deleting class:', className);
-    }
-}
-
-function editClass(oldClassName) {
-    // Implementation will be moved to settings module
-    console.log('Editing class:', oldClassName);
-}
-
-/**
- * Setup event listeners
- */
-function setupEventListeners() {
-    // Listen for module updates
-    document.addEventListener('studentUpdate', (event) => {
-        console.log('Student data updated:', event.detail);
-        // Trigger UI updates for components that depend on student data
-        // updateDashboard();
-        // updateStudentsList();
-    });
-    
-    // Setup other global event listeners
-    console.log('Event listeners setup complete');
-}
-
-/**
- * Main initialization function
- */
-async function initialize() {
-    try {
-        console.log('Starting modular application initialization...');
+        console.log('🚀 Initializing Madani Maktab application modules...');
         
         // Validate configuration
         validateConfig();
         
-        // Initialize modules
-        await initializeModules();
+        // Register core modules
+        registerModule('studentManager', studentManager);
+        registerModule('attendanceManager', attendanceManager);
+        registerModule('dashboardManager', dashboardManager);
+        registerModule('navigationManager', navigationManager);
         
-        // Setup global functions for backward compatibility
-        setupGlobalFunctions();
+        console.log('✅ All modules registered successfully');
         
-        // Setup event listeners
-        setupEventListeners();
+        // Initialize modules in proper order
+        await initializeInOrder();
         
-        console.log('Modular application initialization complete');
+        console.log('🎉 Application initialization complete!');
         
     } catch (error) {
-        console.error('Modular application initialization failed:', error);
-        alert('Failed to initialize the application. Please refresh the page.');
+        console.error('❌ Failed to initialize application modules:', error);
+        showErrorMessage('Failed to initialize application. Please refresh the page.');
     }
 }
 
 /**
- * Start the application when DOM is ready
+ * Initialize modules in proper dependency order
  */
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-} else {
-    initialize();
+async function initializeInOrder() {
+    console.log('📋 Initializing modules in order...');
+    
+    // Phase 1: Core infrastructure
+    console.log('Phase 1: Core infrastructure');
+    await appManager.initialize();
+    
+    // Phase 2: UI and navigation
+    console.log('Phase 2: UI and navigation');
+    await navigationManager.initialize();
+    
+    // Phase 3: Data management modules
+    console.log('Phase 3: Data management');
+    await studentManager.initialize();
+    await attendanceManager.initialize();
+    
+    // Phase 4: UI modules that depend on data
+    console.log('Phase 4: UI modules');
+    await dashboardManager.initialize();
+    
+    console.log('✅ All modules initialized successfully');
 }
 
 /**
- * Export for external use
+ * Show error message to user
+ * @param {string} message - Error message to display
  */
-export { initialize, appManager, studentManager };
+function showErrorMessage(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #e74c3c;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 5px;
+        z-index: 10000;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    `;
+    errorDiv.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(errorDiv);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.parentNode.removeChild(errorDiv);
+        }
+    }, 10000);
+}
+
+/**
+ * Setup global error handlers
+ */
+function setupGlobalErrorHandlers() {
+    // Handle uncaught JavaScript errors
+    window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+        showErrorMessage('An unexpected error occurred. Please check the console for details.');
+    });
+    
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        showErrorMessage('An unexpected error occurred. Please check the console for details.');
+    });
+}
+
+/**
+ * Setup development helpers
+ */
+function setupDevelopmentHelpers() {
+    if (process.env.NODE_ENV === 'development') {
+        // Make managers available globally for debugging
+        window.studentManager = studentManager;
+        window.attendanceManager = attendanceManager;
+        window.dashboardManager = dashboardManager;
+        window.navigationManager = navigationManager;
+        window.appManager = appManager;
+        
+        console.log('🔧 Development helpers enabled');
+    }
+}
+
+/**
+ * Handle DOM content loaded
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('📄 DOM Content Loaded');
+    
+    // Setup error handlers first
+    setupGlobalErrorHandlers();
+    
+    // Setup development helpers
+    setupDevelopmentHelpers();
+    
+    // Initialize all modules
+    await initializeModules();
+});
+
+/**
+ * Handle page visibility changes
+ */
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        console.log('🔄 Page became visible - refreshing dashboard');
+        dashboardManager.forceUpdate();
+    }
+});
+
+/**
+ * Export for backward compatibility with HTML onclick handlers
+ */
+window.showSection = (sectionId) => navigationManager.showSection(sectionId);
+window.toggleMobileMenu = () => navigationManager.toggleMobileMenu();
+
+// Export main functions for HTML compatibility
+window.loadAttendanceForDate = () => attendanceManager.loadAttendanceForDate();
+window.saveAttendance = () => attendanceManager.saveAttendance();
+window.toggleAttendance = (studentId, date, status) => attendanceManager.toggleAttendance(studentId, date, status);
+window.markAllPresent = () => attendanceManager.markAllPresent();
+window.markAllAbsent = () => attendanceManager.showMarkAllAbsentModal();
+window.markAllNeutral = () => attendanceManager.markAllNeutral();
+window.copyPreviousDayAttendance = () => attendanceManager.copyPreviousDayAttendance();
+window.updateAbsenceReason = (studentId, date, reason) => attendanceManager.updateAbsenceReason(studentId, date, reason);
+window.showMarkAllAbsentModal = () => attendanceManager.showMarkAllAbsentModal();
+window.closeBulkAbsentModal = () => attendanceManager.closeBulkAbsentModal();
+window.confirmMarkAllAbsent = () => attendanceManager.confirmMarkAllAbsent();
+
+// Export student management functions for HTML compatibility
+window.registerStudent = () => studentManager.registerStudent();
+window.editStudent = (studentId) => studentManager.editStudent(studentId);
+window.deleteStudent = (studentId) => studentManager.deleteStudent(studentId);
+window.showStudentRegistrationForm = () => studentManager.showRegistrationForm();
+window.hideStudentRegistrationForm = () => studentManager.hideRegistrationForm();
+window.resetStudentForm = () => studentManager.resetForm();
+
+// Export dashboard functions for HTML compatibility
+window.updateDashboard = () => dashboardManager.updateDashboard();
+window.forceUpdateDashboard = () => dashboardManager.forceUpdate();
+
+console.log('📦 Modular script loaded successfully');

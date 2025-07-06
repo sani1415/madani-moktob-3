@@ -14,6 +14,25 @@ export const APP_CONFIG = {
 };
 
 /**
+ * Attendance status constants
+ */
+export const ATTENDANCE_STATUS = {
+    PRESENT: 'present',
+    ABSENT: 'absent',
+    NEUTRAL: 'neutral'
+};
+
+/**
+ * UI configuration constants
+ */
+export const UI_CONFIG = {
+    mobileBreakpoint: 768,
+    animationDuration: 300,
+    debounceDelay: 300,
+    maxModalZIndex: 9999
+};
+
+/**
  * Default class list
  */
 export const DEFAULT_CLASSES = [
@@ -44,183 +63,182 @@ export const BENGALI_CLASS_MAP = {
 };
 
 /**
- * Form validation rules
+ * Validation rules for form inputs
  */
 export const VALIDATION_RULES = {
     student: {
-        required: ['name', 'fatherName', 'rollNumber', 'mobileNumber', 'district', 'upazila', 'class'],
-        minLength: {
-            name: 2,
-            fatherName: 2,
-            rollNumber: 1,
-            mobileNumber: 11
+        name: {
+            required: true,
+            minLength: 2,
+            maxLength: 100
         },
-        maxLength: {
-            name: 50,
-            fatherName: 50,
-            rollNumber: 10,
-            mobileNumber: 15,
-            district: 30,
-            upazila: 30
+        fatherName: {
+            required: true,
+            minLength: 2,
+            maxLength: 100
+        },
+        rollNumber: {
+            required: false,
+            minLength: 1,
+            maxLength: 10
+        },
+        class: {
+            required: true
+        },
+        mobileNumber: {
+            required: true,
+            pattern: /^[0-9+\-\s()]+$/,
+            minLength: 10,
+            maxLength: 15
+        },
+        district: {
+            required: true,
+            minLength: 2,
+            maxLength: 50
+        },
+        upazila: {
+            required: true,
+            minLength: 2,
+            maxLength: 50
+        }
+    },
+    class: {
+        name: {
+            required: true,
+            minLength: 2,
+            maxLength: 50
         }
     },
     holiday: {
-        required: ['name', 'date'],
-        minLength: {
-            name: 2
+        name: {
+            required: true,
+            minLength: 2,
+            maxLength: 100
         },
-        maxLength: {
-            name: 100
+        date: {
+            required: true
         }
     }
 };
 
 /**
- * UI Configuration
- */
-export const UI_CONFIG = {
-    // Mobile breakpoint
-    mobileBreakpoint: 768,
-    
-    // Pagination settings
-    pagination: {
-        defaultPageSize: 20,
-        maxPageSize: 100
-    },
-    
-    // Debounce delays
-    debounceDelay: {
-        search: 300,
-        save: 1000
-    },
-    
-    // Modal settings
-    modal: {
-        animationDuration: 300
-    },
-    
-    // Toast notification duration
-    toastDuration: 3000
-};
-
-/**
- * Date format configurations
- */
-export const DATE_CONFIG = {
-    display: {
-        short: 'DD/MM/YYYY',
-        long: 'DD MMMM YYYY'
-    },
-    input: 'YYYY-MM-DD',
-    locales: {
-        en: 'en-GB',
-        bn: 'bn-BD'
-    }
-};
-
-/**
- * Local storage keys
- */
-export const STORAGE_KEYS = {
-    language: 'madani_maktab_language',
-    appName: 'madani_maktab_app_name',
-    hijriAdjustment: 'madani_maktab_hijri_adjustment',
-    academicYearStart: 'madani_maktab_academic_year_start',
-    studentFilters: 'madani_maktab_student_filters',
-    lastVisitedSection: 'madani_maktab_last_section'
-};
-
-/**
- * API Configuration
+ * API configuration
  */
 export const API_CONFIG = {
-    baseUrl: '/api',
+    baseURL: '/api',
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 1000
 };
 
 /**
- * File upload configuration
+ * Storage keys for localStorage
  */
-export const UPLOAD_CONFIG = {
-    allowedTypes: [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-        'text/csv'
-    ],
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    maxBatchSize: 1000 // Maximum students per batch import
+export const STORAGE_KEYS = {
+    students: 'maktab_students',
+    attendance: 'maktab_attendance',
+    holidays: 'maktab_holidays',
+    classes: 'maktab_classes',
+    settings: 'maktab_settings',
+    appName: 'maktab_app_name',
+    academicYearStart: 'maktab_academic_year_start',
+    hijriAdjustment: 'maktab_hijri_adjustment',
+    lastVisitedSection: 'maktab_last_section'
 };
 
 /**
- * Student ID configuration
+ * Date format configuration
  */
-export const STUDENT_ID_CONFIG = {
-    prefix: 'ST',
-    length: 3,
-    startNumber: 1
+export const DATE_CONFIG = {
+    defaultFormat: 'YYYY-MM-DD',
+    displayFormat: 'DD/MM/YYYY',
+    timeFormat: 'HH:mm',
+    dateTimeFormat: 'DD/MM/YYYY HH:mm'
 };
 
 /**
- * Attendance status constants
+ * Modal configuration
  */
-export const ATTENDANCE_STATUS = {
-    PRESENT: 'present',
-    ABSENT: 'absent',
-    NEUTRAL: 'neutral'
+export const MODAL_CONFIG = {
+    types: {
+        SUCCESS: 'success',
+        ERROR: 'error',
+        WARNING: 'warning',
+        INFO: 'info',
+        CONFIRM: 'confirm'
+    },
+    defaultDuration: 3000,
+    maxWidth: 600
 };
 
 /**
- * Report configurations
+ * Report configuration
  */
 export const REPORT_CONFIG = {
-    maxDateRange: 365, // Maximum days for report generation
-    defaultSummaryPeriod: 'last30Days',
-    summaryPeriods: {
-        last30Days: 30,
-        fromBeginning: null
-    }
-};
-
-/**
- * Calendar configuration
- */
-export const CALENDAR_CONFIG = {
-    firstDayOfWeek: 6, // Saturday
-    weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    monthNames: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ]
-};
-
-/**
- * Hijri date configuration
- */
-export const HIJRI_CONFIG = {
-    adjustmentOptions: {
-        '-1': 'hijriMinusOne',
-        '0': 'hijriNoAdjustment',
-        '1': 'hijriPlusOne'
+    dateRanges: {
+        LAST_7_DAYS: 7,
+        LAST_30_DAYS: 30,
+        LAST_90_DAYS: 90
     },
-    defaultAdjustment: 0
+    exportFormats: ['PDF', 'Excel', 'CSV']
 };
 
 /**
- * Export validation helper
+ * Import/Export configuration
  */
-export function validateConfig() {
-    const errors = [];
-    
-    // Check required configurations
-    if (!APP_CONFIG.name) errors.push('App name is required');
-    if (!DEFAULT_CLASSES.length) errors.push('Default classes are required');
-    if (!API_CONFIG.baseUrl) errors.push('API base URL is required');
-    
-    if (errors.length > 0) {
-        throw new Error(`Configuration validation failed: ${errors.join(', ')}`);
+export const IMPORT_CONFIG = {
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    supportedFormats: ['.xlsx', '.xls', '.csv'],
+    batchSize: 100
+};
+
+/**
+ * Notification configuration
+ */
+export const NOTIFICATION_CONFIG = {
+    position: 'top-right',
+    duration: 5000,
+    maxNotifications: 5
+};
+
+/**
+ * Theme configuration
+ */
+export const THEME_CONFIG = {
+    colors: {
+        primary: '#3498db',
+        secondary: '#2c3e50',
+        success: '#27ae60',
+        warning: '#f39c12',
+        error: '#e74c3c',
+        info: '#17a2b8'
+    },
+    fonts: {
+        primary: 'Arial, sans-serif',
+        secondary: 'Georgia, serif'
     }
-    
+};
+
+/**
+ * Performance configuration
+ */
+export const PERFORMANCE_CONFIG = {
+    debounceDelay: 300,
+    throttleDelay: 100,
+    maxCacheSize: 1000,
+    cacheTimeout: 5 * 60 * 1000 // 5 minutes
+};
+
+/**
+ * Validate configuration object
+ * @param {Object} config - Configuration object to validate
+ * @returns {boolean} Whether configuration is valid
+ */
+export function validateConfig(config) {
+    if (!config || typeof config !== 'object') {
+        return false;
+    }
+
+    // Add validation logic here
     return true;
 }
