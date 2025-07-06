@@ -22,11 +22,11 @@ def check_requirements():
         print("\n📦 Installing required packages...")
         
         try:
-            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "backend/requirements.txt"], check=True)
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
             print("✅ Packages installed successfully!")
             return True
         except subprocess.CalledProcessError:
-            print("❌ Failed to install packages. Please run: pip install -r backend/requirements.txt")
+            print("❌ Failed to install packages. Please run: pip install -r requirements.txt")
             return False
 
 def start_server():
@@ -45,6 +45,12 @@ def main():
     print("🕌 Madani Maktab - Islamic School Attendance Management System")
     print("📁 Using Simple JSON File Database")
     print("="*60)
+    
+    # Check if we're in the right directory
+    if not os.path.exists('backend/simple_server.py'):
+        print("❌ Error: backend/simple_server.py not found!")
+        print("Make sure you're running this script from the project root directory")
+        return
     
     # Check requirements
     if not check_requirements():

@@ -200,5 +200,7 @@ if __name__ == '__main__':
     print(f"🌐 Server starting on http://localhost:{port}")
     print("💾 Using JSON file database (simple and easy!)")
 
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # Use debug=False for production deployment
+    is_production = os.environ.get('RENDER') or os.environ.get('PRODUCTION')
+    app.run(host='0.0.0.0', port=port, debug=not is_production)
 

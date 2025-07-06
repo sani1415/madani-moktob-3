@@ -18,6 +18,7 @@ A simple, beginner-friendly web application for managing student attendance in I
 ```bash
 python app.py
 ```
+*This single command will automatically check and install requirements, then start the server*
 
 ### 2. Open in Browser
 Go to: **http://localhost:5000** (or check the port shown in terminal)
@@ -31,23 +32,23 @@ Go to: **http://localhost:5000** (or check the port shown in terminal)
 
 ```
 madani-moktob-3/
-├── 🚀 app.py                    # Main startup file
+├── 🚀 app.py                    # Single startup file
 ├── 📁 backend/
 │   ├── simple_server.py         # Flask web server
 │   ├── json_database.py         # Database management
-│   ├── requirements.txt         # Python dependencies  
 │   ├── 📁 data/                 # JSON data files
 │   │   ├── students.json        # Student information
 │   │   ├── attendance.json      # Attendance records
 │   │   └── holidays.json        # Holiday calendar
 │   └── 📁 tests/                # Test files
-└── 📁 frontend/                 # Web interface files
-    ├── index.html              # Main webpage
-    ├── style.css               # Styling
-    ├── script.js               # Main functionality
-    ├── hijri.js                # Islamic calendar
-    ├── translations.js         # Language support
-    └── db_adapter.js           # Database connector
+├── 📁 frontend/                 # Web interface files
+│   ├── index.html              # Main webpage
+│   ├── style.css               # Styling
+│   ├── script.js               # Main functionality
+│   ├── hijri.js                # Islamic calendar
+│   ├── translations.js         # Language support
+│   └── db_adapter.js           # Database connector
+└── requirements.txt            # Python dependencies
 ```
 
 ## 🛠️ Technology
@@ -105,6 +106,10 @@ All your data is stored in simple JSON files in the `backend/data/` folder:
 - ✅ Teachers with basic computer skills
 - ✅ Schools wanting simple attendance tracking
 - ✅ Institutions preferring local data storage
+
+## 🌐 Deploy to the Web
+
+Want to make your system available online? See **[DEPLOYMENT.md](DEPLOYMENT.md)** for step-by-step instructions to deploy to Render (free hosting).
 
 ## 🤲 Islamic Features
 
