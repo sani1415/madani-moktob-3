@@ -1,21 +1,27 @@
+# Use Python 3.9 slim image
 FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8080
+# Create data directory
+RUN mkdir -p data
+
+# Expose port 5000
+EXPOSE 5000
 
 # Set environment variables
-ENV PYTHONPATH=/app/backend
-ENV PRODUCTION=true
+ENV FLASK_APP=simple_server.py
+ENV FLASK_ENV=production
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--chdir", "backend", "simple_server:app"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--chdir", "backend", "simple_server:app"] 

@@ -18,483 +18,330 @@ import { appState, updateAppState } from '../../core/app.js';
  */
 export class StudentManager {
     constructor() {
-        this.currentEditingId = null;
-        this.initialized = false;
+        this.fields = []; // Will hold field configurations
+        this.studentForm = document.getElementById('student-form'); // Reference to the form
+        this.studentTableBody = document.querySelector('#student-table tbody'); // Reference to the table body
+        this.currentEditingStudentId = null; // To keep track of the student being edited
+
+        this.bindEvents();
+        this.init();
     }
 
-    /**
-     * Initialize the student manager
-     */
-    async initialize() {
-        if (this.initialized) return;
-        
-        this.setupEventListeners();
-        this.initialized = true;
-        console.log('Student Manager initialized');
+    async init() {
+        await this.loadFieldConfig();
+        this.renderStudentForm();
+        this.renderStudentList();
     }
 
-    /**
-     * Setup event listeners for student form
-     */
-    setupEventListeners() {
-        const studentForm = document.getElementById('studentForm');
-        if (studentForm) {
-            studentForm.addEventListener('submit', this.handleFormSubmit.bind(this));
+    bindEvents() {
+        // Event listener for the student form submission
+        this.studentForm.addEventListener('submit', e => this.saveStudent(e));
+
+        // Event delegation for edit and delete buttons in the student list
+        this.studentTableBody.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const studentId = e.target.dataset.id;
+                await this.loadStudentForEdit(studentId);
+            } else if (e.target.classList.contains('delete-btn')) {
+                const studentId = e.target.dataset.id;
+                await this.deleteStudent(studentId);
+            }
+        });
+
+        // Add a "Clear Form" button listener if you have one
+        const clearFormBtn = document.getElementById('clear-student-form-btn');
+        if (clearFormBtn) {
+            clearFormBtn.addEventListener('click', () => this.clearStudentForm());
         }
     }
 
-    /**
-     * Handle form submission
-     * @param {Event} e - Form submit event
-     */
-    async handleFormSubmit(e) {
+    async loadFieldConfig() {
+        try {
+            const response = await fetch('/api/fields');
+            this.fields = await response.json();
+            // Sort fields for consistent rendering (optional)
+            this.fields.sort((a, b) => a.label.localeCompare(b.label));
+        } catch (error) {
+            console.error('Failed to load field config:', error);
+        }
+    }
+
+    renderStudentForm(studentData = {}) {
+        this.studentForm.innerHTML = ''; // Clear existing inputs
+        this.currentEditingStudentId = studentData.id || null;
+
+        // Only include visible fields for the form
+        const visibleFields = this.fields.filter(field => field.visible);
+
+        visibleFields.forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+
+            let inputHtml;
+            const fieldValue = studentData[field.name] || '';
+
+            switch (field.type) {
+                case 'date':
+                    inputHtml = `<input type="date" name="${field.name}" value="${fieldValue}" ${field.required ? 'required' : ''}>`;
+                    break;
+                case 'select':
+                    // Render a select dropdown with options
+                    let optionsHtml = '<option value="">Select...</option>';
+                    if (field.options && field.options.length > 0) {
+                        optionsHtml += field.options.map(option => 
+                            `<option value="${option}" ${fieldValue === option ? 'selected' : ''}>${option}</option>`
+                        ).join('');
+                    }
+                    inputHtml = `<select name="${field.name}" ${field.required ? 'required' : ''}>${optionsHtml}</select>`;
+                    break;
+                case 'textarea':
+                    inputHtml = `<textarea name="${field.name}" ${field.required ? 'required' : ''}>${fieldValue}</textarea>`;
+                    break;
+                case 'number': // Explicitly handle number type
+                    inputHtml = `<input type="number" name="${field.name}" value="${fieldValue}" ${field.required ? 'required' : ''}>`;
+                    break;
+                default: // text
+                    inputHtml = `<input type="text" name="${field.name}" value="${fieldValue}" ${field.required ? 'required' : ''}>`;
+                    break;
+            }
+
+            div.innerHTML = `
+                <label for="${field.name}">${field.label}${field.required ? ' <span class="required">*</span>' : ''}</label>
+                ${inputHtml}
+            `;
+            this.studentForm.appendChild(div);
+        });
+
+        // Add submit button
+        const submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        submitButton.textContent = this.currentEditingStudentId ? 'Update Student' : 'Add Student';
+        this.studentForm.appendChild(submitButton);
+
+        // Add a clear form button
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.id = 'clear-student-form-btn'; // Assign ID for event binding
+        clearButton.textContent = 'Clear Form';
+        this.studentForm.appendChild(clearButton);
+    }
+
+    async loadStudentForEdit(studentId) {
+        try {
+            const response = await fetch(`/api/students/${studentId}`);
+            if (!response.ok) {
+                throw new Error('Student not found');
+            }
+            const student = await response.json();
+            this.renderStudentForm(student); // Populate the form for editing
+            // Scroll to form or highlight
+            this.studentForm.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            console.error('Failed to load student for edit:', error);
+            alert('Failed to load student details.');
+        }
+    }
+
+    clearStudentForm() {
+        this.renderStudentForm(); // Render an empty form
+    }
+
+    async saveStudent(e) {
         e.preventDefault();
-        
-        if (this.currentEditingId) {
-            await this.updateStudent(this.currentEditingId);
-        } else {
-            await this.registerStudent();
-        }
-    }
+        const formData = new FormData(this.studentForm);
+        const studentData = {};
 
-    /**
-     * Register a new student
-     */
-    async registerStudent() {
+        // Collect all form data based on current visible fields
+        this.fields.filter(field => field.visible).forEach(field => {
+            studentData[field.name] = formData.get(field.name);
+        });
+
+        const method = this.currentEditingStudentId ? 'PUT' : 'POST';
+        const url = this.currentEditingStudentId 
+                    ? `/api/students/${this.currentEditingStudentId}` 
+                    : '/api/students/add';
+
         try {
-            const formData = this.getFormData();
-            
-            // Validate form data
-            if (!this.validateStudentForm(formData)) {
-                return;
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(studentData)
+            });
+
+            if (response.ok) {
+                this.renderStudentForm(); // Clear and reset form
+                await this.renderStudentList(); // Refresh list
+                alert('Student saved successfully!');
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to save student:', errorData.error || response.statusText);
+                alert(`Failed to save student: ${errorData.error || response.statusText}`);
             }
-
-            // Check for duplicate roll number
-            if (this.isDuplicateRollNumber(formData.rollNumber)) {
-                this.showModal('error', `Roll number ${formData.rollNumber} already exists. Please choose a different roll number.`);
-                return;
-            }
-
-            // Generate student ID
-            formData.id = generateStudentId(appState.students);
-            formData.registrationDate = getTodayDateString();
-
-            // Register student with backend
-            const result = await studentAPI.create(formData);
-            
-            if (result.student) {
-                // Update application state
-                const updatedStudents = [...appState.students, result.student];
-                updateAppState({ students: updatedStudents });
-
-                // Reset form and update UI
-                this.resetForm();
-                this.showModal('success', `${formData.name} has been registered successfully - Roll Number: ${result.student.rollNumber}`);
-                
-                // Trigger UI updates
-                this.notifyStudentUpdate();
-            }
-
         } catch (error) {
-            console.error('Registration error:', error);
-            this.showModal('error', error.message || 'Network error. Please try again.');
+            console.error('Network error saving student:', error);
+            alert('An error occurred while saving student data.');
         }
     }
 
-    /**
-     * Update an existing student
-     * @param {string} studentId - ID of student to update
-     */
-    async updateStudent(studentId) {
-        try {
-            const formData = this.getFormData();
-            formData.id = studentId;
-
-            // Validate form data
-            if (!this.validateStudentForm(formData)) {
-                return;
-            }
-
-            // Check for duplicate roll number (excluding current student)
-            if (this.isDuplicateRollNumber(formData.rollNumber, studentId)) {
-                this.showModal('error', `Roll number ${formData.rollNumber} already exists. Please choose a different roll number.`);
-                return;
-            }
-
-            // Update student with backend
-            const result = await studentAPI.update(studentId, formData);
-            
-            if (result.student) {
-                // Update application state
-                const updatedStudents = appState.students.map(s => 
-                    s.id === studentId ? result.student : s
-                );
-                updateAppState({ students: updatedStudents });
-
-                // Reset form and update UI
-                this.resetForm();
-                this.hideRegistrationForm();
-                this.showModal('success', 'Student updated successfully');
-                
-                // Trigger UI updates
-                this.notifyStudentUpdate();
-            }
-
-        } catch (error) {
-            console.error('Update error:', error);
-            this.showModal('error', error.message || 'Network error. Please try again.');
-        }
-    }
-
-    /**
-     * Delete a student
-     * @param {string} studentId - ID of student to delete
-     */
     async deleteStudent(studentId) {
+        if (!confirm('Are you sure you want to delete this student?')) {
+            return;
+        }
         try {
-            const student = appState.students.find(s => s.id === studentId);
-            if (!student) return;
-
-            // First confirmation
-            const confirmed1 = confirm(`Are you sure you want to delete ${student.name} বিন ${student.fatherName}? This action cannot be undone.`);
-            if (!confirmed1) return;
-
-            // Second confirmation with stronger warning
-            const confirmed2 = confirm(`Are you absolutely sure you want to delete this student?\n\nThis action is permanent and cannot be undone. All attendance records for this student will also be deleted.`);
-            if (!confirmed2) return;
-
-            // Delete student from backend
-            await studentAPI.delete(studentId);
-
-            // Update application state
-            const updatedStudents = appState.students.filter(s => s.id !== studentId);
-            updateAppState({ students: updatedStudents });
-
-            this.showModal('success', 'Student deleted successfully');
-            
-            // Trigger UI updates
-            this.notifyStudentUpdate();
-
+            const response = await fetch(`/api/students/${studentId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                alert('Student deleted successfully!');
+                await this.renderStudentList(); // Refresh list
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to delete student:', errorData.error || response.statusText);
+                alert(`Failed to delete student: ${errorData.error || response.statusText}`);
+            }
         } catch (error) {
-            console.error('Delete error:', error);
-            this.showModal('error', error.message || 'Network error. Please try again.');
+            console.error('Network error deleting student:', error);
+            alert('An error occurred while deleting student data.');
         }
     }
 
-    /**
-     * Delete all students
-     */
-    async deleteAllStudents() {
+    async renderStudentList() {
+        const visibleFields = this.fields.filter(field => field.visible);
+        const tableHeaderRow = document.querySelector('#student-table thead tr');
+        if (!tableHeaderRow) {
+            console.error('Student table header row not found.');
+            return;
+        }
+
+        // Clear existing headers and body
+        tableHeaderRow.innerHTML = '';
+        this.studentTableBody.innerHTML = '';
+
+        // Create header row based on visible fields
+        visibleFields.forEach(field => {
+            const th = document.createElement('th');
+            th.textContent = field.label;
+            tableHeaderRow.appendChild(th);
+        });
+        tableHeaderRow.innerHTML += '<th>Actions</th>'; // Add action column header
+
+        // Fetch and render students
         try {
-            if (appState.students.length === 0) {
-                this.showModal('error', 'No students to delete.');
-                return;
+            const response = await fetch('/api/students');
+            const students = await response.json();
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                visibleFields.forEach(field => {
+                    const td = document.createElement('td');
+                    td.textContent = student[field.name] || ''; // Display value or empty string
+                    row.appendChild(td);
+                });
+                // Action buttons
+                const actionTd = document.createElement('td');
+                actionTd.innerHTML = `
+                    <button class="edit-btn" data-id="${student.id}">Edit</button>
+                    <button class="delete-btn" data-id="${student.id}">Delete</button>
+                `;
+                row.appendChild(actionTd);
+                this.studentTableBody.appendChild(row);
+            });
+        } catch (error) {
+            console.error('Failed to render student list:', error);
+            alert('Failed to load student list.');
+        }
+    }
+
+    // CSV import/export methods (already provided, ensure they use this.fields)
+    async exportToCSV() {
+        const fieldsToExport = this.fields; // All fields are exported, not just visible ones
+        const response = await fetch('/api/students');
+        const students = await response.json();
+
+        // Create CSV header using field labels
+        const headers = fieldsToExport.map(field => field.label);
+        const csvRows = [headers.join(',')];
+
+        // Create rows for each student
+        students.forEach(student => {
+            const row = fieldsToExport.map(field => {
+                const value = student[field.name] || '';
+                // Escape double quotes by doubling them, then wrap in double quotes
+                return `"${value.toString().replace(/"/g, '""')}"`;
+            });
+            csvRows.push(row.join(','));
+        });
+
+        // Download CSV
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'students_data.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async importFromCSV(file) {
+        const fields = this.fields; // Use all fields for import mapping
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const csv = e.target.result;
+            const lines = csv.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return;
+
+            const headerLine = lines[0];
+            // Split headers by comma, handling quoted commas if necessary
+            const headers = headerLine.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g).map(h => h.replace(/(^"|"$)/g, '').trim());
+
+            const studentDataArray = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                // Split values by comma, handling quoted commas if necessary
+                const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                if (!values || values.length === 0) continue;
+
+                const studentData = {};
+                headers.forEach((header, index) => {
+                    // Find the corresponding field name from our configurations
+                    const fieldConfig = fields.find(f => f.label === header);
+                    if (fieldConfig && values[index] !== undefined) {
+                        studentData[fieldConfig.name] = values[index].replace(/(^"|"$)/g, '').trim();
+                    }
+                });
+                studentDataArray.push(studentData);
             }
 
-            // First confirmation
-            const confirmed1 = confirm(`Are you sure you want to delete ALL students?\n\nThis action cannot be undone.`);
-            if (!confirmed1) return;
-
-            // Second confirmation with stronger warning
-            const confirmed2 = confirm(`Are you absolutely sure you want to delete ALL students?\n\nThis will permanently delete ALL students and their attendance records. This action is irreversible and will completely reset your student database.`);
-            if (!confirmed2) return;
-
-            // Get count before deletion
-            const deletedCount = appState.students.length;
-
-            // Delete all students from backend
-            await studentAPI.deleteAll();
-
-            // Update application state
-            updateAppState({ students: [] });
-
-            this.showModal('success', `All ${deletedCount} students have been deleted successfully.`);
-            
-            // Trigger UI updates
-            this.notifyStudentUpdate();
-
-        } catch (error) {
-            console.error('Delete all error:', error);
-            this.showModal('error', error.message || 'Network error. Please try again.');
-        }
-    }
-
-    /**
-     * Edit a student
-     * @param {string} studentId - ID of student to edit
-     */
-    editStudent(studentId) {
-        const student = appState.students.find(s => s.id === studentId);
-        if (!student) return;
-
-        // Populate form with student data
-        this.populateForm(student);
-        
-        // Show form in edit mode
-        this.showRegistrationForm();
-        
-        // Set edit mode
-        this.currentEditingId = studentId;
-        
-        // Update form title and button
-        this.updateFormForEdit();
-    }
-
-    /**
-     * Get form data
-     * @returns {Object} Form data object
-     */
-    getFormData() {
-        return {
-            name: document.getElementById('studentName')?.value.trim() || '',
-            fatherName: document.getElementById('fatherName')?.value.trim() || '',
-            rollNumber: document.getElementById('rollNumber')?.value.trim() || '',
-            mobileNumber: document.getElementById('mobile')?.value.trim() || '',
-            district: document.getElementById('district')?.value.trim() || '',
-            upazila: document.getElementById('upazila')?.value.trim() || '',
-            class: document.getElementById('studentClass')?.value || ''
+            // Send each student data to the backend
+            for (const studentDataItem of studentDataArray) {
+                try {
+                    const response = await fetch('/api/students/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(studentDataItem)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error(`Failed to import student: ${JSON.stringify(studentDataItem)}`, errorData);
+                        // Optionally, collect errors and show a summary
+                    }
+                } catch (error) {
+                    console.error(`Network error importing student: ${JSON.stringify(studentDataItem)}`, error);
+                }
+            }
+            alert('CSV import process completed. Check console for any errors.');
+            await this.renderStudentList(); // Refresh list after import
         };
-    }
-
-    /**
-     * Populate form with student data
-     * @param {Object} student - Student object
-     */
-    populateForm(student) {
-        const fields = [
-            { id: 'studentName', value: student.name },
-            { id: 'fatherName', value: student.fatherName },
-            { id: 'rollNumber', value: student.rollNumber },
-            { id: 'mobile', value: student.mobileNumber },
-            { id: 'district', value: student.district },
-            { id: 'upazila', value: student.upazila },
-            { id: 'studentClass', value: student.class }
-        ];
-
-        fields.forEach(field => {
-            const element = document.getElementById(field.id);
-            if (element) {
-                element.value = field.value || '';
-            }
-        });
-    }
-
-    /**
-     * Validate student form
-     * @param {Object} formData - Form data to validate
-     * @returns {boolean} Whether form is valid
-     */
-    validateStudentForm(formData) {
-        const rules = VALIDATION_RULES.student;
-        
-        // Check required fields
-        const missingFields = rules.required.filter(field => !formData[field]);
-        if (missingFields.length > 0) {
-            this.showModal('error', 'Please fill in all required fields.');
-            return false;
-        }
-
-        // Check minimum lengths
-        for (const [field, minLength] of Object.entries(rules.minLength)) {
-            if (formData[field] && formData[field].length < minLength) {
-                this.showModal('error', `${field} must be at least ${minLength} characters long.`);
-                return false;
-            }
-        }
-
-        // Check maximum lengths
-        for (const [field, maxLength] of Object.entries(rules.maxLength)) {
-            if (formData[field] && formData[field].length > maxLength) {
-                this.showModal('error', `${field} cannot exceed ${maxLength} characters.`);
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check if roll number is duplicate
-     * @param {string} rollNumber - Roll number to check
-     * @param {string} excludeId - Student ID to exclude from check
-     * @returns {boolean} Whether roll number is duplicate
-     */
-    isDuplicateRollNumber(rollNumber, excludeId = null) {
-        return appState.students.some(student => 
-            student.rollNumber === rollNumber && student.id !== excludeId
-        );
-    }
-
-    /**
-     * Reset form to initial state
-     */
-    resetForm() {
-        const form = document.getElementById('studentForm');
-        if (form) {
-            form.reset();
-        }
-
-        // Reset form to registration mode
-        this.currentEditingId = null;
-        this.updateFormForRegistration();
-    }
-
-    /**
-     * Update form for registration mode
-     */
-    updateFormForRegistration() {
-        const titleElement = document.querySelector('#studentRegistrationForm h3');
-        const buttonElement = document.querySelector('#studentRegistrationForm .btn-primary');
-        
-        if (titleElement) {
-            titleElement.textContent = 'Register New Student';
-        }
-        
-        if (buttonElement) {
-            buttonElement.textContent = 'Register Student';
-        }
-    }
-
-    /**
-     * Update form for edit mode
-     */
-    updateFormForEdit() {
-        const titleElement = document.querySelector('#studentRegistrationForm h3');
-        const buttonElement = document.querySelector('#studentRegistrationForm .btn-primary');
-        
-        if (titleElement) {
-            titleElement.textContent = 'Edit Student';
-        }
-        
-        if (buttonElement) {
-            buttonElement.textContent = 'Update Student';
-        }
-    }
-
-    /**
-     * Show registration form
-     */
-    showRegistrationForm() {
-        const listContainer = document.getElementById('studentsListContainer');
-        const formContainer = document.getElementById('studentRegistrationForm');
-        
-        if (listContainer) listContainer.style.display = 'none';
-        if (formContainer) formContainer.style.display = 'block';
-    }
-
-    /**
-     * Hide registration form
-     */
-    hideRegistrationForm() {
-        const listContainer = document.getElementById('studentsListContainer');
-        const formContainer = document.getElementById('studentRegistrationForm');
-        
-        if (listContainer) listContainer.style.display = 'block';
-        if (formContainer) formContainer.style.display = 'none';
-        
-        this.resetForm();
-    }
-
-    /**
-     * Show modal message
-     * @param {string} type - Modal type (success, error, info)
-     * @param {string} message - Message to display
-     */
-    showModal(type, message) {
-        // This will be implemented when we extract the modal module
-        const title = type === 'success' ? 'Success' : 'Error';
-        alert(`${title}: ${message}`);
-    }
-
-    /**
-     * Notify other components about student updates
-     */
-    notifyStudentUpdate() {
-        // Dispatch custom event for student updates
-        const event = new CustomEvent('studentUpdate', {
-            detail: { students: appState.students }
-        });
-        document.dispatchEvent(event);
-    }
-
-    /**
-     * Get sorted students
-     * @returns {Array} Sorted array of students
-     */
-    getSortedStudents() {
-        return sortStudents(appState.students);
-    }
-
-    /**
-     * Get students by class
-     * @param {string} className - Class name
-     * @returns {Array} Students in the specified class
-     */
-    getStudentsByClass(className) {
-        return appState.students.filter(student => student.class === className);
-    }
-
-    /**
-     * Get student by ID
-     * @param {string} studentId - Student ID
-     * @returns {Object|null} Student object or null
-     */
-    getStudentById(studentId) {
-        return appState.students.find(student => student.id === studentId) || null;
-    }
-
-    /**
-     * Get students count
-     * @returns {number} Number of students
-     */
-    getStudentsCount() {
-        return appState.students.length;
-    }
-
-    /**
-     * Get students count by class
-     * @param {string} className - Class name
-     * @returns {number} Number of students in class
-     */
-    getStudentsCountByClass(className) {
-        return appState.students.filter(student => student.class === className).length;
-    }
-
-    /**
-     * Search students
-     * @param {string} query - Search query
-     * @param {string} field - Field to search in (name, rollNumber, mobile)
-     * @returns {Array} Filtered students
-     */
-    searchStudents(query, field = 'name') {
-        if (!query) return appState.students;
-        
-        const lowerQuery = query.toLowerCase();
-        return appState.students.filter(student => {
-            const fieldValue = student[field] || '';
-            return fieldValue.toLowerCase().includes(lowerQuery);
-        });
-    }
-
-    /**
-     * Shutdown the student manager
-     */
-    shutdown() {
-        this.initialized = false;
-        this.currentEditingId = null;
-        console.log('Student Manager shutdown');
+        reader.readAsText(file);
     }
 }
 
-// Create and export singleton instance
-export const studentManager = new StudentManager();
-
-// Export individual functions for backward compatibility
-export const registerStudent = () => studentManager.registerStudent();
-export const updateStudent = (id) => studentManager.updateStudent(id);
-export const deleteStudent = (id) => studentManager.deleteStudent(id);
-export const deleteAllStudents = () => studentManager.deleteAllStudents();
-export const editStudent = (id) => studentManager.editStudent(id);
-export const showStudentRegistrationForm = () => studentManager.showRegistrationForm();
-export const hideStudentRegistrationForm = () => studentManager.hideRegistrationForm();
-export const resetStudentForm = () => studentManager.resetForm();
+// Initialize when the relevant page is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Make sure this only runs if the student management elements are present
+    if (document.getElementById('student-form') && document.getElementById('student-table')) {
+        new StudentManager();
+    }
+});

@@ -4,203 +4,285 @@ Madani Maktab - Simple JSON File Server
 Easy-to-use server with JSON file database
 """
 
+import os
+import json
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import json
-import os
-from datetime import datetime
-from json_database import JSONDatabase
+from db import Database # Import the Database class
 
+# Initialize the Flask app
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
-# Initialize JSON database
-db = JSONDatabase()
+# Initialize the database
+db = Database()
 
-# Serve frontend files
-@app.route('/')
-def serve_index():
-    return send_from_directory('../frontend', 'index.html')
+# --- API Endpoints ---
 
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('../frontend', filename)
-
-# API Routes
 @app.route('/api/students', methods=['GET'])
 def get_students():
+    """Get all students with their dynamic field values."""
     try:
-        students = db.get_students()
+        students = db.get_students_with_fields()
         return jsonify(students)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error getting students: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/students', methods=['POST'])
 def add_student():
+    """Add a new student with dynamic field values."""
     try:
-        student_data = request.json
-        if not student_data:
-            return jsonify({'error': 'No data provided'}), 400
-            
-        required_fields = ['id', 'name', 'rollNumber']
-        for field in required_fields:
-            if field not in student_data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid request data"}), 400
         
-        # Check for duplicate roll number
-        existing_students = db.get_students()
-        if any(s.get('rollNumber') == student_data['rollNumber'] for s in existing_students):
-            return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
+        student_id = db.add_student(data)
+        if student_id:
+            # Return the created student data
+            student = db.get_student_with_fields(student_id)
+            return jsonify({'success': True, 'student': student}), 201
+        return jsonify(success=False, error="Failed to add student"), 500
+    except Exception as e:
+        print(f"Error adding student: {e}")
+        return jsonify(success=False, error=str(e)), 500
+
+@app.route('/api/students/<int:student_id>', methods=['GET'])
+def get_student_by_id(student_id):
+    """Get a single student by ID with their dynamic field values."""
+    try:
+        student = db.get_student_with_fields(student_id)
+        if student:
+            return jsonify(student)
+        return jsonify({"error": "Student not found"}), 404
+    except Exception as e:
+        print(f"Error getting student {student_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/students/<int:student_id>', methods=['PUT'])
+def update_student_data(student_id):
+    """Update student and field values."""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid request data"}), 400
         
-        # Mobile numbers are now allowed to be duplicate - removed this check
+        db.update_student(student_id, data)
+        # Return the updated student data
+        student = db.get_student_with_fields(student_id)
+        return jsonify({'success': True, 'student': student})
+    except ValueError as e:
+        return jsonify(success=False, error=str(e)), 404
+    except Exception as e:
+        print(f"Error updating student {student_id}: {e}")
+        return jsonify(success=False, error=str(e)), 500
+
+@app.route('/api/students/<int:student_id>', methods=['DELETE'])
+def delete_student_data(student_id):
+    """Delete a student and their associated data."""
+    try:
+        if db.delete_student(student_id):
+            return jsonify(success=True)
+        return jsonify(success=False, error="Student not found or failed to delete"), 404
+    except Exception as e:
+        print(f"Error deleting student {student_id}: {e}")
+        return jsonify(success=False, error=str(e)), 500
+
+# --- Field Management Endpoints ---
+@app.route('/api/fields', methods=['GET'])
+def get_fields():
+    """Get all field configurations."""
+    try:
+        fields = db.get_fields()
+        return jsonify(fields)
+    except Exception as e:
+        print(f"Error getting fields: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/fields/<int:field_id>', methods=['GET'])
+def get_field_by_id(field_id):
+    """Get a single field configuration by ID."""
+    try:
+        field = db.get_field_by_id(field_id)
+        if field:
+            return jsonify(field)
+        return jsonify({"error": "Field not found"}), 404
+    except Exception as e:
+        print(f"Error getting field {field_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/fields', methods=['POST'])
+def add_field():
+    """Add a new field configuration."""
+    try:
+        data = request.json
+        if not data or 'name' not in data or 'label' not in data or 'type' not in data:
+            return jsonify({"error": "Missing required field (name, label, type)"}), 400
         
-        db.add_student(student_data)
-        return jsonify({'success': True, 'student': student_data})
+        field_id = db.add_field(
+            name=data['name'],
+            label=data['label'],
+            type=data['type'],
+            visible=data.get('visible', True),
+            required=data.get('required', False),
+            options=data.get('options')
+        )
+        if field_id:
+            return jsonify(success=True, id=field_id), 201
+        return jsonify(success=False, error="Field with this name already exists"), 409 # Conflict
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error adding field: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
-@app.route('/api/students/<student_id>', methods=['PUT'])
-def update_student(student_id):
+@app.route('/api/fields/<int:field_id>', methods=['PUT'])
+def update_field_data(field_id):
+    """Update field configuration."""
     try:
-        student_data = request.json
-        if not student_data:
-            return jsonify({'error': 'No data provided'}), 400
-            
-        # Check for duplicate roll number (excluding current student)
-        existing_students = db.get_students()
-        for student in existing_students:
-            if (student.get('rollNumber') == student_data.get('rollNumber') and 
-                student.get('id') != student_id):
-                return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid request data"}), 400
         
-        # Mobile numbers are now allowed to be duplicate - removed this check
-            
-        student_data['id'] = student_id  # Ensure ID matches URL
-        db.add_student(student_data)  # add_student handles updates too
-        return jsonify({'success': True, 'student': student_data})
+        db.update_field(field_id, 
+                        label=data.get('label'), 
+                        type=data.get('type'), 
+                        visible=data.get('visible'), 
+                        required=data.get('required'),
+                        options=data.get('options'))
+        return jsonify(success=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error updating field {field_id}: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
-@app.route('/api/students/<student_id>', methods=['DELETE'])
-def delete_student(student_id):
+@app.route('/api/fields/<int:field_id>', methods=['DELETE'])
+def delete_field_data(field_id):
+    """Delete a field configuration."""
     try:
-        students = db.get_students()
-        students = [s for s in students if s['id'] != student_id]
-        db.save_students(students)
-        return jsonify({'success': True})
+        db.delete_field(field_id)
+        return jsonify(success=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error deleting field {field_id}: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
-@app.route('/api/students', methods=['DELETE'])
-def delete_all_students():
-    try:
-        # Clear all students
-        db.save_students([])
-        return jsonify({'success': True, 'message': 'All students deleted successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/roll-number/<class_name>')
-def get_next_roll_number(class_name):
-    try:
-        next_roll = db.generate_roll_number(class_name)
-        return jsonify({'rollNumber': next_roll})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+# --- Attendance Endpoints ---
 @app.route('/api/attendance', methods=['GET'])
 def get_attendance():
+    """Get all attendance data."""
     try:
         date = request.args.get('date')
-        attendance = db.get_attendance(date)
-        return jsonify(attendance)
+        if date:
+            attendance_records = db.get_attendance_by_date(date)
+            return jsonify({date: attendance_records})
+        else:
+            # Return all attendance data (you might want to implement this)
+            return jsonify({})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error getting attendance: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/attendance/<date>', methods=['GET'])
+def get_attendance_by_date(date):
+    """Get attendance for a specific date."""
+    try:
+        attendance_records = db.get_attendance_by_date(date)
+        return jsonify(attendance_records)
+    except Exception as e:
+        print(f"Error getting attendance for date {date}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/attendance', methods=['POST'])
-def save_attendance():
+def record_attendance():
+    """Record or update attendance for students."""
     try:
-        attendance_data = request.json
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
         
-        # If the data is null or an empty dictionary, reset attendance
-        if attendance_data is None or not attendance_data:
-            db.reset_attendance()
-        else:
-            # Save the entire attendance data
-            db.save_attendance(attendance_data)
-            
-        return jsonify({'success': True})
+        print(f"Received attendance data: {data}")
+        
+        # Handle bulk attendance data (format: {date: {student_id: {status: 'present/absent'}}})
+        if isinstance(data, dict):
+            for date, records in data.items():
+                if isinstance(records, dict):
+                    for student_id, record in records.items():
+                        if isinstance(record, dict) and 'status' in record:
+                            status = record['status']
+                            # Convert student_id to int if it's a string
+                            student_id_int = int(student_id) if isinstance(student_id, str) else student_id
+                            db.add_attendance_record(student_id_int, date, status)
+                        elif isinstance(record, str):
+                            # Handle case where record is just a status string
+                            status = record
+                            student_id_int = int(student_id) if isinstance(student_id, str) else student_id
+                            db.add_attendance_record(student_id_int, date, status)
+        
+        return jsonify(success=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error recording attendance: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
+# --- Holiday Endpoints ---
 @app.route('/api/holidays', methods=['GET'])
-def get_holidays():
+def get_holidays_data():
+    """Get all holidays."""
     try:
         holidays = db.get_holidays()
         return jsonify(holidays)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error getting holidays: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/holidays', methods=['POST'])
-def add_holiday():
+def add_holiday_data():
+    """Add a new holiday."""
     try:
-        holiday_data = request.json
-        if not holiday_data or not holiday_data.get('date') or not holiday_data.get('name'):
-            return jsonify({'error': 'Date and name are required'}), 400
-            
-        db.add_holiday(holiday_data['date'], holiday_data['name'])
-        return jsonify({'success': True})
+        data = request.json
+        if not data or 'date' not in data or 'description' not in data:
+            return jsonify({"error": "Missing date or description"}), 400
+        
+        db.add_holiday(data['date'], data['description'])
+        return jsonify(success=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error adding holiday: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
-@app.route('/api/create_sample_data', methods=['POST'])
-def create_sample_data():
-    """Create sample students data in JSON files"""
+@app.route('/api/holidays/<date>', methods=['DELETE'])
+def delete_holiday_data(date):
+    """Delete a holiday by date."""
     try:
-        students = db.create_sample_data()
-        return jsonify({
-            'success': True, 
-            'message': f'Created {len(students)} sample students in JSON database',
-            'students_count': len(students)
-        })
+        db.delete_holiday(date)
+        return jsonify(success=True)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error deleting holiday: {e}")
+        return jsonify(success=False, error=str(e)), 500
 
+# --- Health Check Endpoint ---
 @app.route('/api/health')
-def health():
+def health_check():
+    """Health check endpoint."""
     try:
-        students_count = len(db.get_students())
+        students_count = len(db.get_students_with_fields())
         return jsonify({
-            'status': 'healthy', 
-            'message': 'Madani Maktab JSON Server is running',
-            'database_type': 'JSON Files',
+            'status': 'healthy',
+            'message': 'Madani Maktab SQLite Server is running',
+            'database_type': 'SQLite',
             'students_count': students_count
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    print("🕌 Madani Maktab - Simple JSON Server")
-    print("=" * 40)
-    
-    # Check if we have students, if not create sample data
-    students = db.get_students()
-    if len(students) == 0:
-        print("📝 No students found, creating sample data...")
-        db.create_sample_data()
-        students = db.get_students()
-    
-    print(f"📊 Loaded {len(students)} students from JSON files")
-    print("📁 Database files located in: ./data/")
-    print("   - students.json")
-    print("   - attendance.json") 
-    print("   - holidays.json")
-    
-    port = int(os.environ.get('PORT', 5001))
-    print(f"🌐 Server starting on http://localhost:{port}")
-    print("💾 Using JSON file database (simple and easy!)")
+# Serve static files for the frontend
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
 
-    # Use debug=False for production deployment
-    is_production = os.environ.get('RENDER') or os.environ.get('PRODUCTION')
-    app.run(host='0.0.0.0', port=port, debug=not is_production)
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
+
+if __name__ == '__main__':
+    print("🕌 Madani Maktab - SQLite Server")
+    print("=" * 40)
+    print(f"🌐 Server starting on http://localhost:5000")
+    print("💾 Using SQLite database")
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
