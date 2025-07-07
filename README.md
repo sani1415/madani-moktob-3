@@ -1,6 +1,6 @@
 # 🕌 Madani Maktab - Islamic School Attendance System
 
-A simple, beginner-friendly web application for managing student attendance in Islamic schools. Built with Python Flask and JSON files - no complex database setup required!
+A simple, beginner-friendly web application for managing student attendance in Islamic schools. Built with Python Flask and SQLite - a fast, reliable database that requires no complex setup!
 
 ## ✨ Features
 
@@ -10,7 +10,7 @@ A simple, beginner-friendly web application for managing student attendance in I
 - 📊 **Smart Dashboard** - View attendance statistics by class
 - 🌐 **Bilingual Support** - English and Bengali (বাংলা)
 - 📱 **Mobile Friendly** - Works on phones, tablets, and computers
-- 💾 **Simple Storage** - Uses JSON files (no database needed)
+- 💾 **Simple Storage** - Uses SQLite database (built into Python, no setup needed)
 
 ## 🚀 Quick Start
 
@@ -35,12 +35,10 @@ madani-moktob-3/
 ├── 🚀 app.py                    # Single startup file
 ├── 📁 backend/
 │   ├── simple_server.py         # Flask web server
-│   ├── json_database.py         # Database management
-│   ├── 📁 data/                 # JSON data files
-│   │   ├── students.json        # Student information
-│   │   ├── attendance.json      # Attendance records
-│   │   └── holidays.json        # Holiday calendar
+│   ├── sqlite_database.py       # SQLite database management
+│   ├── migrate_to_sqlite.py     # Migration tool (if upgrading from JSON)
 │   └── 📁 tests/                # Test files
+├── � madani_moktob.db          # SQLite database file
 ├── 📁 frontend/                 # Web interface files
 │   ├── index.html              # Main webpage
 │   ├── style.css               # Styling
@@ -55,7 +53,7 @@ madani-moktob-3/
 
 - **Backend**: Python Flask (simple web server)
 - **Frontend**: HTML, CSS, JavaScript (easy to understand)
-- **Database**: JSON files (beginner-friendly)
+- **Database**: SQLite (fast, reliable, built into Python)
 - **Calendar**: Custom Hijri calendar system
 
 ## 📖 How to Use
@@ -92,12 +90,19 @@ madani-moktob-3/
 
 ## 💾 Data Storage
 
-All your data is stored in simple JSON files in the `backend/data/` folder:
-- **students.json** - All student information
-- **attendance.json** - Daily attendance records  
-- **holidays.json** - School holiday calendar
+All your data is stored in a single SQLite database file: `madani_moktob.db`
+- **students table** - All student information
+- **attendance table** - Daily attendance records  
+- **holidays table** - School holiday calendar
 
-**Backup Tip**: Copy the `data/` folder to backup your information!
+**Backup Tip**: Copy the `madani_moktob.db` file to backup all your information!
+
+### 🔄 Migrating from JSON
+If you were using the JSON version before, run this command to migrate your data:
+```bash
+cd backend
+python migrate_to_sqlite.py
+```
 
 ## 🌟 Perfect For
 

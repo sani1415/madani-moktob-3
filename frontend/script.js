@@ -120,7 +120,7 @@ async function initializeAppWithDatabase() {
 
 async function loadDataFromDatabase() {
     try {
-        // Load students from JSON database
+        // Load students from database
         const studentsResponse = await fetch('/api/students');
         if (studentsResponse.ok) {
             students = await studentsResponse.json();
@@ -128,7 +128,7 @@ async function loadDataFromDatabase() {
             throw new Error('Failed to load students from database');
         }
         
-        // Load attendance from JSON database
+        // Load attendance from database
         const attendanceResponse = await fetch('/api/attendance');
         if (attendanceResponse.ok) {
             const attendanceData = await attendanceResponse.json();
@@ -149,7 +149,7 @@ async function loadDataFromDatabase() {
             throw new Error('Failed to load attendance from database');
         }
         
-        // Load holidays from JSON database
+        // Load holidays from database
         const holidaysResponse = await fetch('/api/holidays');
         if (holidaysResponse.ok) {
             holidays = await holidaysResponse.json();
@@ -1178,7 +1178,7 @@ async function saveAttendance() {
     console.log('Current attendance object before save:', attendance);
     
     try {
-        // Save to JSON database via API
+        // Save to database via API
         const response = await fetch('/api/attendance', {
             method: 'POST',
             headers: {

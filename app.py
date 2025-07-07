@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Madani Maktab - Simple Startup Script
-Run this file to start your Islamic school attendance management system with JSON database!
+Run this file to start your Islamic school attendance management system with SQLite database!
 """
 
 import os
@@ -30,8 +30,8 @@ def check_requirements():
             return False
 
 def start_server():
-    """Start the Flask server with JSON database"""
-    print("\n🚀 Starting Madani Maktab JSON server...")
+    """Start the Flask server with SQLite database"""
+    print("\n🚀 Starting Madani Maktab SQLite server...")
     print("📖 Your Islamic school attendance system will be available at:")
     print("   http://localhost:5000")
     print("\n💡 Press Ctrl+C to stop the server")
@@ -43,7 +43,7 @@ def start_server():
 
 def main():
     print("🕌 Madani Maktab - Islamic School Attendance Management System")
-    print("📁 Using Simple JSON File Database")
+    print("� Using SQLite Database")
     print("="*60)
     
     # Check if we're in the right directory
@@ -56,9 +56,9 @@ def main():
     if not check_requirements():
         return
     
-    print("\n✅ No complex database setup required!")
-    print("💾 All data will be stored in simple JSON files")
-    print("📊 Perfect for beginners and small schools")
+    print("\n✅ Using SQLite database - fast and reliable!")
+    print("💾 All data will be stored in madani_moktob.db")
+    print("📊 Better performance for growing schools")
     
     # Start server
     start_server()
