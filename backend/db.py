@@ -12,23 +12,23 @@ class Database:
             # Get the project root directory (2 levels up from backend/)
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             db_path = os.path.join(project_root, 'madani_moktob.db')
-        
+
         print(f"🔍 Database path: {db_path}")
         print(f"🔍 Database file exists: {os.path.exists(db_path)}")
-        
+
         self.db_path = db_path
         self.lock = Lock()
-        
+
         # Create tables on initialization
         self.create_tables()
         print(f"✅ Database tables created/verified")
-        
+
     def get_connection(self):
         """Get a new database connection for the current thread"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
-        
+
     def create_tables(self):
         """Create database tables if they don't exist"""
         conn = self.get_connection()
@@ -39,7 +39,7 @@ class Database:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS student_fields (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
@@ -50,7 +50,7 @@ class Database:
                     options TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS student_field_values (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     student_id INTEGER NOT NULL,
@@ -60,7 +60,7 @@ class Database:
                     FOREIGN KEY (field_id) REFERENCES student_fields (id) ON DELETE CASCADE,
                     UNIQUE(student_id, field_id)
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS attendance (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     student_id INTEGER NOT NULL,
@@ -69,7 +69,7 @@ class Database:
                     FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
                     UNIQUE(student_id, date)
                 );
-                
+
                 CREATE TABLE IF NOT EXISTS holidays (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     date TEXT UNIQUE NOT NULL,
@@ -78,7 +78,7 @@ class Database:
                 );
             """)
             conn.commit()
-            
+
             # Check if holidays table has the correct structure
             cursor.execute("PRAGMA table_info(holidays)")
             columns = [row[1] for row in cursor.fetchall()]
@@ -87,7 +87,7 @@ class Database:
                 cursor.execute("ALTER TABLE holidays ADD COLUMN name TEXT NOT NULL DEFAULT 'Holiday'")
                 conn.commit()
                 print("✅ Added 'name' column to holidays table")
-                
+
         finally:
             conn.close()
 
@@ -96,25 +96,25 @@ class Database:
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
-            
+
             # Check if tables exist
             cursor.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='table' AND name IN ('students', 'student_fields', 'student_field_values')
             """)
             tables = [row['name'] for row in cursor.fetchall()]
             print(f"🔍 Database tables found: {tables}")
-            
+
             # Check student count
             cursor.execute("SELECT COUNT(*) as count FROM students")
             student_count = cursor.fetchone()['count']
             print(f"🔍 Student count: {student_count}")
-            
+
             # Check field count
             cursor.execute("SELECT COUNT(*) as count FROM student_fields")
             field_count = cursor.fetchone()['count']
             print(f"🔍 Field count: {field_count}")
-            
+
             conn.close()
             return True
         except Exception as e:
@@ -126,14 +126,14 @@ class Database:
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 students = json.load(f)
-                
+
             conn = self.get_connection()
             cursor = conn.cursor()
-            
+
             all_existing_field_names = set()
             for student in students:
                 all_existing_field_names.update(student.keys())
-            
+
             if 'id' in all_existing_field_names:
                 all_existing_field_names.remove('id')
 
@@ -152,7 +152,7 @@ class Database:
                     (field_name, label, 'text', None) # Add None for options for migrated fields
                 )
             conn.commit()
-            
+
             cursor.execute("SELECT id, name FROM student_fields")
             field_name_to_id = {row['name']: row['id'] for row in cursor.fetchall()}
 
@@ -206,7 +206,7 @@ class Database:
             fields.append(field)
         conn.close()
         return fields
-    
+
     def get_field_by_id(self, field_id):
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -258,14 +258,14 @@ class Database:
         cursor = conn.cursor()
         set_parts = []
         values = []
-        
+
         # Handle 'name' validation if provided in kwargs
         if 'name' in kwargs and kwargs['name'] is not None:
             self._validate_field_name(kwargs['name'])
             set_parts.append("name=?")
             values.append(kwargs['name'])
             del kwargs['name'] # Processed, so remove from generic loop
-            
+
         # Handle 'options' specifically
         if 'options' in kwargs:
             options_data = kwargs['options']
@@ -273,7 +273,7 @@ class Database:
             set_parts.append("options=?")
             values.append(options_json)
             del kwargs['options']
-            
+
         for key, value in kwargs.items():
             if value is not None:
                 set_parts.append(f"{key}=?")
@@ -282,7 +282,7 @@ class Database:
                     values.append(int(value))
                 else:
                     values.append(value)
-        
+
         if not set_parts:
             return
 
@@ -299,7 +299,7 @@ class Database:
             raise
         finally:
             conn.close()
-    
+
     def delete_field(self, field_id):
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -318,13 +318,13 @@ class Database:
         try:
             conn = self.get_connection()
             print("🔍 Getting students with fields...")
-            
+
             # Get all field configurations
             cursor = conn.cursor()
             cursor.execute("SELECT id, name FROM student_fields")
             fields = {row['id']: row['name'] for row in cursor.fetchall()}
             print(f"🔍 Found {len(fields)} field configurations: {fields}")
-            
+
             # Get all students with their field values
             cursor.execute("""
                 SELECT s.id, s.created_at, fv.field_id, fv.value
@@ -332,7 +332,7 @@ class Database:
                 LEFT JOIN student_field_values fv ON s.id = fv.student_id
                 ORDER BY s.id
             """)
-            
+
             students = {}
             for row in cursor.fetchall():
                 student_id = row['id']
@@ -341,12 +341,12 @@ class Database:
                         'id': student_id,
                         'created_at': row['created_at']
                     }
-                
+
                 if row['field_id']:  # field_id exists
                     field_name = fields.get(row['field_id'])
                     if field_name:
                         students[student_id][field_name] = row['value']
-            
+
             result = list(students.values())
             print(f"🔍 Returning {len(result)} students")
             return result
@@ -355,7 +355,7 @@ class Database:
             import traceback
             traceback.print_exc()
             raise e
-    
+
     def get_student_with_fields(self, student_id):
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -373,10 +373,10 @@ class Database:
                 JOIN student_fields sf ON sfv.field_id = sf.id
                 WHERE sfv.student_id = ?
             """, (student_id,))
-            
+
             for field_value_row in cursor.fetchall():
                 student_data[field_value_row['name']] = field_value_row['value']
-            
+
             return student_data
         finally:
             conn.close()
@@ -387,7 +387,7 @@ class Database:
         try:
             cursor.execute("INSERT INTO students DEFAULT VALUES")
             student_id = cursor.lastrowid
-            
+
             for field_name, value in field_values.items():
                 cursor.execute("SELECT id FROM student_fields WHERE name=?", (field_name,))
                 field_row = cursor.fetchone()
@@ -405,13 +405,13 @@ class Database:
             raise # Re-raise for API endpoint to catch
         finally:
             conn.close()
-    
+
     def update_student(self, student_id, field_values):
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute("BEGIN TRANSACTION")
-            
+
             cursor.execute("SELECT id FROM students WHERE id = ?", (student_id,))
             if not cursor.fetchone():
                 raise ValueError(f"Student with ID {student_id} not found.")
@@ -429,7 +429,7 @@ class Database:
                     "INSERT OR REPLACE INTO student_field_values (student_id, field_id, value) VALUES (?, ?, ?)",
                     (student_id, field_id, str(value))
                 )
-            
+
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -535,7 +535,7 @@ class Database:
         """Create sample students for testing"""
         try:
             print("📝 Creating sample students...")
-            
+
             # Sample students with dynamic fields
             sample_students = [
                 {
@@ -566,13 +566,13 @@ class Database:
                     'email': 'omar@example.com'
                 }
             ]
-            
+
             for student_data in sample_students:
                 student_id = self.add_student(student_data)
                 print(f"✅ Created student: {student_data['name']} (ID: {student_id})")
-            
+
             print(f"✅ Created {len(sample_students)} sample students")
             return True
         except Exception as e:
             print(f"❌ Error creating sample data: {e}")
-            return False 
+            return False

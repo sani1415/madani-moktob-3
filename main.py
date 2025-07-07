@@ -16,4 +16,4 @@ if __name__ == '__main__':
     print("=" * 40)
     print(f"🌐 Server starting on http://localhost:5000")
     print("💾 Using SQLite database")
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    app.run(host='0.0.0.0', port=5000, debug=True)

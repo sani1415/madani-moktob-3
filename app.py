@@ -11,7 +11,7 @@ import subprocess
 def check_requirements():
     """Check if required packages are installed"""
     print("🔍 Checking requirements...")
-    
+
     try:
         import flask
         import flask_cors
@@ -21,7 +21,7 @@ def check_requirements():
     except ImportError as e:
         print(f"❌ Missing package: {e}")
         print("\n📦 Installing required packages...")
-        
+
         try:
             subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
             print("✅ Packages installed successfully!")
@@ -33,14 +33,14 @@ def check_requirements():
 def initialize_database():
     """Initialize the SQLite database if it doesn't exist"""
     print("\n🔄 Checking SQLite database...")
-    
+
     try:
         # Import here to ensure requirements are checked first
         from backend.db import Database
-        
+
         # Initialize the database
         db = Database()
-        
+
         # Check if we need to migrate data from JSON
         json_path = os.path.join('data', 'students.json')
         if os.path.exists(json_path):
@@ -49,7 +49,7 @@ def initialize_database():
             print("✅ Data migration completed!")
         else:
             print("✅ SQLite database initialized!")
-            
+
         # Query field and student counts using a dedicated connection
         conn = db.get_connection()
         cursor = conn.cursor()
@@ -79,14 +79,14 @@ def initialize_database():
             print("✅ Default fields created!")
 
         # Check if we have any students, if not create sample data
-        
+
         if student_count == 0:
             print("📝 No students found, creating sample data...")
             if db.create_sample_data():
                 print("✅ Sample data created successfully!")
             else:
                 print("❌ Failed to create sample data")
-        
+
         return True
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
@@ -99,7 +99,7 @@ def start_server():
     print("   http://localhost:5000")
     print("\n💡 Press Ctrl+C to stop the server")
     print("="*50)
-    
+
     # Change to backend directory and run the simple server
     os.chdir('backend')
     subprocess.run([sys.executable, "simple_server.py"])
@@ -108,26 +108,26 @@ def main():
     print("🕌 Madani Maktab - Islamic School Attendance Management System")
     print("💾 Using SQLite Database with Dynamic Fields")
     print("="*60)
-    
+
     # Check if we're in the right directory
     if not os.path.exists('backend/simple_server.py'):
         print("❌ Error: backend/simple_server.py not found!")
         print("Make sure you're running this script from the project root directory")
         return
-    
+
     # Check requirements
     if not check_requirements():
         return
-    
+
     # Initialize database
     if not initialize_database():
         print("❌ Failed to initialize database. Please check the error messages above.")
         return
-    
+
     print("\n✅ SQLite database setup complete!")
     print("💾 All data will be stored in the SQLite database")
     print("📊 Perfect for beginners and small schools")
-    
+
     # Start server
     start_server()
 

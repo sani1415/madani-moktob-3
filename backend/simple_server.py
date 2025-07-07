@@ -36,7 +36,7 @@ def add_student():
         data = request.json
         if not data:
             return jsonify({"error": "Invalid request data"}), 400
-        
+
         student_id = db.add_student(data)
         if student_id:
             # Return the created student data
@@ -66,7 +66,7 @@ def update_student_data(student_id):
         data = request.json
         if not data:
             return jsonify({"error": "Invalid request data"}), 400
-        
+
         db.update_student(student_id, data)
         # Return the updated student data
         student = db.get_student_with_fields(student_id)
@@ -118,7 +118,7 @@ def add_field():
         data = request.json
         if not data or 'name' not in data or 'label' not in data or 'type' not in data:
             return jsonify({"error": "Missing required field (name, label, type)"}), 400
-        
+
         field_id = db.add_field(
             name=data['name'],
             label=data['label'],
@@ -141,11 +141,11 @@ def update_field_data(field_id):
         data = request.json
         if not data:
             return jsonify({"error": "Invalid request data"}), 400
-        
-        db.update_field(field_id, 
-                        label=data.get('label'), 
-                        type=data.get('type'), 
-                        visible=data.get('visible'), 
+
+        db.update_field(field_id,
+                        label=data.get('label'),
+                        type=data.get('type'),
+                        visible=data.get('visible'),
                         required=data.get('required'),
                         options=data.get('options'))
         return jsonify(success=True)
@@ -196,9 +196,9 @@ def record_attendance():
         data = request.json
         if not data:
             return jsonify({"error": "No data provided"}), 400
-        
+
         print(f"Received attendance data: {data}")
-        
+
         # Handle bulk attendance data (format: {date: {student_id: {status: 'present/absent'}}})
         if isinstance(data, dict):
             for date, records in data.items():
@@ -214,7 +214,7 @@ def record_attendance():
                             status = record
                             student_id_int = int(student_id) if isinstance(student_id, str) else student_id
                             db.add_attendance_record(student_id_int, date, status)
-        
+
         return jsonify(success=True)
     except Exception as e:
         print(f"Error recording attendance: {e}")
@@ -238,7 +238,7 @@ def add_holiday_data():
         data = request.json
         if not data or 'date' not in data or 'description' not in data:
             return jsonify({"error": "Missing date or description"}), 400
-        
+
         db.add_holiday(data['date'], data['description'])
         return jsonify(success=True)
     except Exception as e:
