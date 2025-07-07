@@ -228,8 +228,12 @@ class Database:
 
     # Helper for field name validation
     def _validate_field_name(self, name):
-        if not name or not re.match(r"^[a-z_][a-z0-9_]*$", name):
-            raise ValueError("Field name must be lowercase alphanumeric or underscores, start with a letter or underscore, and contain no spaces or special characters.")
+        """Validate field name allowing camelCase"""
+        if not name or not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name):
+            raise ValueError(
+                "Field name must be alphanumeric or underscores, start with a "
+                "letter or underscore, and contain no spaces or special characters."
+            )
         return True
 
     def add_field(self, name, label, type, visible=True, required=False, options=None):
