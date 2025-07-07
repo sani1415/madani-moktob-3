@@ -1,0 +1,293 @@
+/* ========================================
+   Responsive & Import/Export Styles
+   ======================================== */
+
+/* Bulk Import Section */
+.bulk-import-section {
+    background: var(--white);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+}
+
+.bulk-import-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 2px solid var(--light-gray);
+}
+
+.bulk-import-header h3 {
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-xxl);
+}
+
+.bulk-import-instructions {
+    margin-bottom: var(--spacing-xl);
+}
+
+.bulk-import-instructions h4 {
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-lg);
+}
+
+.format-table {
+    overflow-x: auto;
+    margin-bottom: var(--spacing-lg);
+}
+
+.format-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.format-table th,
+.format-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: left;
+    border: 1px solid var(--gray);
+}
+
+.format-table th {
+    background: var(--primary-color);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.format-table tbody tr:nth-child(even) {
+    background: var(--light-gray);
+}
+
+.import-notes {
+    background: var(--info-bg);
+    border: 1px solid var(--info-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.import-notes p {
+    color: var(--info-color);
+    margin: var(--spacing-xs) 0;
+    font-size: var(--font-size-sm);
+}
+
+.import-notes ul {
+    color: var(--info-color);
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.import-notes li {
+    margin: var(--spacing-xs) 0;
+}
+
+.bulk-import-upload {
+    margin-bottom: var(--spacing-xl);
+}
+
+.upload-area {
+    margin-bottom: var(--spacing-lg);
+}
+
+.upload-drop-zone {
+    border: 2px dashed var(--gray);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-xxl);
+    text-align: center;
+    transition: var(--transition-fast);
+    cursor: pointer;
+}
+
+.upload-drop-zone:hover {
+    border-color: var(--primary-color);
+    background: var(--light-gray);
+}
+
+.upload-drop-zone i {
+    font-size: var(--font-size-4xl);
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.upload-drop-zone p {
+    color: var(--text-muted);
+    margin: var(--spacing-sm) 0;
+    font-size: var(--font-size-md);
+}
+
+.upload-drop-zone .file-types {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
+.upload-actions {
+    text-align: center;
+}
+
+.import-results {
+    background: var(--light-gray);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+.import-progress {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: var(--light-gray);
+    border-radius: var(--border-radius-pill);
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gradient-success);
+    transition: width var(--transition-slow);
+}
+
+.import-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-list {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.error-list h5 {
+    color: var(--danger-color);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-md);
+}
+
+.error-list ul {
+    color: var(--danger-color);
+    margin: 0;
+    padding-left: var(--spacing-lg);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 768px) {
+    .bulk-import-header {
+        padding: var(--spacing-md);
+    }
+    
+    .format-table {
+        overflow-x: scroll;
+    }
+    
+    .upload-drop-zone {
+        padding: var(--spacing-lg);
+    }
+    
+    .upload-drop-zone i {
+        font-size: var(--font-size-3xl);
+    }
+    
+    .import-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .bulk-import-section {
+        padding: var(--spacing-md);
+    }
+    
+    .bulk-import-header {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .upload-drop-zone {
+        padding: var(--spacing-md);
+    }
+    
+    .format-table th,
+    .format-table td {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-xs);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .nav,
+    .header,
+    .footer,
+    .modal,
+    .btn,
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+    
+    .main {
+        padding: 0;
+    }
+    
+    .section {
+        display: block !important;
+    }
+    
+    .container {
+        max-width: none;
+        padding: 0;
+    }
+    
+    .report-table,
+    .students-table {
+        font-size: 10px;
+    }
+    
+    .stat-card {
+        break-inside: avoid;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-color: #000080;
+        --primary-dark: #000000;
+        --success-color: #006400;
+        --danger-color: #8B0000;
+        --warning-color: #FF8C00;
+        --text-color: #000000;
+        --background: #FFFFFF;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Dark Mode Preparation */
+@media (prefers-color-scheme: dark) {
+    /* Future dark mode variables would go here */
+    /* Currently maintaining light mode for consistency */
+}

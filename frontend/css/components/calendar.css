@@ -1,0 +1,462 @@
+/* ========================================
+   Calendar Component Styles
+   ======================================== */
+
+.calendar-container {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Calendar Navigation */
+.calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--primary-color);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.student-calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+}
+
+.month-year-display {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
+}
+
+.month-selector,
+.year-selector {
+    background: var(--white);
+    border: 1px solid var(--gray);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--primary-dark);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.month-selector:focus,
+.year-selector:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Calendar Grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--white);
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--light-gray);
+    background: var(--white);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    position: relative;
+    min-height: 50px;
+}
+
+.calendar-day.empty {
+    background: var(--light-gray);
+    cursor: not-allowed;
+}
+
+.calendar-day.header {
+    background: var(--primary-color);
+    color: var(--white);
+    font-weight: 600;
+    cursor: default;
+}
+
+.calendar-day.future-day {
+    background: var(--light-gray);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.calendar-day.before-academic-year {
+    background: #f8f9fa;
+    color: var(--text-muted);
+    cursor: not-allowed;
+    position: relative;
+}
+
+.calendar-day.before-academic-year::after {
+    content: "📚";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+}
+
+.calendar-day.no-data {
+    background: var(--light-gray);
+    color: var(--text-muted);
+}
+
+/* Attendance Status */
+.calendar-day.attendance-taken {
+    background: var(--success-bg);
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.calendar-day.attendance-pending {
+    background: var(--warning-bg);
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+.calendar-day.attendance-missed {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* Student-specific Calendar */
+.calendar-day.present {
+    background: var(--success-bg);
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.calendar-day.absent {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* Holiday Calendar */
+.calendar-day.holiday {
+    background: var(--warning-bg) !important;
+    border-color: var(--warning-color) !important;
+    color: var(--warning-color) !important;
+}
+
+.calendar-day.holiday::after {
+    content: "🎉";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.7rem;
+}
+
+.calendar-day.holiday-day {
+    background: var(--warning-bg);
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+    font-weight: 600;
+    position: relative;
+}
+
+.calendar-day.holiday-day::before {
+    content: "🎉";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+}
+
+.calendar-day:hover:not(.empty):not(.header) {
+    background: var(--primary-color);
+    color: var(--white);
+    transform: scale(1.05);
+}
+
+.day-number {
+    font-weight: 600;
+}
+
+/* Calendar Legend */
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--light-gray);
+    border-top: 1px solid var(--gray);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--gray);
+}
+
+.legend-color.attendance-taken {
+    background: var(--success-bg);
+    border-color: var(--success-color);
+}
+
+.legend-color.attendance-pending {
+    background: var(--warning-bg);
+    border-color: var(--warning-color);
+}
+
+.legend-color.attendance-missed {
+    background: var(--danger-bg);
+    border-color: var(--danger-color);
+}
+
+.legend-color.holiday-day {
+    background: var(--warning-bg);
+    border-color: var(--warning-color);
+    position: relative;
+}
+
+.legend-color.holiday-day::after {
+    content: "🎉";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 8px;
+}
+
+.legend-color.future-day {
+    background: var(--light-gray);
+    border-color: var(--gray);
+}
+
+.legend-color.before-academic-year {
+    background: #f8f9fa;
+    border-color: var(--gray);
+}
+
+/* Summary Stats */
+.summary-stats {
+    padding: var(--spacing-lg);
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+    margin-bottom: var(--spacing-lg);
+}
+
+.summary-stats h4 {
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    font-size: var(--font-size-lg);
+}
+
+.summary-stats .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.stat-number {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+.additional-stats {
+    border-top: 1px solid var(--light-gray);
+    padding-top: var(--spacing-md);
+}
+
+.additional-stats p {
+    margin: var(--spacing-xs) 0;
+    color: var(--text-muted);
+}
+
+/* Attendance Summary Header */
+.attendance-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.summary-period-toggle {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.summary-period-toggle label {
+    font-weight: 500;
+    color: var(--primary-dark);
+}
+
+.period-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--gray);
+    background: var(--white);
+    color: var(--primary-dark);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-size: var(--font-size-sm);
+}
+
+.period-btn:hover {
+    background: var(--light-gray);
+    border-color: var(--primary-color);
+}
+
+.period-btn.active {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+.period-btn.active:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+/* Attendance Tracking Section */
+.attendance-tracking-section {
+    background: var(--white);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+    margin-bottom: var(--spacing-lg);
+}
+
+.attendance-tracking-section h3 {
+    color: var(--primary-dark);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+    font-size: var(--font-size-xxl);
+}
+
+/* Responsive Calendar */
+@media (max-width: 768px) {
+    .attendance-summary-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .summary-period-toggle {
+        justify-content: center;
+    }
+    
+    .period-btn {
+        flex: 1;
+    }
+    
+    .calendar-container {
+        margin: var(--spacing-md) 0;
+    }
+    
+    .calendar-grid {
+        gap: 1px;
+    }
+    
+    .calendar-day {
+        min-height: 40px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .day-number {
+        font-size: var(--font-size-xs);
+    }
+    
+    .calendar-header {
+        padding: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+    
+    .summary-stats .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .legend-item {
+        font-size: var(--font-size-xs);
+    }
+    
+    .attendance-tracking-section {
+        padding: var(--spacing-md);
+    }
+    
+    .stat-number {
+        font-size: var(--font-size-xxl);
+    }
+    
+    .calendar-legend {
+        gap: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-container {
+        margin: var(--spacing-sm) 0;
+    }
+    
+    .calendar-grid {
+        gap: 0;
+    }
+    
+    .summary-stats .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-navigation {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .month-selector,
+    .year-selector {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .calendar-day {
+        min-height: 35px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .calendar-legend {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+}
