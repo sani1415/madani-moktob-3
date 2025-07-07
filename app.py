@@ -50,11 +50,15 @@ def initialize_database():
         else:
             print("✅ SQLite database initialized!")
             
-        # Create default fields if none exist
-        cursor = db.conn.cursor()
+        # Query field and student counts using a dedicated connection
+        conn = db.get_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM student_fields")
         field_count = cursor.fetchone()[0]
-        
+        cursor.execute("SELECT COUNT(*) FROM students")
+        student_count = cursor.fetchone()[0]
+        conn.close()
+
         if field_count == 0:
             print("📝 Creating default student fields...")
             default_fields = [
@@ -68,15 +72,13 @@ def initialize_database():
             ]
             for field in default_fields:
                 try:
-                    db.add_field(name=field[0], label=field[1], type=field[2], 
+                    db.add_field(name=field[0], label=field[1], type=field[2],
                                 visible=field[3], required=field[4])
                 except Exception as e:
                     print(f"Note: Field '{field[0]}' already exists or couldn't be created: {e}")
             print("✅ Default fields created!")
-        
+
         # Check if we have any students, if not create sample data
-        cursor.execute("SELECT COUNT(*) FROM students")
-        student_count = cursor.fetchone()[0]
         
         if student_count == 0:
             print("📝 No students found, creating sample data...")
