@@ -51,7 +51,8 @@ def initialize_database():
             print("✅ SQLite database initialized!")
             
         # Create default fields if none exist
-        cursor = db.conn.cursor()
+        conn = db.get_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM student_fields")
         field_count = cursor.fetchone()[0]
         
@@ -77,6 +78,7 @@ def initialize_database():
         # Check if we have any students, if not create sample data
         cursor.execute("SELECT COUNT(*) FROM students")
         student_count = cursor.fetchone()[0]
+        conn.close()
         
         if student_count == 0:
             print("📝 No students found, creating sample data...")
