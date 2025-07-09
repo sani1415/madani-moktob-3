@@ -54,9 +54,12 @@ class SQLiteDatabase:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Create students table with all fields
+        # ------------------------------------------------------------------
+        # New canonical tables (without *_new suffix).
+        # ------------------------------------------------------------------
+
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS students_new (
+            CREATE TABLE IF NOT EXISTS students (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 fatherName TEXT,
@@ -69,30 +72,57 @@ class SQLiteDatabase:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
-        # Create attendance table
+
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS attendance_new (
+            CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 student_id TEXT NOT NULL,
                 date TEXT NOT NULL,
                 status TEXT NOT NULL,
                 reason TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students_new(id),
+                FOREIGN KEY (student_id) REFERENCES students(id),
                 UNIQUE(student_id, date)
             )
         ''')
-        
-        # Create holidays table
+
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS holidays_new (
+            CREATE TABLE IF NOT EXISTS holidays (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # ------------------------------------------------------------------
+        # Migrate from old *_new tables if they still exist (one-time).
+        # ------------------------------------------------------------------
+
+        legacy_pairs = [
+            ("students_new", "students"),
+            ("attendance_new", "attendance"),
+            ("holidays_new", "holidays"),
+        ]
+
+        for old_name, new_name in legacy_pairs:
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (old_name,)
+            )
+            if cursor.fetchone():
+                # Copy data into new table – columns are identical.
+                cursor.execute(f"INSERT OR IGNORE INTO {new_name} SELECT * FROM {old_name}")
+                cursor.execute(f"DROP TABLE {old_name}")
+
+        # ------------------------------------------------------------------
+        # Indexes for faster look-ups.
+        # ------------------------------------------------------------------
+
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_students_class_roll ON students(class, rollNumber)"
+        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date)")
         
         conn.commit()
         conn.close()
@@ -132,7 +162,7 @@ class SQLiteDatabase:
         
         # Find all existing roll numbers for this class
         cursor.execute('''
-            SELECT rollNumber FROM students_new 
+            SELECT rollNumber FROM students 
             WHERE class = ? AND rollNumber IS NOT NULL
             ORDER BY CAST(rollNumber AS INTEGER)
         ''', (class_name,))
@@ -167,7 +197,7 @@ class SQLiteDatabase:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        cursor.execute('SELECT * FROM students_new ORDER BY rollNumber')
+        cursor.execute('SELECT * FROM students ORDER BY rollNumber')
         students = []
         for row in cursor.fetchall():
             student = dict(row)
@@ -185,7 +215,7 @@ class SQLiteDatabase:
         cursor = conn.cursor()
         
         # Clear existing students
-        cursor.execute('DELETE FROM students_new')
+        cursor.execute('DELETE FROM students')
         
         # Insert all students
         for student in students:
@@ -197,7 +227,7 @@ class SQLiteDatabase:
     def _insert_student(self, cursor, student_data):
         """Helper method to insert a single student"""
         cursor.execute('''
-            INSERT OR REPLACE INTO students_new 
+            INSERT OR REPLACE INTO students 
             (id, name, fatherName, mobileNumber, district, upazila, class, rollNumber, registrationDate)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
@@ -233,7 +263,7 @@ class SQLiteDatabase:
             # Get attendance for specific date
             cursor.execute('''
                 SELECT student_id, status, reason 
-                FROM attendance_new 
+                FROM attendance 
                 WHERE date = ?
             ''', (date,))
             
@@ -250,7 +280,7 @@ class SQLiteDatabase:
             # Get all attendance grouped by date
             cursor.execute('''
                 SELECT date, student_id, status, reason 
-                FROM attendance_new 
+                FROM attendance 
                 ORDER BY date DESC
             ''')
             
@@ -273,13 +303,13 @@ class SQLiteDatabase:
         cursor = conn.cursor()
         
         # Clear all attendance records
-        cursor.execute('DELETE FROM attendance_new')
+        cursor.execute('DELETE FROM attendance')
         
         # Insert new attendance records
         for date, students in attendance_data.items():
             for student_id, info in students.items():
                 cursor.execute('''
-                    INSERT INTO attendance_new (student_id, date, status, reason)
+                    INSERT INTO attendance (student_id, date, status, reason)
                     VALUES (?, ?, ?, ?)
                 ''', (student_id, date, info.get('status', 'absent'), info.get('reason', '')))
         
@@ -290,7 +320,7 @@ class SQLiteDatabase:
         """Reset attendance data to an empty state"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM attendance_new')
+        cursor.execute('DELETE FROM attendance')
         conn.commit()
         conn.close()
     
@@ -300,7 +330,7 @@ class SQLiteDatabase:
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT OR REPLACE INTO attendance_new (student_id, date, status, reason)
+            INSERT OR REPLACE INTO attendance (student_id, date, status, reason)
             VALUES (?, ?, ?, ?)
         ''', (student_id, date, status, reason))
         
@@ -313,7 +343,7 @@ class SQLiteDatabase:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        cursor.execute('SELECT date, name FROM holidays_new ORDER BY date')
+        cursor.execute('SELECT date, name FROM holidays ORDER BY date')
         holidays = []
         for row in cursor.fetchall():
             holidays.append({
@@ -330,12 +360,12 @@ class SQLiteDatabase:
         cursor = conn.cursor()
         
         # Clear existing holidays
-        cursor.execute('DELETE FROM holidays_new')
+        cursor.execute('DELETE FROM holidays')
         
         # Insert new holidays
         for holiday in holidays:
             cursor.execute('''
-                INSERT INTO holidays_new (date, name)
+                INSERT INTO holidays (date, name)
                 VALUES (?, ?)
             ''', (holiday['date'], holiday['name']))
         
@@ -348,7 +378,7 @@ class SQLiteDatabase:
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT OR REPLACE INTO holidays_new (date, name)
+            INSERT OR REPLACE INTO holidays (date, name)
             VALUES (?, ?)
         ''', (date, name))
         

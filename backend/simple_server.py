@@ -209,15 +209,19 @@ def create_sample_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+APP_NAME = os.getenv("APP_NAME", "Madani Maktab")
+
+
 @app.route('/api/health')
 def health():
     try:
         students_count = len(db.get_students())
         return jsonify({
-            'status': 'healthy', 
-            'message': 'Madani Maktab SQLite Server is running',
+            'status': 'healthy',
+            'message': f"{APP_NAME} SQLite Server is running",
             'database_type': 'SQLite Database',
-            'students_count': students_count
+            'students_count': students_count,
+            'app_name': APP_NAME,
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
