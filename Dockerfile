@@ -18,4 +18,4 @@ ENV PYTHONPATH=/app/backend
 ENV PRODUCTION=true
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--chdir", "backend", "simple_server:app"] 
+CMD ["gunicorn", "-c", "gunicorn_conf.py", "--chdir", "backend", "simple_server:app"] 
