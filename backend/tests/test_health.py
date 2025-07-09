@@ -1,9 +1,17 @@
+import os
+import sys
+import tempfile
 import pytest
-import os, sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Ensure we import the backend package root
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, ROOT_DIR)
 
-from database_server import app
+# Configure the app to use a temporary SQLite DB file for tests
+tmp_db = tempfile.NamedTemporaryFile(prefix="test_db_", suffix=".sqlite", delete=False)
+os.environ["DATABASE_FILE"] = tmp_db.name
+
+from simple_server import app
 
 @pytest.fixture
 def client():

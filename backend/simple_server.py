@@ -4,7 +4,7 @@ Madani Maktab - SQLite Server
 Server with SQLite database for better performance
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 import json
 import os
@@ -12,10 +12,44 @@ from datetime import datetime
 from sqlite_database import SQLiteDatabase
 
 app = Flask(__name__, static_folder='../frontend')
-CORS(app)
 
-# Initialize SQLite database
+# Allow CORS but let caller restrict via env if desired
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+CORS(app, origins=allowed_origins.split(","))
+
+# Initialize SQLite database (file can be overridden via env variable)
 db = SQLiteDatabase()
+
+# ---------------------------------------------------------------------------
+# Authentication helper
+# ---------------------------------------------------------------------------
+
+API_TOKEN = os.getenv("API_TOKEN")
+
+
+def require_auth(func):
+    """Decorator to enforce a simple bearer-token auth on state-changing routes.
+
+    If *API_TOKEN* is not set, the decorator becomes a no-op (public).
+    The client must send the token in the *Authorization* header as
+        Authorization: Bearer <token>
+    """
+
+    if not API_TOKEN:
+        # No token defined, route remains public
+        return func
+
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer ") and auth_header.split(" ", 1)[1] == API_TOKEN:
+            return func(*args, **kwargs)
+        # Unauthorised
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return wrapper
 
 # Serve frontend files
 @app.route('/')
@@ -35,7 +69,10 @@ def get_students():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ------------------------- Students ----------------------------------------
+
 @app.route('/api/students', methods=['POST'])
+@require_auth
 def add_student():
     try:
         student_data = request.json
@@ -60,6 +97,7 @@ def add_student():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/students/<student_id>', methods=['PUT'])
+@require_auth
 def update_student(student_id):
     try:
         student_data = request.json
@@ -82,6 +120,7 @@ def update_student(student_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/students/<student_id>', methods=['DELETE'])
+@require_auth
 def delete_student(student_id):
     try:
         students = db.get_students()
@@ -92,6 +131,7 @@ def delete_student(student_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/students', methods=['DELETE'])
+@require_auth
 def delete_all_students():
     try:
         # Clear all students
@@ -118,6 +158,7 @@ def get_attendance():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/attendance', methods=['POST'])
+@require_auth
 def save_attendance():
     try:
         attendance_data = request.json
@@ -142,6 +183,7 @@ def get_holidays():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/holidays', methods=['POST'])
+@require_auth
 def add_holiday():
     try:
         holiday_data = request.json
@@ -154,6 +196,7 @@ def add_holiday():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/create_sample_data', methods=['POST'])
+@require_auth
 def create_sample_data():
     """Create sample students data in SQLite database"""
     try:

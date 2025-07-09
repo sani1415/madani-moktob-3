@@ -11,14 +11,42 @@ from datetime import datetime
 from pathlib import Path
 
 class SQLiteDatabase:
-    def __init__(self, db_file="madani_moktob.db"):
-        self.db_file = db_file
+    def __init__(self, db_file: str | None = None):
+        """Initialize the SQLite helper.
+
+        The database file can be overridden with the environment variable
+        DATABASE_FILE.  Falls back to *madani_moktob.db* when not provided.
+        """
+        import os
+
+        # Allow overriding the DB file location from an environment variable so
+        # that different environments (tests, CI, prod) can use their own DB
+        # without code changes.
+        self.db_file = db_file or os.getenv("DATABASE_FILE", "madani_moktob.db")
+
+        # Create parent directory if someone passed a path like /data/app.db
+        dir_name = os.path.dirname(self.db_file)
+        if dir_name and not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+
         self.init_database()
     
     def get_connection(self):
-        """Get a database connection"""
-        conn = sqlite3.connect(self.db_file)
+        """Get a database connection.
+
+        * check_same_thread=False -> allow usage across Flask app threads
+        * journal_mode=WAL         -> better concurrency under Gunicorn
+        """
+        conn = sqlite3.connect(self.db_file, check_same_thread=False)
         conn.row_factory = sqlite3.Row
+
+        # Put the connection in WAL mode for improved read/write concurrency.
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+        except sqlite3.OperationalError:
+            # Some distros (esp. on read-only FS) may not allow changing mode.
+            pass
+
         return conn
     
     def init_database(self):
