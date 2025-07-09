@@ -4,13 +4,9 @@
  */
 
 import { attendanceAPI } from '../../core/api.js';
-import { 
-    getTodayDateString, 
-    isHoliday, 
-    getHolidayName 
-} from '../../core/utils.js';
-import { ATTENDANCE_STATUS } from '../../core/config.js';
-import { appState, updateAppState } from '../../core/app.js';
+import { ATTENDANCE_STATUS, UI_CONFIG } from '../../core/config.js';
+import { getTodayDateString, formatDate, parseRollNumber, getClassNumber } from '../../core/utils.js';
+import { appState, updateAppState, getModule } from '../../core/app.js';
 
 /**
  * Attendance Manager Class
@@ -842,14 +838,51 @@ export class AttendanceManager {
     }
 
     /**
+     * Initialize attendance for today
+     */
+    initializeTodayAttendance() {
+        const today = getTodayDateString();
+        const state = appState.getState ? appState.getState() : appState;
+        
+        if (!state.attendance[today]) {
+            console.log('Initializing attendance for today:', today);
+            
+            // Create empty attendance record for today
+            const updatedAttendance = { ...state.attendance };
+            updatedAttendance[today] = {};
+            
+            // Initialize all students as neutral for today
+            if (state.students) {
+                state.students.forEach(student => {
+                    updatedAttendance[today][student.id] = {
+                        status: ATTENDANCE_STATUS.NEUTRAL,
+                        reason: ''
+                    };
+                });
+            }
+            
+            // Update application state
+            updateAppState({ attendance: updatedAttendance });
+            
+            console.log('Today attendance initialized with neutral status for all students');
+        }
+    }
+
+    /**
      * Show modal message
      * @param {string} type - Modal type (success, error, info)
      * @param {string} message - Message to display
      */
     showModal(type, message) {
-        // This will be implemented when we extract the modal module
-        const title = type === 'success' ? 'Success' : 'Error';
-        alert(`${title}: ${message}`);
+        const modalManager = getModule('modalManager');
+        if (modalManager && modalManager.showModal) {
+            const title = type === 'success' ? 'Success' : 'Error';
+            modalManager.showModal(title, message);
+        } else {
+            // Fallback to alert if modal manager not available
+            const title = type === 'success' ? 'Success' : 'Error';
+            alert(`${title}: ${message}`);
+        }
     }
 
     /**

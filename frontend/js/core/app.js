@@ -106,9 +106,6 @@ export class AppManager {
         try {
             console.log('Starting Madani Maktab application initialization...');
 
-            // Validate configuration
-            validateConfig();
-
             // Check API health
             const apiHealthy = await checkAPIHealth();
             if (!apiHealthy) {
@@ -118,20 +115,11 @@ export class AppManager {
             // Load application data
             await this.loadApplicationData();
 
-            // Initialize UI components
-            await this.initializeUI();
-
-            // Initialize modules
-            await this.initializeModules();
-
-            // Setup event listeners
-            this.setupEventListeners();
-
             // Mark as initialized
             this.initialized = true;
             appState.updateState({ isInitialized: true });
-
-            console.log('Madani Maktab application initialized successfully');
+            
+            console.log('Madani Maktab application core initialized successfully');
             return true;
 
         } catch (error) {
@@ -149,25 +137,28 @@ export class AppManager {
         try {
             console.log('Loading application data...');
             
-            const { students, attendance, holidays } = await loadAllData();
+            const data = await loadAllData();
             
             // Update saved attendance dates
             const savedDates = new Set();
-            Object.keys(attendance).forEach(date => {
-                if (attendance[date] && Object.keys(attendance[date]).length > 0) {
-                    savedDates.add(date);
-                }
-            });
+            if (data.attendance) {
+                Object.keys(data.attendance).forEach(date => {
+                    if (data.attendance[date] && Object.keys(data.attendance[date]).length > 0) {
+                        savedDates.add(date);
+                    }
+                });
+            }
 
             // Update application state
             appState.updateState({
-                students,
-                attendance,
-                holidays,
+                students: data.students || [],
+                attendance: data.attendance || {},
+                holidays: data.holidays || [],
+                classes: data.classes || DEFAULT_CLASSES,
                 savedAttendanceDates: savedDates
             });
 
-            console.log(`Loaded ${students.length} students, ${Object.keys(attendance).length} attendance records, ${holidays.length} holidays`);
+            console.log(`Loaded ${data.students?.length || 0} students, ${Object.keys(data.attendance || {}).length} attendance records, ${data.holidays?.length || 0} holidays`);
             
         } catch (error) {
             console.error('Failed to load application data:', error);
@@ -182,7 +173,9 @@ export class AppManager {
     async initializeUI() {
         try {
             // Initialize language
-            await this.initializeLanguage();
+            if (window.initializeLanguage) {
+                window.initializeLanguage();
+            }
 
             // Initialize app name
             this.initializeAppName();
@@ -191,76 +184,38 @@ export class AppManager {
             const today = getTodayDateString();
             this.setDateInputs(today);
 
-            // Initialize attendance for today if not exists
-            if (!appState.attendance[today]) {
-                this.initializeTodayAttendance();
-            }
+            // This logic is now handled by the attendance manager
+            // if (!appState.attendance[today]) {
+            //     this.initializeTodayAttendance();
+            // }
 
-            // Initialize settings
-            this.initializeSettings();
-
+            // Initialize settings from other modules after they are loaded
+            // This is to avoid race conditions
+            
         } catch (error) {
-            console.error('UI initialization failed:', error);
-            throw error;
+            console.error('Failed to initialize UI:', error);
         }
     }
 
     /**
-     * Initialize all registered modules
-     * @returns {Promise<void>}
+     * Initialize modules (placeholder - real initialization is in script-modular.js)
      */
     async initializeModules() {
-        try {
-            const initPromises = Array.from(this.modules.entries()).map(async ([name, module]) => {
-                if (typeof module.initialize === 'function') {
-                    console.log(`Initializing module: ${name}`);
-                    await module.initialize();
-                }
-            });
-
-            await Promise.all(initPromises);
-            console.log('All modules initialized successfully');
-
-        } catch (error) {
-            console.error('Module initialization failed:', error);
-            throw error;
-        }
+        console.log('All modules will be initialized by script-modular.js');
     }
 
     /**
      * Setup global event listeners
      */
     setupEventListeners() {
-        // Listen for state changes
-        document.addEventListener('appStateChange', (event) => {
-            console.log('Application state changed:', event.detail.state);
-        });
-
-        // Listen for DOM content loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM content loaded');
-        });
-
-        // Listen for window resize
-        window.addEventListener('resize', () => {
-            this.handleWindowResize();
-        });
-
-        // Listen for beforeunload
-        window.addEventListener('beforeunload', () => {
-            this.handleBeforeUnload();
-        });
+        // This is now handled in individual modules
     }
 
     /**
      * Handle window resize
      */
     handleWindowResize() {
-        // Update mobile menu state
-        const navList = document.getElementById('navList');
-        if (navList && window.innerWidth > 768) {
-            navList.classList.remove('active');
-        }
+        // This is now handled by the navigation module
     }
 
     /**
@@ -275,8 +230,8 @@ export class AppManager {
      * Initialize language system
      */
     async initializeLanguage() {
-        // This will be implemented when we extract the translation module
-        console.log('Language system initialized');
+        // This is now handled in script-modular.js and translations.js
+        console.log('Language system will be initialized externally.');
     }
 
     /**
@@ -285,9 +240,20 @@ export class AppManager {
     initializeAppName() {
         const savedName = localStorage.getItem(STORAGE_KEYS.appName);
         if (savedName) {
-            const titleElement = document.querySelector('h1');
+            const titleElement = document.querySelector('.header h1');
+            const appNameInput = document.getElementById('appNameInput');
+            
             if (titleElement) {
-                titleElement.textContent = savedName;
+                // To keep the icon, we can set just the text content of the node
+                // Assuming the structure is <i ...></i> Text
+                const textNode = Array.from(titleElement.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+                if (textNode) {
+                    textNode.textContent = ` ${savedName}`;
+                }
+            }
+
+            if (appNameInput) {
+                appNameInput.value = savedName;
             }
         }
     }
@@ -315,28 +281,16 @@ export class AppManager {
      * Initialize attendance for today
      */
     initializeTodayAttendance() {
-        const today = getTodayDateString();
-        if (!appState.attendance[today]) {
-            appState.attendance[today] = {};
-        }
+        // This is now handled by the attendance manager
+        console.warn('initializeTodayAttendance is deprecated in AppManager');
     }
 
     /**
      * Initialize settings
      */
     initializeSettings() {
-        // Initialize academic year start date
-        const savedAcademicYear = localStorage.getItem(STORAGE_KEYS.academicYearStart);
-        if (savedAcademicYear) {
-            appState.updateState({ academicYearStartDate: savedAcademicYear });
-        }
-
-        // Initialize hijri settings
-        const savedHijriAdjustment = localStorage.getItem(STORAGE_KEYS.hijriAdjustment);
-        if (savedHijriAdjustment) {
-            // This will be handled by the hijri module
-            console.log('Hijri adjustment loaded:', savedHijriAdjustment);
-        }
+        // This is now handled by the settings manager
+        console.warn('initializeSettings is deprecated in AppManager');
     }
 
     /**
@@ -414,11 +368,9 @@ export const appManager = new AppManager();
  * Initialize the application when DOM is ready
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        await appManager.initialize();
-    } catch (error) {
-        console.error('Failed to initialize application:', error);
-    }
+    // The main initialization is now triggered from script-modular.js
+    // This is to ensure all modules are loaded before initialization starts.
+    console.log('app.js: DOMContentLoaded - waiting for script-modular.js to initialize.');
 });
 
 /**
@@ -438,4 +390,11 @@ export function registerModule(name, module) {
 
 export function getModule(name) {
     return appManager.getModule(name);
+}
+
+/**
+ * Get application state
+ */
+export function getState() {
+    return appState.getState ? appState.getState() : appState;
 }

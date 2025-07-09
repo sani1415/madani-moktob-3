@@ -132,6 +132,17 @@ export const API_CONFIG = {
 };
 
 /**
+ * API endpoints
+ */
+export const API_ENDPOINTS = {
+    students: '/students',
+    attendance: '/attendance',
+    holidays: '/holidays',
+    settings: '/settings',
+    health: '/health'
+};
+
+/**
  * Storage keys for localStorage
  */
 export const STORAGE_KEYS = {

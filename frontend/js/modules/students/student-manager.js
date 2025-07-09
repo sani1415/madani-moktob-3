@@ -11,7 +11,7 @@ import {
     getTodayDateString 
 } from '../../core/utils.js';
 import { VALIDATION_RULES } from '../../core/config.js';
-import { appState, updateAppState } from '../../core/app.js';
+import { appState, updateAppState, getModule } from '../../core/app.js';
 
 /**
  * Student Manager Class
@@ -401,9 +401,15 @@ export class StudentManager {
      * @param {string} message - Message to display
      */
     showModal(type, message) {
-        // This will be implemented when we extract the modal module
-        const title = type === 'success' ? 'Success' : 'Error';
-        alert(`${title}: ${message}`);
+        const modalManager = getModule('modalManager');
+        if (modalManager && modalManager.showModal) {
+            const title = type === 'success' ? 'Success' : 'Error';
+            modalManager.showModal(title, message);
+        } else {
+            // Fallback to alert if modal manager not available
+            const title = type === 'success' ? 'Success' : 'Error';
+            alert(`${title}: ${message}`);
+        }
     }
 
     /**
@@ -415,6 +421,49 @@ export class StudentManager {
             detail: { students: appState.students }
         });
         document.dispatchEvent(event);
+
+        // Also directly update the student list display if we're on the registration page
+        const studentsListContainer = document.getElementById('studentsListContainer');
+        if (studentsListContainer && studentsListContainer.style.display !== 'none') {
+            this.displayStudentsList();
+        }
+    }
+
+    /**
+     * Display students list
+     */
+    displayStudentsList() {
+        const tbody = document.querySelector('#studentsTable tbody');
+        if (!tbody) return;
+
+        if (appState.students.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">
+                        No students registered yet. Click "Register New Student" to add students.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const sortedStudents = this.getSortedStudents();
+        
+        tbody.innerHTML = sortedStudents.map(student => `
+            <tr>
+                <td>${student.rollNumber}</td>
+                <td>${student.name} বিন ${student.fatherName}</td>
+                <td>${student.class}</td>
+                <td>
+                    <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteStudent('${student.id}')" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     /**

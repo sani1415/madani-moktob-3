@@ -165,8 +165,13 @@ export class NavigationManager {
      * Show a specific section
      * @param {string} sectionId - ID of the section to show
      */
-    async showSection(sectionId) {
+    async showSection(sectionId, force = false) {
         try {
+            if (!force && sectionId === this.currentSection) {
+                console.log('Already on section:', sectionId);
+                return;
+            }
+            
             console.log('Navigating to section:', sectionId);
 
             // Hide all sections
@@ -201,13 +206,11 @@ export class NavigationManager {
             // Save current section for restoration
             this.saveCurrentSection(sectionId);
             
-            // Handle section-specific initialization
-            await this.handleSectionSpecificLogic(sectionId);
-
-            console.log('Successfully navigated to section:', sectionId);
+            // Trigger section-specific logic
+            this.handleSectionSpecificLogic(sectionId);
 
         } catch (error) {
-            console.error('Error navigating to section:', sectionId, error);
+            console.error(`Error navigating to section '${sectionId}':`, error);
         }
     }
 
@@ -248,58 +251,79 @@ export class NavigationManager {
     }
 
     /**
-     * Restore last visited section
+     * Restore last visited section from localStorage
      */
     restoreLastSection() {
-        try {
-            // Check URL hash first
-            const hash = window.location.hash.substring(1);
-            if (hash) {
-                this.showSection(hash);
-                return;
-            }
-
-            // Fall back to saved section
-            const savedSection = localStorage.getItem(STORAGE_KEYS.lastVisitedSection);
-            if (savedSection && document.getElementById(savedSection)) {
-                this.showSection(savedSection);
-                return;
-            }
-
-            // Default to dashboard
-            this.showSection('dashboard');
-
-        } catch (error) {
-            console.warn('Failed to restore last section:', error);
-            this.showSection('dashboard');
-        }
+        const lastSection = localStorage.getItem(STORAGE_KEYS.lastVisitedSection);
+        this.currentSection = lastSection || 'dashboard';
+        console.log('Restored section:', this.currentSection);
+        
+        // Don't call showSection here directly.
+        // The main script will call it after all modules are initialized.
     }
 
     /**
      * Handle section-specific logic
-     * @param {string} sectionId - Section ID
+     * @param {string} sectionId - ID of the section we're navigating to
      */
     async handleSectionSpecificLogic(sectionId) {
+        const appManager = window.appManager;
+        
         switch (sectionId) {
             case 'dashboard':
-                // Dashboard updates are handled by the dashboard module through events
+                console.log('Navigating to dashboard - updating data');
+                const dashboardManager = appManager?.getModule?.('dashboardManager');
+                if (dashboardManager) {
+                    dashboardManager.updateDashboard();
+                }
                 break;
                 
             case 'attendance':
-                // Attendance loading is handled by the attendance module through events
+                console.log('Navigating to attendance - loading today\'s data');
+                const attendanceManager = appManager?.getModule?.('attendanceManager');
+                if (attendanceManager) {
+                    await attendanceManager.loadAttendanceForDate();
+                }
                 break;
                 
             case 'registration':
+                console.log('Navigating to registration - displaying students list');
+                const studentManager = appManager?.getModule?.('studentManager');
+                if (studentManager && studentManager.displayStudentsList) {
+                    studentManager.displayStudentsList();
+                }
+                
                 // Show student list by default, hide form
-                this.setupRegistrationSection();
+                const studentsListContainer = document.getElementById('studentsListContainer');
+                const studentRegistrationForm = document.getElementById('studentRegistrationForm');
+                if (studentsListContainer && studentRegistrationForm) {
+                    studentsListContainer.style.display = 'block';
+                    studentRegistrationForm.style.display = 'none';
+                }
                 break;
                 
             case 'reports':
-                // Reports setup is handled by the reports module
+                console.log('Navigating to reports section');
+                const reportsManager = appManager?.getModule?.('reportsManager');
+                if (reportsManager && reportsManager.updateReportClassDropdown) {
+                    reportsManager.updateReportClassDropdown();
+                }
                 break;
                 
             case 'settings':
-                // Settings setup is handled by the settings module
+                console.log('Navigating to settings section');
+                const settingsManager = appManager?.getModule?.('settingsManager');
+                if (settingsManager) {
+                    if (settingsManager.displayClasses) {
+                        settingsManager.displayClasses();
+                    }
+                    if (settingsManager.displayHolidays) {
+                        settingsManager.displayHolidays();
+                    }
+                    if (settingsManager.displayAcademicYearStart) {
+                        settingsManager.displayAcademicYearStart();
+                    }
+                }
                 break;
                 
             default:
@@ -477,9 +501,9 @@ export class NavigationManager {
 // Create and export singleton instance
 export const navigationManager = new NavigationManager();
 
-// Export individual functions for backward compatibility
+// Export functions for backward compatibility with HTML onclick handlers
 export const toggleMobileMenu = () => navigationManager.toggleMobileMenu();
-export const showSection = (sectionId) => navigationManager.showSection(sectionId);
+export const showSection = (sectionId, force = false) => navigationManager.showSection(sectionId, force);
 export const navigateTo = (sectionId) => navigationManager.navigateTo(sectionId);
 export const getCurrentSection = () => navigationManager.getCurrentSection();
 export const closeMobileMenu = () => navigationManager.closeMobileMenu();

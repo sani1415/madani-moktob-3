@@ -11,7 +11,7 @@ import {
     parseRollNumber
 } from '../../core/utils.js';
 import { ATTENDANCE_STATUS } from '../../core/config.js';
-import { appState } from '../../core/app.js';
+import { appState, getModule } from '../../core/app.js';
 
 /**
  * Dashboard Manager Class
@@ -82,11 +82,12 @@ export class DashboardManager {
      */
     updateDashboard() {
         try {
+            const state = appState.getState ? appState.getState() : appState;
             const today = getTodayDateString();
             
             console.log('Updating dashboard for date:', today);
-            console.log('Total students:', appState.students.length);
-            console.log('Today attendance data:', appState.attendance[today]);
+            console.log('Total students:', state.students?.length || 0);
+            console.log('Today attendance data:', state.attendance?.[today]);
 
             // Update total students
             this.updateTotalStudents();
@@ -114,9 +115,10 @@ export class DashboardManager {
      * Update total students count
      */
     updateTotalStudents() {
+        const state = appState.getState ? appState.getState() : appState;
         const totalElement = document.getElementById('totalStudents');
         if (totalElement) {
-            totalElement.textContent = appState.students.length;
+            totalElement.textContent = state.students?.length || 0;
             totalElement.style.color = '#2c3e50';
         }
     }
@@ -126,10 +128,11 @@ export class DashboardManager {
      * @param {string} today - Today's date string
      */
     updateHolidayNotice(today) {
+        const state = appState.getState ? appState.getState() : appState;
         const holidayNotice = document.getElementById('holidayNotice');
         
-        if (isHoliday(today, appState.holidays)) {
-            const holidayName = getHolidayName(today, appState.holidays);
+        if (isHoliday(today, state.holidays || [])) {
+            const holidayName = getHolidayName(today, state.holidays || []);
             console.log('Today is a holiday:', holidayName);
             
             if (holidayNotice) {
@@ -153,14 +156,15 @@ export class DashboardManager {
      * @param {string} today - Today's date string
      */
     updateAttendanceStats(today) {
+        const state = appState.getState ? appState.getState() : appState;
         const presentElement = document.getElementById('presentToday');
         const absentElement = document.getElementById('absentToday');
         const rateElement = document.getElementById('attendanceRate');
 
-        if (isHoliday(today, appState.holidays)) {
+        if (isHoliday(today, state.holidays || [])) {
             // On holidays, show all students as present
             if (presentElement) {
-                presentElement.textContent = appState.students.length;
+                presentElement.textContent = state.students?.length || 0;
                 presentElement.style.color = '#27ae60';
             }
             if (absentElement) {
@@ -172,7 +176,7 @@ export class DashboardManager {
                 rateElement.style.color = '#27ae60';
             }
         } else {
-            const todayAttendance = appState.attendance[today] || {};
+            const todayAttendance = state.attendance?.[today] || {};
             console.log('Processing attendance for non-holiday:', todayAttendance);
 
             let presentCount = 0;
@@ -188,7 +192,7 @@ export class DashboardManager {
                 }
             }
 
-            const unmarkedCount = appState.students.length - presentCount - absentCount;
+            const unmarkedCount = (state.students?.length || 0) - presentCount - absentCount;
 
             console.log('Attendance counts - Present:', presentCount, 'Absent:', absentCount, 'Unmarked:', unmarkedCount);
 
@@ -212,7 +216,7 @@ export class DashboardManager {
                 attendanceRate = Math.round((presentCount / (presentCount + absentCount)) * 100);
             }
 
-            console.log('Final dashboard values - Total:', appState.students.length, 'Present:', presentCount, 'Absent:', absentCount, 'Rate:', attendanceRate + '%');
+            console.log('Final dashboard values - Total:', state.students?.length || 0, 'Present:', presentCount, 'Absent:', absentCount, 'Rate:', attendanceRate + '%');
 
             if (rateElement) {
                 rateElement.textContent = `${attendanceRate}%`;
@@ -225,13 +229,14 @@ export class DashboardManager {
      * Update today's overview section
      */
     updateTodayOverview() {
+        const state = appState.getState ? appState.getState() : appState;
         const today = getTodayDateString();
-        const todayAttendance = appState.attendance[today] || {};
+        const todayAttendance = state.attendance?.[today] || {};
         const overviewDiv = document.getElementById('todayOverview');
 
         if (!overviewDiv) return;
 
-        if (appState.students.length === 0) {
+        if (!state.students || state.students.length === 0) {
             overviewDiv.innerHTML = '<p>No students registered yet.</p>';
             return;
         }
@@ -241,11 +246,11 @@ export class DashboardManager {
             return;
         }
 
-        const presentStudents = appState.students.filter(student => 
+        const presentStudents = state.students.filter(student => 
             todayAttendance[student.id] && todayAttendance[student.id].status === ATTENDANCE_STATUS.PRESENT
         );
 
-        const absentStudents = appState.students.filter(student => 
+        const absentStudents = state.students.filter(student => 
             todayAttendance[student.id] && todayAttendance[student.id].status === ATTENDANCE_STATUS.ABSENT
         );
 
@@ -282,8 +287,9 @@ export class DashboardManager {
      * Update class-wise statistics
      */
     updateClassWiseStats() {
+        const state = appState.getState ? appState.getState() : appState;
         const today = getTodayDateString();
-        const todayAttendance = appState.attendance[today] || {};
+        const todayAttendance = state.attendance?.[today] || {};
         const classWiseGrid = document.getElementById('classWiseGrid');
 
         if (!classWiseGrid) return;
@@ -292,44 +298,50 @@ export class DashboardManager {
         const classSummary = {};
 
         // First, create entries for all classes that actually have students
-        appState.students.forEach(student => {
-            if (student.class && !classSummary[student.class]) {
-                classSummary[student.class] = {
-                    total: 0,
-                    present: 0,
-                    absent: 0,
-                    rate: 0
-                };
-            }
-        });
+        if (state.students) {
+            state.students.forEach(student => {
+                if (student.class && !classSummary[student.class]) {
+                    classSummary[student.class] = {
+                        total: 0,
+                        present: 0,
+                        absent: 0,
+                        rate: 0
+                    };
+                }
+            });
+        }
 
         // Also add predefined classes (in case they have no students yet)
-        appState.classes.forEach(className => {
-            if (!classSummary[className]) {
-                classSummary[className] = {
-                    total: 0,
-                    present: 0,
-                    absent: 0,
-                    rate: 0
-                };
-            }
-        });
+        if (state.classes) {
+            state.classes.forEach(className => {
+                if (!classSummary[className]) {
+                    classSummary[className] = {
+                        total: 0,
+                        present: 0,
+                        absent: 0,
+                        rate: 0
+                    };
+                }
+            });
+        }
 
         // Count students in each class
-        appState.students.forEach(student => {
-            if (student.class && classSummary[student.class]) {
-                classSummary[student.class].total++;
+        if (state.students) {
+            state.students.forEach(student => {
+                if (student.class && classSummary[student.class]) {
+                    classSummary[student.class].total++;
 
-                if (todayAttendance[student.id]) {
-                    if (todayAttendance[student.id].status === ATTENDANCE_STATUS.PRESENT) {
-                        classSummary[student.class].present++;
-                    } else if (todayAttendance[student.id].status === ATTENDANCE_STATUS.ABSENT) {
-                        classSummary[student.class].absent++;
+                    if (todayAttendance[student.id]) {
+                        if (todayAttendance[student.id].status === ATTENDANCE_STATUS.PRESENT) {
+                            classSummary[student.class].present++;
+                        } else if (todayAttendance[student.id].status === ATTENDANCE_STATUS.ABSENT) {
+                            classSummary[student.class].absent++;
+                        }
+                        // If status is 'neutral', don't count as present or absent
                     }
-                    // If status is 'neutral', don't count as present or absent
                 }
-            }
-        });
+            });
+        }
 
         // Calculate rates
         Object.keys(classSummary).forEach(className => {
