@@ -33,7 +33,9 @@ def start_server():
     """Start the Flask server with SQLite database"""
     print("\n🚀 Starting Madani Maktab SQLite server...")
     print("📖 Your Islamic school attendance system will be available at:")
-    print("   http://localhost:5000")
+    # The Flask server will run on PORT env (default 5001) inside simple_server
+    port = os.environ.get('PORT', '5001')
+    print(f"   http://localhost:{port}")
     print("\n💡 Press Ctrl+C to stop the server")
     print("="*50)
     
