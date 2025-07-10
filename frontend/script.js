@@ -223,8 +223,12 @@ async function initializeEducationSection() {
         if (!response.ok) throw new Error('Failed to load education data');
         const books = await response.json();
 
+        console.log('Education data loaded:', books);
+        console.log('Available classes:', window.classes);
+
         educationContent.innerHTML = window.classes.map(className => {
             const classBooks = books.filter(book => book.class_name === className);
+            console.log(`Books for class "${className}":`, classBooks);
             return `
                 <div class="class-education-section">
                     <div class="class-education-header">
@@ -335,7 +339,14 @@ async function addBook(e, className) {
         });
         if (response.ok) {
             closeModal();
-            initializeEducationSection();
+            // Add a short delay and show success message
+            setTimeout(() => {
+                showModal('সফল!', 'বইটি সফলভাবে যোগ করা হয়েছে।');
+            }, 100);
+            // Refresh the education section after a brief delay
+            setTimeout(async () => {
+                await initializeEducationSection();
+            }, 600);
         } else {
             throw new Error('Failed to add book');
         }
@@ -390,7 +401,11 @@ async function updateProgress(e, bookId) {
         });
         if (response.ok) {
             closeModal();
-            initializeEducationSection();
+            showModal('সফল!', 'বইয়ের অগ্রগতি সফলভাবে আপডেট করা হয়েছে।');
+            // Refresh the education section after a brief delay
+            setTimeout(async () => {
+                await initializeEducationSection();
+            }, 500);
         } else {
             throw new Error('Failed to update progress');
         }
@@ -409,13 +424,59 @@ async function deleteBook(bookId) {
     try {
         const response = await fetch(`/api/education/books/${bookId}`, { method: 'DELETE' });
         if (response.ok) {
-            initializeEducationSection();
+            showModal('সফল!', 'বইটি সফলভাবে মুছে ফেলা হয়েছে।');
+            // Refresh the education section after a brief delay
+            setTimeout(async () => {
+                await initializeEducationSection();
+            }, 500);
         } else {
             throw new Error('Failed to delete book');
         }
     } catch (error) {
         console.error('Error deleting book:', error);
         alert('Error deleting book. Please try again.');
+    }
+}
+
+/**
+ * Manually refresh education section (for debugging)
+ */
+async function refreshEducationSection() {
+    console.log('Manually refreshing education section...');
+    await initializeEducationSection();
+}
+
+/**
+ * Debug function to check education data and class matching
+ */
+async function debugEducationData() {
+    try {
+        const response = await fetch('/api/education/summary', { cache: 'no-cache' });
+        const books = await response.json();
+        
+        console.log('=== EDUCATION DEBUG INFO ===');
+        console.log('Available classes:', window.classes);
+        console.log('Books in database:', books);
+        
+        window.classes.forEach(className => {
+            const classBooks = books.filter(book => book.class_name === className);
+            console.log(`\nClass: "${className}"`);
+            console.log(`Books found: ${classBooks.length}`);
+            console.log('Books:', classBooks.map(b => b.book_title));
+        });
+        
+        // Check for any books that don't match any class
+        const unmatchedBooks = books.filter(book => !window.classes.includes(book.class_name));
+        if (unmatchedBooks.length > 0) {
+            console.log('\n⚠️  UNMATCHED BOOKS (these won\'t show up):');
+            unmatchedBooks.forEach(book => {
+                console.log(`Book: "${book.book_title}" has class: "${book.class_name}"`);
+            });
+        }
+        
+        console.log('=== END DEBUG INFO ===');
+    } catch (error) {
+        console.error('Debug failed:', error);
     }
 }
 
