@@ -3,7 +3,7 @@
  * Handles class management, holiday management, app configuration, Hijri settings, and import/export
  */
 
-import { appManager } from '../../core/app.js';
+import { appManager, getState, updateAppState } from '../../core/app.js';
 import { API_ENDPOINTS } from '../../core/config.js';
 import { formatDate } from '../../core/utils.js';
 
@@ -55,7 +55,7 @@ export const settingsManager = {
      * Add a new class
      */
     addClass() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { classes } = appState;
         const newClassName = document.getElementById('newClassName').value.trim();
         
@@ -70,7 +70,7 @@ export const settingsManager = {
         }
         
         classes.push(newClassName);
-        appManager.setState({ classes });
+        updateAppState({ classes });
         
         this.saveData();
         this.updateClassDropdowns();
@@ -84,7 +84,7 @@ export const settingsManager = {
      * Delete a class
      */
     deleteClass(className) {
-        const appState = appManager.getState();
+        const appState = getState();
         const { classes, students } = appState;
         
         // First confirmation
@@ -97,7 +97,7 @@ export const settingsManager = {
                 // Filter out students from this class
                 const updatedStudents = students.filter(student => student.class !== className);
                 
-                appManager.setState({ 
+                updateAppState({ 
                     classes: updatedClasses,
                     students: updatedStudents 
                 });
@@ -121,7 +121,7 @@ export const settingsManager = {
      * Display classes list
      */
     displayClasses() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { classes } = appState;
         const classesList = document.getElementById('classesList');
         
@@ -173,7 +173,7 @@ export const settingsManager = {
         const saveEdit = () => {
             const newName = input.value.trim();
             if (newName && newName !== oldClassName) {
-                const appState = appManager.getState();
+                const appState = getState();
                 const { classes, students } = appState;
                 
                 if (classes.includes(newName)) {
@@ -194,7 +194,7 @@ export const settingsManager = {
                     }
                 });
                 
-                appManager.setState({ classes, students });
+                updateAppState({ classes, students });
                 
                 this.saveData();
                 this.updateClassDropdowns();
@@ -227,7 +227,7 @@ export const settingsManager = {
      * Update class dropdowns throughout the app
      */
     updateClassDropdowns() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { classes } = appState;
         
         const classDropdowns = document.querySelectorAll('#studentClass, #classFilter, #reportClass');
@@ -248,7 +248,7 @@ export const settingsManager = {
      * Update class filter options
      */
     updateClassFilterOptions() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { classes } = appState;
         const classFilterSelect = document.getElementById('classFilter');
         
@@ -271,7 +271,7 @@ export const settingsManager = {
      * Add a new holiday
      */
     addHoliday() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { holidays } = appState;
         
         const startDateInput = document.getElementById('holidayStartDate');
@@ -320,7 +320,7 @@ export const settingsManager = {
         });
         holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
         
-        appManager.setState({ holidays });
+        updateAppState({ holidays });
         
         this.saveData();
         this.displayHolidays();
@@ -338,11 +338,11 @@ export const settingsManager = {
      * Delete a holiday
      */
     deleteHoliday(index) {
-        const appState = appManager.getState();
+        const appState = getState();
         const { holidays } = appState;
         
         holidays.splice(index, 1);
-        appManager.setState({ holidays });
+        updateAppState({ holidays });
         
         this.saveData();
         this.displayHolidays();
@@ -353,7 +353,7 @@ export const settingsManager = {
      * Display holidays list
      */
     displayHolidays() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { holidays } = appState;
         const holidaysList = document.getElementById('holidaysList');
         
@@ -390,7 +390,7 @@ export const settingsManager = {
      * Check if a date is a holiday
      */
     isHoliday(date) {
-        const appState = appManager.getState();
+        const appState = getState();
         const { holidays } = appState;
         
         if (!holidays || holidays.length === 0) return false;
@@ -420,7 +420,7 @@ export const settingsManager = {
      * Get holiday name for a date
      */
     getHolidayName(date) {
-        const appState = appManager.getState();
+        const appState = getState();
         const { holidays } = appState;
         
         if (!holidays || holidays.length === 0) return '';
@@ -488,7 +488,7 @@ export const settingsManager = {
         const academicYearStart = localStorage.getItem('academicYearStart');
         if (academicYearStart) {
             document.getElementById('academicYearStart').value = academicYearStart;
-            appManager.setState({ academicYearStartDate: academicYearStart });
+            updateAppState({ academicYearStartDate: academicYearStart });
         }
         this.displayAcademicYearStart();
     },
@@ -500,7 +500,7 @@ export const settingsManager = {
         const academicYearStart = document.getElementById('academicYearStart').value;
         if (academicYearStart) {
             localStorage.setItem('academicYearStart', academicYearStart);
-            appManager.setState({ academicYearStartDate: academicYearStart });
+            updateAppState({ academicYearStartDate: academicYearStart });
             
             this.displayAcademicYearStart();
             this.showModal('Success', 'Academic year start date saved successfully');
@@ -513,7 +513,7 @@ export const settingsManager = {
      * Display academic year start date
      */
     displayAcademicYearStart() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { academicYearStartDate } = appState;
         const displayElement = document.getElementById('academicYearDisplay');
         
@@ -536,7 +536,7 @@ export const settingsManager = {
      */
     clearAcademicYearStart() {
         localStorage.removeItem('academicYearStart');
-        appManager.setState({ academicYearStartDate: null });
+        updateAppState({ academicYearStartDate: null });
         document.getElementById('academicYearStart').value = '';
         this.displayAcademicYearStart();
         this.showModal('Success', 'Academic year start date cleared');
@@ -821,7 +821,7 @@ export const settingsManager = {
      * Download all students CSV
      */
     downloadAllStudentsCSV() {
-        const appState = appManager.getState();
+        const appState = getState();
         const { students } = appState;
         
         if (students.length === 0) {

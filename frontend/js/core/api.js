@@ -252,7 +252,7 @@ export async function loadAllData() {
  */
 export async function checkAPIHealth() {
     try {
-        const response = await fetch('/api/health');
+        const response = await fetch(`${API_BASE_URL}/health`);
         return response.ok;
     } catch (error) {
         console.error('API health check failed:', error);
