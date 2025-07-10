@@ -11,6 +11,7 @@ A simple, beginner-friendly web application for managing student attendance in I
 - 🌐 **Bilingual Support** - English and Bengali (বাংলা)
 - 📱 **Mobile Friendly** - Works on phones, tablets, and computers
 - 💾 **Simple Storage** - Uses SQLite database (built into Python, no setup needed)
+- 📚 **Book Progress Monitoring** - Track textbook completion by class
 
 ## 🚀 Quick Start
 
@@ -69,6 +70,12 @@ madani-moktob-3/
 3. Choose class (optional filter)
 4. Mark each student Present/Absent
 5. Click "Save Attendance"
+
+### Tracking Book Progress
+1. Go to "Book Progress" section
+2. Choose class and textbook
+3. Enter completed pages
+4. Click "Submit" to record progress
 
 ### Viewing Reports
 1. Go to "Reports" section

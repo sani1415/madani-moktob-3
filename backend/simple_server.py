@@ -153,6 +153,48 @@ def add_holiday():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Book Progress Endpoints
+@app.route('/api/book_progress', methods=['GET'])
+def get_book_progress():
+    try:
+        class_name = request.args.get('class')
+        progress = db.get_latest_book_progress(class_name)
+        return jsonify(progress)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/book_progress', methods=['POST'])
+def add_book_progress():
+    try:
+        data = request.json
+        required = ['class', 'book_name', 'total_pages', 'completed_pages']
+        if not data or any(r not in data for r in required):
+            return jsonify({'error': 'class, book_name, total_pages and completed_pages are required'}), 400
+
+        db.add_book_progress(
+            data['class'],
+            data['book_name'],
+            int(data['total_pages']),
+            int(data['completed_pages'])
+        )
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/book_progress/history')
+def book_progress_history():
+    try:
+        class_name = request.args.get('class')
+        book_name = request.args.get('book_name')
+        if not class_name or not book_name:
+            return jsonify({'error': 'class and book_name are required'}), 400
+        history = db.get_book_progress_history(class_name, book_name)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
     """Create sample students data in SQLite database"""

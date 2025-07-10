@@ -65,6 +65,18 @@ class SQLiteDatabase:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Create book progress table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS book_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class TEXT NOT NULL,
+                book_name TEXT NOT NULL,
+                total_pages INTEGER NOT NULL,
+                completed_pages INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
         
         conn.commit()
         conn.close()
@@ -323,10 +335,83 @@ class SQLiteDatabase:
             INSERT OR REPLACE INTO holidays_new (date, name)
             VALUES (?, ?)
         ''', (date, name))
-        
+
         conn.commit()
         conn.close()
         return True
+
+    # Book progress methods
+    def add_book_progress(self, class_name, book_name, total_pages, completed_pages):
+        """Add a new book progress entry"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO book_progress (class, book_name, total_pages, completed_pages)
+            VALUES (?, ?, ?, ?)
+        ''', (class_name, book_name, total_pages, completed_pages))
+
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_latest_book_progress(self, class_name=None):
+        """Get latest book progress entries (optionally filtered by class)"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        subquery = '''
+            SELECT class, book_name, MAX(created_at) as max_ts
+            FROM book_progress
+            GROUP BY class, book_name
+        '''
+
+        query = f'''
+            SELECT bp.class, bp.book_name, bp.total_pages, bp.completed_pages,
+                   bp.created_at
+            FROM book_progress bp
+            JOIN ({subquery}) latest
+              ON bp.class = latest.class AND
+                 bp.book_name = latest.book_name AND
+                 bp.created_at = latest.max_ts
+        '''
+
+        params = []
+        if class_name:
+            query += ' WHERE bp.class = ?'
+            params.append(class_name)
+
+        cursor.execute(query, params)
+
+        rows = []
+        for row in cursor.fetchall():
+            entry = dict(row)
+            entry['remaining_pages'] = entry['total_pages'] - entry['completed_pages']
+            rows.append(entry)
+
+        conn.close()
+        return rows
+
+    def get_book_progress_history(self, class_name, book_name):
+        """Get progress history for a book"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT class, book_name, total_pages, completed_pages, created_at
+            FROM book_progress
+            WHERE class = ? AND book_name = ?
+            ORDER BY id DESC
+        ''', (class_name, book_name))
+
+        rows = []
+        for row in cursor.fetchall():
+            entry = dict(row)
+            entry['remaining_pages'] = entry['total_pages'] - entry['completed_pages']
+            rows.append(entry)
+
+        conn.close()
+        return rows
     
     def create_sample_data(self):
         """Create sample students data"""

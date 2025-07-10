@@ -3,7 +3,7 @@ import os, sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from database_server import app
+from simple_server import app
 
 @pytest.fixture
 def client():
