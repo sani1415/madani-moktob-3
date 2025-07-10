@@ -66,6 +66,29 @@ class SQLiteDatabase:
             )
         ''')
         
+        # Create books table for Education section
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS books (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class_name TEXT NOT NULL,
+                book_title TEXT NOT NULL,
+                total_pages INTEGER NOT NULL,
+                description TEXT
+            )
+        ''')
+        # Create book_progress table for Education section
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS book_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_id INTEGER NOT NULL,
+                pages_completed INTEGER NOT NULL,
+                update_date TEXT NOT NULL,
+                teacher_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (book_id) REFERENCES books(id)
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -370,3 +393,126 @@ class SQLiteDatabase:
         self.save_students(sample_students)
         print(f"✅ Created {len(sample_students)} sample students in SQLite database")
         return sample_students
+
+    # === Education Section Methods ===
+
+    def get_books(self, class_name=None):
+        """Get all books, optionally filtered by class"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if class_name:
+            cursor.execute('SELECT * FROM books WHERE class_name = ?', (class_name,))
+        else:
+            cursor.execute('SELECT * FROM books')
+            
+        books = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return books
+
+    def add_book(self, data):
+        """Add a new book"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO books (class_name, book_title, total_pages, description)
+            VALUES (?, ?, ?, ?)
+        ''', (data['class_name'], data['book_title'], data['total_pages'], data.get('description')))
+        
+        conn.commit()
+        conn.close()
+
+    def edit_book(self, book_id, data):
+        """Edit an existing book"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE books
+            SET class_name = ?, book_title = ?, total_pages = ?, description = ?
+            WHERE id = ?
+        ''', (data['class_name'], data['book_title'], data['total_pages'], data.get('description'), book_id))
+        
+        conn.commit()
+        conn.close()
+
+    def delete_book(self, book_id):
+        """Delete a book and its progress"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('DELETE FROM books WHERE id = ?', (book_id,))
+        cursor.execute('DELETE FROM book_progress WHERE book_id = ?', (book_id,))
+        
+        conn.commit()
+        conn.close()
+
+    def add_book_progress(self, data):
+        """Add a progress update for a book"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO book_progress (book_id, pages_completed, update_date, teacher_id)
+            VALUES (?, ?, ?, ?)
+        ''', (data['book_id'], data['pages_completed'], data['update_date'], data.get('teacher_id')))
+        
+        conn.commit()
+        conn.close()
+
+    def get_book_progress_history(self, book_id):
+        """Get the progress history for a book"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM book_progress WHERE book_id = ? ORDER BY update_date DESC', (book_id,))
+        
+        history = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return history
+
+    def get_education_summary(self, class_name=None):
+        """Get a summary of education progress"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        query = '''
+            SELECT
+                b.id,
+                b.class_name,
+                b.book_title,
+                b.total_pages,
+                COALESCE(p.pages_completed, 0) as pages_completed,
+                (
+                    SELECT pages_completed
+                    FROM book_progress
+                    WHERE book_id = b.id
+                    ORDER BY update_date DESC
+                    LIMIT 1
+                ) as last_progress
+            FROM books b
+            LEFT JOIN (
+                SELECT book_id, MAX(pages_completed) as pages_completed
+                FROM book_progress
+                GROUP BY book_id
+            ) p ON b.id = p.book_id
+        '''
+        
+        if class_name:
+            cursor.execute(query + ' WHERE b.class_name = ?', (class_name,))
+        else:
+            cursor.execute(query)
+
+        summary = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            item['pages_completed'] = item['last_progress'] if item['last_progress'] is not None else 0
+            if item['total_pages'] > 0:
+                item['percentage_completed'] = round((item['pages_completed'] / item['total_pages']) * 100)
+            else:
+                item['percentage_completed'] = 0
+            summary.append(item)
+            
+        conn.close()
+        return summary

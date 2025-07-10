@@ -179,6 +179,69 @@ def health():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# === Education Section API ===
+
+@app.route('/api/education/books', methods=['GET'])
+def get_books():
+    class_name = request.args.get('class_name')
+    try:
+        books = db.get_books(class_name)
+        return jsonify(books)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/books', methods=['POST'])
+def add_book():
+    data = request.json
+    try:
+        db.add_book(data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/books/<int:book_id>', methods=['PUT'])
+def edit_book(book_id):
+    data = request.json
+    try:
+        db.edit_book(book_id, data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/books/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    try:
+        db.delete_book(book_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/progress', methods=['POST'])
+def add_progress():
+    data = request.json
+    try:
+        db.add_book_progress(data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/progress/<int:book_id>', methods=['GET'])
+def get_progress_history(book_id):
+    try:
+        history = db.get_book_progress_history(book_id)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/summary', methods=['GET'])
+def get_education_summary():
+    class_name = request.args.get('class_name')
+    try:
+        summary = db.get_education_summary(class_name)
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     print("🕌 Madani Maktab - SQLite Server")
     print("=" * 40)
@@ -203,4 +266,3 @@ if __name__ == '__main__':
     # Use debug=False for production deployment
     is_production = os.environ.get('RENDER') or os.environ.get('PRODUCTION')
     app.run(host='0.0.0.0', port=port, debug=not is_production)
-
