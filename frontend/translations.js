@@ -10,6 +10,7 @@ const translations = {
         registerStudent: "Register Student",
         dailyAttendance: "Daily Attendance",
         reports: "Reports",
+        education: "Education",
         settings: "Settings",
         
         // Dashboard
@@ -139,7 +140,6 @@ const translations = {
         bulkAbsentReason: "Reason for absence (applies to all students):",
         bulkAbsentPlaceholder: "e.g., School holiday, Strike, etc.",
         bulkAbsentConfirm: "Mark All Absent",
-        cancel: "Cancel",
         pleaseProvideReason: "Please provide a reason for the absence",
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
@@ -246,6 +246,7 @@ const translations = {
         studentsConfirmedPresent: "students confirmed present",
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
+        studentsMarkedNeutral: "students cleared to neutral",
         rememberToSaveAttendance: "Remember to save attendance after making changes!",
         selectDateRangeToGenerate: "Select date range and click \"Generate Report\" to view attendance data.",
         showAttendanceTrackingCalendar: "Show Attendance Tracking Calendar",
@@ -254,8 +255,6 @@ const translations = {
         stickyAttendanceApplied: "Sticky attendance applied!",
         stillAbsentFromLastTime: "still absent from last time. Change any student's status as needed.",
         allStudentsPresent: "All students present. Change any student's status as needed.",
-        present: "present",
-        absent: "absent",
         total: "total",
         
         // Student Detail Summary Options
@@ -278,6 +277,7 @@ const translations = {
         registerStudent: "ছাত্র নিবন্ধন",
         dailyAttendance: "দৈনিক উপস্থিতি",
         reports: "রিপোর্ট",
+        education: "শিক্ষা",
         settings: "সেটিংস",
         
         // Dashboard
@@ -488,8 +488,6 @@ const translations = {
         stickyAttendanceApplied: "স্টিকি উপস্থিতি প্রয়োগ করা হয়েছে!",
         stillAbsentFromLastTime: "গত বার থেকে এখনও অনুপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
         allStudentsPresent: "সব ছাত্র উপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
-        present: "উপস্থিত",
-        absent: "অনুপস্থিত", 
         total: "মোট",
         
         // Student Detail Summary Options
@@ -555,11 +553,13 @@ function updateHeaderTexts() {
 // Update navigation texts
 function updateNavigationTexts() {
     const navLinks = document.querySelectorAll('.nav-link');
-    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'settings'];
+    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'education', 'settings'];
     
     navLinks.forEach((link, index) => {
-        const icon = link.querySelector('i').outerHTML;
-        link.innerHTML = `${icon} ${t(navTexts[index])}`;
+        if (navTexts[index]) {
+            const icon = link.querySelector('i').outerHTML;
+            link.innerHTML = `${icon} ${t(navTexts[index])}`;
+        }
     });
 }
 

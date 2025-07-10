@@ -3,43 +3,68 @@
  * Handles all education-related operations including book and progress tracking.
  */
 
-// This is a simplified module to be integrated into your existing structure.
-// You will need to adapt it to your modular script loader.
-
 class EducationManager {
     constructor() {
         this.books = [];
         this.progress = {};
-        // Improvement: Get the class list dynamically from the main application state.
-        // This assumes 'classes' is a global array defined in your main script.js
-        this.classes = window.classes || [];
+        // The class list will be fetched during initialization
+        this.classes = [];
     }
 
+    /**
+     * Initializes the education module by loading data and rendering the content.
+     * This should be called every time the education section is displayed.
+     */
     async initialize() {
-        // This method should be called when the education section is shown.
-        // Refresh the class list every time it's initialized
+        // Get the class list from the global scope, which is set in script.js
         this.classes = window.classes || [];
+        
         await this.loadEducationData();
         this.renderEducationContent();
     }
 
+    /**
+     * Fetches the summary of educational books and progress from the backend.
+     */
     async loadEducationData() {
         try {
             const response = await fetch('/api/education/summary');
             if (!response.ok) {
-                throw new Error('Failed to load education summary');
+                throw new Error('Failed to load education summary from the server.');
             }
             this.books = await response.json();
         } catch (error) {
             console.error('Error loading education data:', error);
-            // You can add a UI error message here
+            // Display an error message in the UI if data fails to load
+            const educationContent = document.querySelector('#education .education-content');
+            if (educationContent) {
+                educationContent.innerHTML = `<p class="text-danger">Error loading education data. Please try again later.</p>`;
+            }
         }
     }
 
+    /**
+     * Renders the entire content for the education section, including all classes and their books.
+     */
     renderEducationContent() {
         const educationContent = document.querySelector('#education .education-content');
-        if (!educationContent) return;
+        if (!educationContent) {
+            console.error('Education content container not found.');
+            return;
+        }
 
+        // Check if there are any classes defined in the application
+        if (!this.classes || this.classes.length === 0) {
+            educationContent.innerHTML = `
+                <div class="no-students-message">
+                    <i class="fas fa-school"></i>
+                    <p>No classes found. Please add classes in the "Settings" page first.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Generate the HTML for each class section
         educationContent.innerHTML = this.classes.map(className => {
             const classBooks = this.books.filter(book => book.class_name === className);
             return `
@@ -51,34 +76,43 @@ class EducationManager {
                         </button>
                     </div>
                     <div class="book-list">
-                        ${classBooks.length > 0 ? classBooks.map(book => this.renderBookCard(book)).join('') : '<p>No books added for this class yet.</p>'}
+                        ${classBooks.length > 0 ? classBooks.map(book => this.renderBookCard(book)).join('') : '<p>No books have been added for this class yet.</p>'}
                     </div>
                 </div>
             `;
         }).join('');
     }
 
+    /**
+     * Renders a single book card with its details and progress.
+     * @param {object} book - The book data object.
+     * @returns {string} The HTML string for the book card.
+     */
     renderBookCard(book) {
         const percentage = book.percentage_completed || 0;
         return `
             <div class="book-card">
                 <h4>${book.book_title}</h4>
-                <p>${book.description || 'No description'}</p>
+                <p>${book.description || 'No description provided.'}</p>
                 <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: ${percentage}%">${percentage}%</div>
+                    <div class="progress-bar" style="width: ${percentage}%" title="${percentage}% Completed">${percentage}%</div>
                 </div>
                 <div class="book-actions">
                     <button class="btn btn-secondary btn-small" onclick="educationManager.showUpdateProgressModal(${book.id})">
                         <i class="fas fa-edit"></i> Update Progress
                     </button>
                     <button class="btn btn-danger btn-small" onclick="educationManager.deleteBook(${book.id})">
-                        <i class="fas fa-trash"></i>
+                        <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
             </div>
         `;
     }
 
+    /**
+     * Displays a modal for adding a new book to a specific class.
+     * @param {string} className - The name of the class to add the book to.
+     */
     showAddBookModal(className) {
         const modalBody = document.getElementById('modalBody');
         modalBody.innerHTML = `
@@ -111,13 +145,17 @@ class EducationManager {
         document.getElementById('modal').style.display = 'block';
     }
 
+    /**
+     * Handles the logic for adding a new book via an API call.
+     * @param {string} className - The name of the class the book belongs to.
+     */
     async addBook(className) {
         const bookTitle = document.getElementById('bookTitle').value;
         const totalPages = document.getElementById('totalPages').value;
         const description = document.getElementById('bookDescription').value;
 
         if (!bookTitle || !totalPages) {
-            alert('Please fill in all fields.');
+            alert('Please fill in all required fields.');
             return;
         }
 
@@ -145,6 +183,10 @@ class EducationManager {
         }
     }
 
+    /**
+     * Displays a modal for updating the progress of a book.
+     * @param {number} bookId - The ID of the book to update.
+     */
     showUpdateProgressModal(bookId) {
         const modalBody = document.getElementById('modalBody');
         modalBody.innerHTML = `
@@ -169,6 +211,10 @@ class EducationManager {
         document.getElementById('modal').style.display = 'block';
     }
 
+    /**
+     * Handles the logic for updating book progress via an API call.
+     * @param {number} bookId - The ID of the book being updated.
+     */
     async updateProgress(bookId) {
         const pagesCompleted = document.getElementById('pagesCompleted').value;
 
@@ -200,8 +246,12 @@ class EducationManager {
         }
     }
 
+    /**
+     * Handles the logic for deleting a book and its progress via an API call.
+     * @param {number} bookId - The ID of the book to delete.
+     */
     async deleteBook(bookId) {
-        if (!confirm('Are you sure you want to delete this book and all its progress?')) {
+        if (!confirm('Are you sure you want to delete this book and all its progress? This action cannot be undone.')) {
             return;
         }
 
@@ -211,7 +261,7 @@ class EducationManager {
             });
 
             if (response.ok) {
-                this.initialize(); // Re-initialize to remove the book
+                this.initialize(); // Re-initialize to remove the book from the view
             } else {
                 throw new Error('Failed to delete book');
             }
@@ -222,12 +272,5 @@ class EducationManager {
     }
 }
 
-// Make it globally accessible for the onclick handlers
+// Make the educationManager instance globally accessible for the onclick handlers in the HTML
 window.educationManager = new EducationManager();
-
-// You'll need to call educationManager.initialize() when the education section is shown.
-// This can be done in your showSection function in script.js.
-// Example:
-// if (sectionId === 'education') {
-//     educationManager.initialize();
-// }

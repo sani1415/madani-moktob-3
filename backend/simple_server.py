@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
 import os
+import traceback
 from datetime import datetime
 from sqlite_database import SQLiteDatabase
 
@@ -52,8 +53,6 @@ def add_student():
         if any(s.get('rollNumber') == student_data['rollNumber'] for s in existing_students):
             return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
         
-        # Mobile numbers are now allowed to be duplicate - removed this check
-        
         db.add_student(student_data)
         return jsonify({'success': True, 'student': student_data})
     except Exception as e:
@@ -73,8 +72,6 @@ def update_student(student_id):
                 student.get('id') != student_id):
                 return jsonify({'error': f'Roll number {student_data["rollNumber"]} already exists'}), 400
         
-        # Mobile numbers are now allowed to be duplicate - removed this check
-            
         student_data['id'] = student_id  # Ensure ID matches URL
         db.add_student(student_data)  # add_student handles updates too
         return jsonify({'success': True, 'student': student_data})
@@ -122,11 +119,9 @@ def save_attendance():
     try:
         attendance_data = request.json
         
-        # If the data is null or an empty dictionary, reset attendance
         if attendance_data is None or not attendance_data:
             db.reset_attendance()
         else:
-            # Save the entire attendance data
             db.save_attendance(attendance_data)
             
         return jsonify({'success': True})
@@ -237,10 +232,15 @@ def get_progress_history(book_id):
 def get_education_summary():
     class_name = request.args.get('class_name')
     try:
+        print("API: Received request for education summary.")
         summary = db.get_education_summary(class_name)
+        print(f"API: Successfully fetched summary. Returning {len(summary)} items.")
         return jsonify(summary)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # This will catch any error and print it to the console
+        print("API: CRITICAL ERROR in /api/education/summary endpoint.")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 if __name__ == '__main__':
     print("🕌 Madani Maktab - SQLite Server")
@@ -255,9 +255,6 @@ if __name__ == '__main__':
     
     print(f"📊 Loaded {len(students)} students from SQLite database")
     print("📁 Database file: madani_moktob.db")
-    print("   - students table")
-    print("   - attendance table") 
-    print("   - holidays table")
     
     port = int(os.environ.get('PORT', 5001))
     print(f"🌐 Server starting on http://localhost:{port}")

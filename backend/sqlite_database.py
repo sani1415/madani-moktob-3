@@ -21,10 +21,25 @@ class SQLiteDatabase:
         conn.row_factory = sqlite3.Row
         return conn
     
+    def _add_column_if_not_exists(self, cursor, table_name, column_name, column_def):
+        """Helper to add a column to a table if it doesn't exist."""
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if column_name not in columns:
+            print(f"Adding column '{column_name}' to table '{table_name}'...")
+            try:
+                cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}")
+                print(f"Successfully added column '{column_name}'.")
+            except sqlite3.OperationalError as e:
+                print(f"Could not add column '{column_name}': {e}")
+
     def init_database(self):
-        """Initialize database tables if they don't exist"""
+        """Initialize and migrate database tables if they don't exist or need updates."""
         conn = self.get_connection()
         cursor = conn.cursor()
+        
+        # Enable foreign key support
+        cursor.execute("PRAGMA foreign_keys = ON")
         
         # Create students table with all fields
         cursor.execute('''
@@ -51,7 +66,7 @@ class SQLiteDatabase:
                 status TEXT NOT NULL,
                 reason TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students_new(id),
+                FOREIGN KEY (student_id) REFERENCES students_new(id) ON DELETE CASCADE,
                 UNIQUE(student_id, date)
             )
         ''')
@@ -72,10 +87,13 @@ class SQLiteDatabase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class_name TEXT NOT NULL,
                 book_title TEXT NOT NULL,
-                total_pages INTEGER NOT NULL,
-                description TEXT
+                total_pages INTEGER NOT NULL
             )
         ''')
+        
+        # Add 'description' column to 'books' table if it doesn't exist
+        self._add_column_if_not_exists(cursor, 'books', 'description', 'TEXT')
+
         # Create book_progress table for Education section
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS book_progress (
@@ -85,7 +103,7 @@ class SQLiteDatabase:
                 update_date TEXT NOT NULL,
                 teacher_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (book_id) REFERENCES books(id)
+                FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
             )
         ''')
         
@@ -97,63 +115,36 @@ class SQLiteDatabase:
         try:
             # Handle Bengali class names
             bengali_class_map = {
-                'প্রথম শ্রেণি': 1,
-                'দ্বিতীয় শ্রেণি': 2,
-                'তৃতীয় শ্রেণি': 3,
-                'চতুর্থ শ্রেণি': 4,
-                'পঞ্চম শ্রেণি': 5,
-                'ষষ্ঠ শ্রেণি': 6,
-                'সপ্তম শ্রেণি': 7,
-                'অষ্টম শ্রেণি': 8,
-                'নবম শ্রেণি': 9,
-                'দশম শ্রেণি': 10
+                'প্রথম শ্রেণি': 1, 'দ্বিতীয় শ্রেণি': 2, 'তৃতীয় শ্রেণি': 3,
+                'চতুর্থ শ্রেণি': 4, 'পঞ্চম শ্রেণি': 5, 'ষষ্ঠ শ্রেণি': 6,
+                'সপ্তম শ্রেণি': 7, 'অষ্টম শ্রেণি': 8, 'নবম শ্রেণি': 9, 'দশম শ্রেণি': 10
             }
-            
             if class_name in bengali_class_map:
                 return bengali_class_map[class_name]
-            
-            # Fallback for English class names
             return int(class_name.split()[-1])
         except:
-            return 1  # Default to class 1 if parsing fails
+            return 1
     
     def generate_roll_number(self, class_name):
         """Generate next roll number for a class"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         class_number = self.get_class_number(class_name)
         base_number = class_number * 100
-        
-        # Find all existing roll numbers for this class
         cursor.execute('''
             SELECT rollNumber FROM students_new 
             WHERE class = ? AND rollNumber IS NOT NULL
             ORDER BY CAST(rollNumber AS INTEGER)
         ''', (class_name,))
-        
-        existing_rolls = []
-        for row in cursor.fetchall():
-            try:
-                roll = int(row['rollNumber'])
-                if base_number <= roll < base_number + 100:
-                    existing_rolls.append(roll)
-            except:
-                continue
-        
+        existing_rolls = [int(row['rollNumber']) for row in cursor.fetchall() if row['rollNumber'] and row['rollNumber'].isdigit() and base_number <= int(row['rollNumber']) < base_number + 100]
         conn.close()
-        
-        # Find next available roll number
         if not existing_rolls:
             return base_number + 1
-        
         existing_rolls.sort()
         for i, roll in enumerate(existing_rolls):
             expected = base_number + i + 1
             if roll != expected:
                 return expected
-        
-        # If all sequential, return next number
         return max(existing_rolls) + 1
     
     # Students methods
@@ -161,16 +152,10 @@ class SQLiteDatabase:
         """Get all students"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         cursor.execute('SELECT * FROM students_new ORDER BY rollNumber')
-        students = []
-        for row in cursor.fetchall():
-            student = dict(row)
-            # Remove created_at from response
-            if 'created_at' in student:
-                del student['created_at']
-            students.append(student)
-        
+        students = [dict(row) for row in cursor.fetchall()]
+        for student in students:
+            student.pop('created_at', None)
         conn.close()
         return students
     
@@ -178,14 +163,9 @@ class SQLiteDatabase:
         """Save multiple students (used for bulk operations)"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        # Clear existing students
         cursor.execute('DELETE FROM students_new')
-        
-        # Insert all students
         for student in students:
             self._insert_student(cursor, student)
-        
         conn.commit()
         conn.close()
     
@@ -196,24 +176,16 @@ class SQLiteDatabase:
             (id, name, fatherName, mobileNumber, district, upazila, class, rollNumber, registrationDate)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            student_data.get('id'),
-            student_data.get('name'),
-            student_data.get('fatherName'),
-            student_data.get('mobileNumber'),
-            student_data.get('district'),
-            student_data.get('upazila'),
-            student_data.get('class'),
-            student_data.get('rollNumber'),
-            student_data.get('registrationDate')
+            student_data.get('id'), student_data.get('name'), student_data.get('fatherName'),
+            student_data.get('mobileNumber'), student_data.get('district'), student_data.get('upazila'),
+            student_data.get('class'), student_data.get('rollNumber'), student_data.get('registrationDate')
         ))
     
     def add_student(self, student_data):
         """Add or update a student"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         self._insert_student(cursor, student_data)
-        
         conn.commit()
         conn.close()
         return True
@@ -223,61 +195,27 @@ class SQLiteDatabase:
         """Get attendance data"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         if date:
-            # Get attendance for specific date
-            cursor.execute('''
-                SELECT student_id, status, reason 
-                FROM attendance_new 
-                WHERE date = ?
-            ''', (date,))
-            
-            attendance = {}
-            for row in cursor.fetchall():
-                attendance[row['student_id']] = {
-                    'status': row['status'],
-                    'reason': row['reason'] or ''
-                }
-            
-            conn.close()
-            return attendance
+            cursor.execute('SELECT student_id, status, reason FROM attendance_new WHERE date = ?', (date,))
+            attendance = {row['student_id']: {'status': row['status'], 'reason': row['reason'] or ''} for row in cursor.fetchall()}
         else:
-            # Get all attendance grouped by date
-            cursor.execute('''
-                SELECT date, student_id, status, reason 
-                FROM attendance_new 
-                ORDER BY date DESC
-            ''')
-            
+            cursor.execute('SELECT date, student_id, status, reason FROM attendance_new ORDER BY date DESC')
             attendance = {}
             for row in cursor.fetchall():
-                if row['date'] not in attendance:
-                    attendance[row['date']] = {}
-                
-                attendance[row['date']][row['student_id']] = {
-                    'status': row['status'],
-                    'reason': row['reason'] or ''
-                }
-            
-            conn.close()
-            return attendance
+                attendance.setdefault(row['date'], {})[row['student_id']] = {'status': row['status'], 'reason': row['reason'] or ''}
+        conn.close()
+        return attendance
     
     def save_attendance(self, attendance_data):
         """Save attendance data"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        # Clear all attendance records
         cursor.execute('DELETE FROM attendance_new')
-        
-        # Insert new attendance records
-        for date, students in attendance_data.items():
-            for student_id, info in students.items():
-                cursor.execute('''
-                    INSERT INTO attendance_new (student_id, date, status, reason)
-                    VALUES (?, ?, ?, ?)
-                ''', (student_id, date, info.get('status', 'absent'), info.get('reason', '')))
-        
+        if attendance_data:
+            for date, students in attendance_data.items():
+                for student_id, info in students.items():
+                    cursor.execute('INSERT INTO attendance_new (student_id, date, status, reason) VALUES (?, ?, ?, ?)',
+                                   (student_id, date, info.get('status', 'absent'), info.get('reason', '')))
         conn.commit()
         conn.close()
 
@@ -289,33 +227,13 @@ class SQLiteDatabase:
         conn.commit()
         conn.close()
     
-    def update_attendance(self, date, student_id, status, reason=""):
-        """Update attendance for a specific student and date"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT OR REPLACE INTO attendance_new (student_id, date, status, reason)
-            VALUES (?, ?, ?, ?)
-        ''', (student_id, date, status, reason))
-        
-        conn.commit()
-        conn.close()
-    
     # Holidays methods
     def get_holidays(self):
         """Get all holidays"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         cursor.execute('SELECT date, name FROM holidays_new ORDER BY date')
-        holidays = []
-        for row in cursor.fetchall():
-            holidays.append({
-                'date': row['date'],
-                'name': row['name']
-            })
-        
+        holidays = [{'date': row['date'], 'name': row['name']} for row in cursor.fetchall()]
         conn.close()
         return holidays
     
@@ -323,17 +241,9 @@ class SQLiteDatabase:
         """Save holidays list"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        # Clear existing holidays
         cursor.execute('DELETE FROM holidays_new')
-        
-        # Insert new holidays
         for holiday in holidays:
-            cursor.execute('''
-                INSERT INTO holidays_new (date, name)
-                VALUES (?, ?)
-            ''', (holiday['date'], holiday['name']))
-        
+            cursor.execute('INSERT INTO holidays_new (date, name) VALUES (?, ?)', (holiday['date'], holiday['name']))
         conn.commit()
         conn.close()
     
@@ -341,12 +251,7 @@ class SQLiteDatabase:
         """Add a holiday"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT OR REPLACE INTO holidays_new (date, name)
-            VALUES (?, ?)
-        ''', (date, name))
-        
+        cursor.execute('INSERT OR REPLACE INTO holidays_new (date, name) VALUES (?, ?)', (date, name))
         conn.commit()
         conn.close()
         return True
@@ -354,42 +259,9 @@ class SQLiteDatabase:
     def create_sample_data(self):
         """Create sample students data"""
         sample_students = [
-            # Class 1 students (Roll 101-105)
             {"id": "ST001", "name": "Abdullah Rahman", "fatherName": "Rahman Ahmed", "mobileNumber": "01711234567", "district": "Dhaka", "upazila": "Dhanmondi", "class": "প্রথম শ্রেণি", "rollNumber": "101", "registrationDate": "2025-01-01"},
-            {"id": "ST002", "name": "Fatima Khatun", "fatherName": "Karim Uddin", "mobileNumber": "01811234567", "district": "Dhaka", "upazila": "Gulshan", "class": "প্রথম শ্রেণি", "rollNumber": "102", "registrationDate": "2025-01-02"},
-            {"id": "ST011", "name": "Ibrahim Khalil", "fatherName": "Khalil Ahmed", "mobileNumber": "01712345678", "district": "Rajshahi", "upazila": "Boalia", "class": "প্রথম শ্রেণি", "rollNumber": "103", "registrationDate": "2025-01-11"},
-            {"id": "ST012", "name": "Hafsa Begum", "fatherName": "Begum Saheb", "mobileNumber": "01812345678", "district": "Rajshahi", "upazila": "Motihar", "class": "প্রথম শ্রেণি", "rollNumber": "104", "registrationDate": "2025-01-12"},
-            {"id": "ST021", "name": "Zakaria Hasan", "fatherName": "Hasan Uddin", "mobileNumber": "01713456789", "district": "Comilla", "upazila": "Sadar", "class": "প্রথম শ্রেণি", "rollNumber": "105", "registrationDate": "2025-01-21"},
-            
-            # Class 2 students (Roll 201-205)
-            {"id": "ST003", "name": "Muhammad Hasan", "fatherName": "Hasan Ali", "mobileNumber": "01911234567", "district": "Dhaka", "upazila": "Mirpur", "class": "দ্বিতীয় শ্রেণি", "rollNumber": "201", "registrationDate": "2025-01-03"},
-            {"id": "ST004", "name": "Aisha Begum", "fatherName": "Ahmed Hossain", "mobileNumber": "01611234567", "district": "Dhaka", "upazila": "Wari", "class": "দ্বিতীয় শ্রেণি", "rollNumber": "202", "registrationDate": "2025-01-04"},
-            {"id": "ST013", "name": "Hamza Ali", "fatherName": "Ali Akbar", "mobileNumber": "01912345678", "district": "Barisal", "upazila": "Kotwali", "class": "দ্বিতীয় শ্রেণি", "rollNumber": "203", "registrationDate": "2025-01-13"},
-            {"id": "ST014", "name": "Sakinah Khatun", "fatherName": "Khatun Ahmad", "mobileNumber": "01612345678", "district": "Barisal", "upazila": "Babuganj", "class": "দ্বিতীয় শ্রেণি", "rollNumber": "204", "registrationDate": "2025-01-14"},
-            {"id": "ST022", "name": "Aminah Begum", "fatherName": "Begum Ali", "mobileNumber": "01813456789", "district": "Comilla", "upazila": "Laksam", "class": "দ্বিতীয় শ্রেণি", "rollNumber": "205", "registrationDate": "2025-01-22"},
-            
-            # Class 3 students (Roll 301-305)
-            {"id": "ST005", "name": "Omar Faruk", "fatherName": "Faruk Miah", "mobileNumber": "01511234567", "district": "Dhaka", "upazila": "Ramna", "class": "তৃতীয় শ্রেণি", "rollNumber": "301", "registrationDate": "2025-01-05"},
-            {"id": "ST006", "name": "Maryam Siddiqui", "fatherName": "Siddiqui Saheb", "mobileNumber": "01411234567", "district": "Chittagong", "upazila": "Kotwali", "class": "তৃতীয় শ্রেণি", "rollNumber": "302", "registrationDate": "2025-01-06"},
-            {"id": "ST015", "name": "Ismail Hossain", "fatherName": "Hossain Miah", "mobileNumber": "01512345678", "district": "Khulna", "upazila": "Daulatpur", "class": "তৃতীয় শ্রেণি", "rollNumber": "303", "registrationDate": "2025-01-15"},
-            {"id": "ST016", "name": "Ruqayyah Begum", "fatherName": "Begum Hossain", "mobileNumber": "01412345678", "district": "Khulna", "upazila": "Khalishpur", "class": "তৃতীয় শ্রেণি", "rollNumber": "304", "registrationDate": "2025-01-16"},
-            {"id": "ST023", "name": "Sulaiman Ahmed", "fatherName": "Ahmed Molla", "mobileNumber": "01913456789", "district": "Jessore", "upazila": "Sadar", "class": "তৃতীয় শ্রেণি", "rollNumber": "305", "registrationDate": "2025-01-23"},
-            
-            # Class 4 students (Roll 401-405)
-            {"id": "ST007", "name": "Ali Hasan", "fatherName": "Hasan Mahmud", "mobileNumber": "01311234567", "district": "Chittagong", "upazila": "Pahartali", "class": "চতুর্থ শ্রেণি", "rollNumber": "401", "registrationDate": "2025-01-07"},
-            {"id": "ST008", "name": "Khadija Rahman", "fatherName": "Rahman Molla", "mobileNumber": "01211234567", "district": "Chittagong", "upazila": "Panchlaish", "class": "চতুর্থ শ্রেণি", "rollNumber": "402", "registrationDate": "2025-01-08"},
-            {"id": "ST017", "name": "Tariq Rahman", "fatherName": "Rahman Sheikh", "mobileNumber": "01312345678", "district": "Rangpur", "upazila": "Sadar", "class": "চতুর্থ শ্রেণি", "rollNumber": "403", "registrationDate": "2025-01-17"},
-            {"id": "ST018", "name": "Umm Kulsum", "fatherName": "Kulsum Miah", "mobileNumber": "01212345678", "district": "Rangpur", "upazila": "Mithapukur", "class": "চতুর্থ শ্রেণি", "rollNumber": "404", "registrationDate": "2025-01-18"},
-            {"id": "ST024", "name": "Umm Habibah", "fatherName": "Habibah Miah", "mobileNumber": "01613456789", "district": "Jessore", "upazila": "Jhikargachha", "class": "চতুর্থ শ্রেণি", "rollNumber": "405", "registrationDate": "2025-01-24"},
-            
-            # Class 5 students (Roll 501-505)
-            {"id": "ST009", "name": "Yusuf Ahmed", "fatherName": "Ahmed Karim", "mobileNumber": "01111234567", "district": "Sylhet", "upazila": "Sylhet Sadar", "class": "পঞ্চম শ্রেণি", "rollNumber": "501", "registrationDate": "2025-01-09"},
-            {"id": "ST010", "name": "Zainab Khatun", "fatherName": "Khatun Miah", "mobileNumber": "01012345678", "district": "Sylhet", "upazila": "Companiganj", "class": "পঞ্চম শ্রেণি", "rollNumber": "502", "registrationDate": "2025-01-10"},
-            {"id": "ST019", "name": "Bilal Ahmed", "fatherName": "Ahmed Haque", "mobileNumber": "01112345678", "district": "Mymensingh", "upazila": "Sadar", "class": "পঞ্চম শ্রেণি", "rollNumber": "503", "registrationDate": "2025-01-19"},
-            {"id": "ST020", "name": "Safiyyah Khatun", "fatherName": "Khatun Rahman", "mobileNumber": "01013456789", "district": "Mymensingh", "upazila": "Trishal", "class": "পঞ্চম শ্রেণি", "rollNumber": "504", "registrationDate": "2025-01-20"},
-            {"id": "ST025", "name": "Dawud Rahman", "fatherName": "Rahman Hossain", "mobileNumber": "01513456789", "district": "Bogra", "upazila": "Sadar", "class": "পঞ্চম শ্রেণি", "rollNumber": "505", "registrationDate": "2025-01-25"}
+            {"id": "ST002", "name": "Fatima Khatun", "fatherName": "Karim Uddin", "mobileNumber": "01811234567", "district": "Dhaka", "upazila": "Gulshan", "class": "প্রথম শ্রেণি", "rollNumber": "102", "registrationDate": "2025-01-02"}
         ]
-        
         self.save_students(sample_students)
         print(f"✅ Created {len(sample_students)} sample students in SQLite database")
         return sample_students
@@ -400,12 +272,10 @@ class SQLiteDatabase:
         """Get all books, optionally filtered by class"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
         if class_name:
             cursor.execute('SELECT * FROM books WHERE class_name = ?', (class_name,))
         else:
             cursor.execute('SELECT * FROM books')
-            
         books = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return books
@@ -414,26 +284,8 @@ class SQLiteDatabase:
         """Add a new book"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO books (class_name, book_title, total_pages, description)
-            VALUES (?, ?, ?, ?)
-        ''', (data['class_name'], data['book_title'], data['total_pages'], data.get('description')))
-        
-        conn.commit()
-        conn.close()
-
-    def edit_book(self, book_id, data):
-        """Edit an existing book"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            UPDATE books
-            SET class_name = ?, book_title = ?, total_pages = ?, description = ?
-            WHERE id = ?
-        ''', (data['class_name'], data['book_title'], data['total_pages'], data.get('description'), book_id))
-        
+        cursor.execute('INSERT INTO books (class_name, book_title, total_pages, description) VALUES (?, ?, ?, ?)',
+                       (data['class_name'], data['book_title'], data['total_pages'], data.get('description')))
         conn.commit()
         conn.close()
 
@@ -441,10 +293,8 @@ class SQLiteDatabase:
         """Delete a book and its progress"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
+        cursor.execute("PRAGMA foreign_keys = ON")
         cursor.execute('DELETE FROM books WHERE id = ?', (book_id,))
-        cursor.execute('DELETE FROM book_progress WHERE book_id = ?', (book_id,))
-        
         conn.commit()
         conn.close()
 
@@ -452,67 +302,89 @@ class SQLiteDatabase:
         """Add a progress update for a book"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO book_progress (book_id, pages_completed, update_date, teacher_id)
-            VALUES (?, ?, ?, ?)
-        ''', (data['book_id'], data['pages_completed'], data['update_date'], data.get('teacher_id')))
-        
+        cursor.execute('INSERT INTO book_progress (book_id, pages_completed, update_date, teacher_id) VALUES (?, ?, ?, ?)',
+                       (data['book_id'], data['pages_completed'], data['update_date'], data.get('teacher_id')))
         conn.commit()
         conn.close()
 
-    def get_book_progress_history(self, book_id):
-        """Get the progress history for a book"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM book_progress WHERE book_id = ? ORDER BY update_date DESC', (book_id,))
-        
-        history = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return history
-
     def get_education_summary(self, class_name=None):
-        """Get a summary of education progress"""
+        """Get a summary of education progress with a highly robust, step-by-step query."""
         conn = self.get_connection()
         cursor = conn.cursor()
-
-        query = '''
-            SELECT
-                b.id,
-                b.class_name,
-                b.book_title,
-                b.total_pages,
-                COALESCE(p.pages_completed, 0) as pages_completed,
-                (
-                    SELECT pages_completed
-                    FROM book_progress
-                    WHERE book_id = b.id
-                    ORDER BY update_date DESC
-                    LIMIT 1
-                ) as last_progress
-            FROM books b
-            LEFT JOIN (
-                SELECT book_id, MAX(pages_completed) as pages_completed
-                FROM book_progress
-                GROUP BY book_id
-            ) p ON b.id = p.book_id
-        '''
         
-        if class_name:
-            cursor.execute(query + ' WHERE b.class_name = ?', (class_name,))
-        else:
-            cursor.execute(query)
-
         summary = []
-        for row in cursor.fetchall():
-            item = dict(row)
-            item['pages_completed'] = item['last_progress'] if item['last_progress'] is not None else 0
-            if item['total_pages'] > 0:
-                item['percentage_completed'] = round((item['pages_completed'] / item['total_pages']) * 100)
-            else:
-                item['percentage_completed'] = 0
-            summary.append(item)
+        
+        try:
+            # Step 1: Check if the 'books' table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='books';")
+            if cursor.fetchone() is None:
+                print("Warning: 'books' table not found. Returning empty education summary.")
+                conn.close()
+                return []
+
+            # Step 2: Check if the 'book_progress' table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='book_progress';")
+            progress_table_exists = cursor.fetchone() is not None
+
+            # Step 3: Get column names for 'books' table to handle missing 'description' gracefully
+            cursor.execute("PRAGMA table_info(books)")
+            books_columns = [row['name'] for row in cursor.fetchall()]
+            description_column_exists = 'description' in books_columns
+
+            # Step 4: Fetch all books safely
+            books_query = 'SELECT id, class_name, book_title, total_pages'
+            if description_column_exists:
+                books_query += ', description'
+            books_query += ' FROM books'
             
+            params = ()
+            if class_name:
+                books_query += ' WHERE class_name = ?'
+                params = (class_name,)
+            
+            cursor.execute(books_query, params)
+            books = [dict(row) for row in cursor.fetchall()]
+
+            # Step 5: For each book, fetch its latest progress and calculate percentage
+            for book in books:
+                item = dict(book)
+                
+                # Ensure description key exists
+                item.setdefault('description', '')
+
+                pages_completed = 0
+                if progress_table_exists:
+                    cursor.execute(
+                        'SELECT pages_completed FROM book_progress WHERE book_id = ? ORDER BY update_date DESC, id DESC LIMIT 1',
+                        (item['id'],)
+                    )
+                    progress_row = cursor.fetchone()
+                    if progress_row and progress_row['pages_completed'] is not None:
+                        pages_completed = progress_row['pages_completed']
+                
+                item['pages_completed'] = pages_completed
+                
+                # Safely calculate percentage
+                total_pages = item.get('total_pages')
+                percentage = 0
+                if total_pages is not None:
+                    try:
+                        # Ensure total_pages is a number and greater than 0
+                        total_pages_num = int(total_pages)
+                        if total_pages_num > 0:
+                            percentage = round((int(pages_completed) / total_pages_num) * 100)
+                    except (ValueError, TypeError):
+                        # Handle cases where total_pages is not a valid number
+                        percentage = 0
+                
+                item['percentage_completed'] = percentage
+                summary.append(item)
+                
+        except Exception as e:
+            print(f"CRITICAL ERROR in get_education_summary: {e}")
+            # In case of any error, return an empty list to prevent a server crash
+            conn.close()
+            return []
+
         conn.close()
         return summary

@@ -1,13 +1,13 @@
 // Application State
 let students = [];
 let classes = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
+window.classes = classes; // Make classes globally available for other modules
 let attendance = {};
 let holidays = [];
 let academicYearStartDate = null; // Store academic year start date
 let savedAttendanceDates = new Set(); // Track which dates have been saved to database
 
 // Calendar navigation state
-// Initialize calendar to current month, but will be updated to academic year start if set
 let currentCalendarMonth = new Date().getMonth();
 let currentCalendarYear = new Date().getFullYear();
 
@@ -46,7 +46,6 @@ function getClassNumber(className) {
         return bengaliClassMap[className];
     }
     
-    // Fallback to extracting number from class name
     const match = className.match(/(\d+)/);
     return match ? parseInt(match[1]) : 0;
 }
@@ -67,28 +66,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function initializeAppWithDatabase() {
     try {
         console.log('Starting app initialization...');
-        
-        // Load data from database only
-            await loadDataFromDatabase();
-        
+        await loadDataFromDatabase();
         console.log('Data loaded successfully, initializing UI...');
         
         updateClassDropdowns();
         displayClasses();
         displayHolidays();
         
-        // Set today's date
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('attendanceDate').value = today;
         document.getElementById('reportStartDate').value = today;
         document.getElementById('reportEndDate').value = today;
         
-        // Initialize attendance for today if not exists
         if (!attendance[today]) {
             initializeTodayAttendance();
         }
         
-        // Load attendance for today and update dashboard
         loadAttendanceForDate();
         setTimeout(() => {
             updateDashboard();
@@ -98,7 +91,6 @@ async function initializeAppWithDatabase() {
         initializeHijriSettings();
         initializeAcademicYearStart();
         
-        // Listen for date changes
         document.getElementById('attendanceDate').addEventListener('change', function() {
             loadAttendanceForDate();
             updateAttendancePageHijri();
@@ -107,9 +99,7 @@ async function initializeAppWithDatabase() {
             loadAttendanceForDate();
         });
         
-        // Initialize student list display
         displayStudentsList();
-        
         console.log('App initialization completed successfully');
         
     } catch (error) {
@@ -120,115 +110,283 @@ async function initializeAppWithDatabase() {
 
 async function loadDataFromDatabase() {
     try {
-        // Load students from database
-        const studentsResponse = await fetch('/api/students');
-        if (studentsResponse.ok) {
-            students = await studentsResponse.json();
-        } else {
-            throw new Error('Failed to load students from database');
-        }
-        
-        // Load attendance from database
-        const attendanceResponse = await fetch('/api/attendance');
+        const [studentsResponse, attendanceResponse, holidaysResponse] = await Promise.all([
+            fetch('/api/students'),
+            fetch('/api/attendance'),
+            fetch('/api/holidays')
+        ]);
+
+        if (studentsResponse.ok) students = await studentsResponse.json();
+        else throw new Error('Failed to load students from database');
+
         if (attendanceResponse.ok) {
-            const attendanceData = await attendanceResponse.json();
-            console.log('Loaded attendance data from database:', attendanceData);
-            attendance = attendanceData || {};
-            
-            // Initialize saved dates set - all existing dates in database are considered saved
+            attendance = await attendanceResponse.json() || {};
             savedAttendanceDates.clear();
             Object.keys(attendance).forEach(date => {
                 if (attendance[date] && Object.keys(attendance[date]).length > 0) {
                     savedAttendanceDates.add(date);
                 }
             });
-            
-            console.log('Final attendance object:', attendance);
-            console.log('Saved attendance dates:', Array.from(savedAttendanceDates));
-        } else {
-            throw new Error('Failed to load attendance from database');
-        }
-        
-        // Load holidays from database
-        const holidaysResponse = await fetch('/api/holidays');
-        if (holidaysResponse.ok) {
-            holidays = await holidaysResponse.json();
-        } else {
-            throw new Error('Failed to load holidays from database');
-        }
-        
-        // Set default classes
+        } else throw new Error('Failed to load attendance from database');
+
+        if (holidaysResponse.ok) holidays = await holidaysResponse.json();
+        else throw new Error('Failed to load holidays from database');
+
         classes = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি', 'চতুর্থ শ্রেণি', 'পঞ্চম শ্রেণি'];
+        window.classes = classes;
         
         console.log(`Loaded ${students.length} students from database`);
-        
-        // Update dashboard after data load
         updateDashboard();
-        
-        // Refresh attendance calendar if it's visible to show correct attendance data
         refreshAttendanceCalendarIfVisible();
         
     } catch (error) {
         console.error('Database connection failed:', error);
-        throw error; // Re-throw to be handled by calling function
-    }
-}
-
-// Mobile Menu Functions
-function toggleMobileMenu() {
-    const navList = document.getElementById('navList');
-    const toggleButton = document.querySelector('.mobile-menu-toggle i');
-    
-    navList.classList.toggle('active');
-    
-    // Change icon
-    if (navList.classList.contains('active')) {
-        toggleButton.className = 'fas fa-times';
-    } else {
-        toggleButton.className = 'fas fa-bars';
+        throw error;
     }
 }
 
 // Navigation Functions
 async function showSection(sectionId) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
     
-    // Remove active class from nav links
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => link.classList.remove('active'));
-    
-    // Show selected section
     document.getElementById(sectionId).classList.add('active');
     
-    // Add active class to clicked nav link
-    event.target.classList.add('active');
-    
-    // Close mobile menu on mobile devices
-    const navList = document.getElementById('navList');
-    const toggleButton = document.querySelector('.mobile-menu-toggle i');
+    // Find the correct link to activate
+    const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(link => link.getAttribute('onclick').includes(`'${sectionId}'`));
+    if(activeLink) activeLink.classList.add('active');
+
     if (window.innerWidth <= 768) {
+        const navList = document.getElementById('navList');
         navList.classList.remove('active');
-        toggleButton.className = 'fas fa-bars';
+        document.querySelector('.mobile-menu-toggle i').className = 'fas fa-bars';
     }
     
-    // Update content based on section
-    if (sectionId === 'dashboard') {
-        updateDashboard();
-    } else if (sectionId === 'attendance') {
-        await loadAttendanceForDate();
-    } else if (sectionId === 'registration') {
+    if (sectionId === 'dashboard') updateDashboard();
+    else if (sectionId === 'attendance') await loadAttendanceForDate();
+    else if (sectionId === 'registration') {
         displayStudentsList();
-        // Show student list by default, hide form
-        const studentsListContainer = document.getElementById('studentsListContainer');
-        const studentRegistrationForm = document.getElementById('studentRegistrationForm');
-        if (studentsListContainer && studentRegistrationForm) {
-            studentsListContainer.style.display = 'block';
-            studentRegistrationForm.style.display = 'none';
-        }
+        document.getElementById('studentsListContainer').style.display = 'block';
+        document.getElementById('studentRegistrationForm').style.display = 'none';
+    } else if (sectionId === 'education') {
+        await initializeEducationSection();
     }
 }
+
+// --- START: EDUCATION SECTION LOGIC ---
+
+/**
+ * Initializes the education section by fetching data and rendering content.
+ */
+async function initializeEducationSection() {
+    const educationContent = document.querySelector('#education .education-content');
+    if (!educationContent) return;
+
+    educationContent.innerHTML = '<p>Loading education progress...</p>';
+
+    if (!window.classes || window.classes.length === 0) {
+        educationContent.innerHTML = '<p>No classes found. Please add classes in Settings first.</p>';
+        return;
+    }
+
+    try {
+        // *** THIS IS THE FIX: Added { cache: 'no-cache' } to prevent the browser from using old data ***
+        const response = await fetch('/api/education/summary', { cache: 'no-cache' });
+        if (!response.ok) throw new Error('Failed to load education data');
+        const books = await response.json();
+
+        educationContent.innerHTML = window.classes.map(className => {
+            const classBooks = books.filter(book => book.class_name === className);
+            return `
+                <div class="class-education-section">
+                    <div class="class-education-header">
+                        <h3>${className}</h3>
+                        <button class="btn btn-primary btn-small" onclick="showAddBookModal('${className}')">
+                            <i class="fas fa-plus"></i> Add Book
+                        </button>
+                    </div>
+                    <div class="book-list">
+                        ${classBooks.length > 0 ? classBooks.map(renderBookCard).join('') : '<p>No books have been added for this class yet.</p>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error initializing education section:', error);
+        educationContent.innerHTML = '<p class="text-danger">Could not load education progress. Please try again later.</p>';
+    }
+}
+
+/**
+ * Renders an HTML card for a single book.
+ * @param {object} book - The book data object.
+ * @returns {string} HTML string for the book card.
+ */
+function renderBookCard(book) {
+    const percentage = book.percentage_completed || 0;
+    return `
+        <div class="book-card">
+            <h4>${book.book_title}</h4>
+            <p>${book.description || 'No description provided.'}</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${percentage}%" title="${percentage}% Completed">${percentage}%</div>
+            </div>
+            <div class="book-actions">
+                <button class="btn btn-secondary btn-small" onclick="showUpdateProgressModal(${book.id})">
+                    <i class="fas fa-edit"></i> Update Progress
+                </button>
+                <button class="btn btn-danger btn-small" onclick="deleteBook(${book.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Shows a modal to add a new book.
+ * @param {string} className - The class to add the book to.
+ */
+function showAddBookModal(className) {
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <h3>Add Book to ${className}</h3>
+        <form id="addBookForm" class="form" onsubmit="addBook(event, '${className}')">
+            <div class="form-group">
+                <label for="bookTitle">Book Title</label>
+                <input type="text" id="bookTitle" required>
+            </div>
+            <div class="form-group">
+                <label for="totalPages">Total Pages</label>
+                <input type="number" id="totalPages" required>
+            </div>
+            <div class="form-group">
+                <label for="bookDescription">Description</label>
+                <textarea id="bookDescription" rows="3"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add Book</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    `;
+    document.getElementById('modal').style.display = 'block';
+}
+
+/**
+ * Handles adding a new book via API.
+ * @param {Event} e - The form submission event.
+ * @param {string} className - The class name.
+ */
+async function addBook(e, className) {
+    e.preventDefault();
+    const bookTitle = document.getElementById('bookTitle').value;
+    const totalPages = document.getElementById('totalPages').value;
+    const description = document.getElementById('bookDescription').value;
+
+    if (!bookTitle || !totalPages) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/education/books', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                class_name: className, book_title: bookTitle,
+                total_pages: totalPages, description: description
+            })
+        });
+        if (response.ok) {
+            closeModal();
+            initializeEducationSection();
+        } else {
+            throw new Error('Failed to add book');
+        }
+    } catch (error) {
+        console.error('Error adding book:', error);
+        alert('Error adding book. Please try again.');
+    }
+}
+
+/**
+ * Shows a modal to update book progress.
+ * @param {number} bookId - The ID of the book.
+ */
+function showUpdateProgressModal(bookId) {
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <h3>Update Book Progress</h3>
+        <form id="updateProgressForm" class="form" onsubmit="updateProgress(event, ${bookId})">
+            <div class="form-group">
+                <label for="pagesCompleted">Pages Completed</label>
+                <input type="number" id="pagesCompleted" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    `;
+    document.getElementById('modal').style.display = 'block';
+}
+
+/**
+ * Handles updating book progress via API.
+ * @param {Event} e - The form submission event.
+ * @param {number} bookId - The ID of the book.
+ */
+async function updateProgress(e, bookId) {
+    e.preventDefault();
+    const pagesCompleted = document.getElementById('pagesCompleted').value;
+    if (!pagesCompleted) {
+        alert('Please enter the number of pages completed.');
+        return;
+    }
+    try {
+        const response = await fetch('/api/education/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                book_id: bookId, pages_completed: pagesCompleted,
+                update_date: new Date().toISOString().split('T')[0]
+            })
+        });
+        if (response.ok) {
+            closeModal();
+            initializeEducationSection();
+        } else {
+            throw new Error('Failed to update progress');
+        }
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        alert('Error updating progress. Please try again.');
+    }
+}
+
+/**
+ * Deletes a book via API.
+ * @param {number} bookId - The ID of the book.
+ */
+async function deleteBook(bookId) {
+    if (!confirm('Are you sure you want to delete this book and all its progress?')) return;
+    try {
+        const response = await fetch(`/api/education/books/${bookId}`, { method: 'DELETE' });
+        if (response.ok) {
+            initializeEducationSection();
+        } else {
+            throw new Error('Failed to delete book');
+        }
+    } catch (error) {
+        console.error('Error deleting book:', error);
+        alert('Error deleting book. Please try again.');
+    }
+}
+
+// --- END: EDUCATION SECTION LOGIC ---
+
 
 // Student Registration Functions
 document.getElementById('studentForm').addEventListener('submit', function(e) {
