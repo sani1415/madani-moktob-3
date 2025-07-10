@@ -185,7 +185,35 @@ async function initializeEducationSection() {
     educationContent.innerHTML = '<p>Loading education progress...</p>';
 
     if (!window.classes || window.classes.length === 0) {
-        educationContent.innerHTML = '<p>No classes found. Please add classes in Settings first.</p>';
+        educationContent.innerHTML = `
+            <div class="no-students-message">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>No Classes Found</h3>
+                <p>To use the Education section, you need to set up classes first.</p>
+                <div style="margin-top: 20px;">
+                    <button onclick="showSection('settings')" class="btn btn-primary">
+                        <i class="fas fa-cog"></i> Go to Settings
+                    </button>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                    <strong>Quick Setup:</strong>
+                    <ol style="margin: 10px 0 0 20px; text-align: left;">
+                        <li>Click "Go to Settings" above</li>
+                        <li>Add classes (e.g., "প্রথম শ্রেণি", "দ্বিতীয় শ্রেণি")</li>
+                        <li>Come back to Education section</li>
+                        <li>Start adding books for your classes</li>
+                    </ol>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button onclick="createSampleEducationData()" class="btn btn-secondary">
+                        <i class="fas fa-magic"></i> Create Sample Data
+                    </button>
+                    <p style="font-size: 0.8em; margin-top: 5px; color: #666;">
+                        This will create sample classes and books for demonstration
+                    </p>
+                </div>
+            </div>
+        `;
         return;
     }
 
@@ -206,7 +234,13 @@ async function initializeEducationSection() {
                         </button>
                     </div>
                     <div class="book-list">
-                        ${classBooks.length > 0 ? classBooks.map(renderBookCard).join('') : '<p>No books have been added for this class yet.</p>'}
+                        ${classBooks.length > 0 ? classBooks.map(renderBookCard).join('') : `
+                            <div style="text-align: center; padding: 20px; color: #666;">
+                                <i class="fas fa-book-open" style="font-size: 2em; margin-bottom: 10px; color: #ddd;"></i>
+                                <p>No books have been added for this class yet.</p>
+                                <p style="font-size: 0.9em;">Click "Add Book" above to get started!</p>
+                            </div>
+                        `}
                     </div>
                 </div>
             `;
@@ -382,6 +416,69 @@ async function deleteBook(bookId) {
     } catch (error) {
         console.error('Error deleting book:', error);
         alert('Error deleting book. Please try again.');
+    }
+}
+
+/**
+ * Creates sample education data for demonstration
+ */
+async function createSampleEducationData() {
+    try {
+        // Sample classes (these will be added to the settings)
+        const sampleClasses = ['প্রথম শ্রেণি', 'দ্বিতীয় শ্রেণি', 'তৃতীয় শ্রেণি'];
+        
+        // Add sample classes to the global classes array
+        for (const className of sampleClasses) {
+            if (!window.classes.includes(className)) {
+                window.classes.push(className);
+            }
+        }
+        
+        // Sample books data
+        const sampleBooks = [
+            { class_name: 'প্রথম শ্রেণি', book_title: 'কুরআন মাজিদ', total_pages: 604, description: 'পবিত্র কুরআন মাজিদ তিলাওয়াত' },
+            { class_name: 'প্রথম শ্রেণি', book_title: 'নূরানী পদ্ধতি', total_pages: 96, description: 'কুরআন শিক্ষার প্রাথমিক পদ্ধতি' },
+            { class_name: 'দ্বিতীয় শ্রেণি', book_title: 'হাদিস শরিফ', total_pages: 200, description: 'নবী করীম (সাঃ) এর হাদিস সংগ্রহ' },
+            { class_name: 'দ্বিতীয় শ্রেণি', book_title: 'ইসলামি আকিদা', total_pages: 150, description: 'ইসলামি বিশ্বাসের মূল শিক্ষা' },
+            { class_name: 'তৃতীয় শ্রেণি', book_title: 'ফিকহ শাস্ত্র', total_pages: 300, description: 'ইসলামি আইনশাস্ত্রের প্রাথমিক শিক্ষা' },
+            { class_name: 'তৃতীয় শ্রেণি', book_title: 'সীরাতুন্নবী', total_pages: 250, description: 'নবী করীম (সাঃ) এর জীবনী' }
+        ];
+        
+        // Add sample books
+        for (const book of sampleBooks) {
+            await fetch('/api/education/books', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(book)
+            });
+        }
+        
+        // Add some sample progress
+        const books = await fetch('/api/education/summary').then(r => r.json());
+        for (const book of books.slice(0, 3)) { // Add progress to first 3 books
+            const randomProgress = Math.floor(Math.random() * book.total_pages * 0.7); // Random progress up to 70%
+            await fetch('/api/education/progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    book_id: book.id,
+                    pages_completed: randomProgress,
+                    update_date: new Date().toISOString().split('T')[0]
+                })
+            });
+        }
+        
+        // Update the classes dropdown and refresh the page
+        updateClassDropdowns();
+        
+        showModal('সফল!', 'নমুনা ডেটা সফলভাবে তৈরি হয়েছে। শিক্ষা বিভাগ এখন ব্যবহারযোগ্য।');
+        
+        // Refresh the education section
+        await initializeEducationSection();
+        
+    } catch (error) {
+        console.error('Error creating sample data:', error);
+        showModal('ত্রুটি', 'নমুনা ডেটা তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
 }
 
