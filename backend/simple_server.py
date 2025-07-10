@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Madani Maktab - Simple JSON File Server
-Easy-to-use server with JSON file database
+Madani Maktab - SQLite Server
+Server with SQLite database for better performance
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -9,13 +9,13 @@ from flask_cors import CORS
 import json
 import os
 from datetime import datetime
-from json_database import JSONDatabase
+from sqlite_database import SQLiteDatabase
 
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
-# Initialize JSON database
-db = JSONDatabase()
+# Initialize SQLite database
+db = SQLiteDatabase()
 
 # Serve frontend files
 @app.route('/')
@@ -155,12 +155,12 @@ def add_holiday():
 
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
-    """Create sample students data in JSON files"""
+    """Create sample students data in SQLite database"""
     try:
         students = db.create_sample_data()
         return jsonify({
             'success': True, 
-            'message': f'Created {len(students)} sample students in JSON database',
+            'message': f'Created {len(students)} sample students in SQLite database',
             'students_count': len(students)
         })
     except Exception as e:
@@ -172,15 +172,15 @@ def health():
         students_count = len(db.get_students())
         return jsonify({
             'status': 'healthy', 
-            'message': 'Madani Maktab JSON Server is running',
-            'database_type': 'JSON Files',
+            'message': 'Madani Maktab SQLite Server is running',
+            'database_type': 'SQLite Database',
             'students_count': students_count
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    print("🕌 Madani Maktab - Simple JSON Server")
+    print("🕌 Madani Maktab - SQLite Server")
     print("=" * 40)
     
     # Check if we have students, if not create sample data
@@ -190,15 +190,15 @@ if __name__ == '__main__':
         db.create_sample_data()
         students = db.get_students()
     
-    print(f"📊 Loaded {len(students)} students from JSON files")
-    print("📁 Database files located in: ./data/")
-    print("   - students.json")
-    print("   - attendance.json") 
-    print("   - holidays.json")
+    print(f"📊 Loaded {len(students)} students from SQLite database")
+    print("📁 Database file: madani_moktob.db")
+    print("   - students table")
+    print("   - attendance table") 
+    print("   - holidays table")
     
     port = int(os.environ.get('PORT', 5001))
     print(f"🌐 Server starting on http://localhost:{port}")
-    print("💾 Using JSON file database (simple and easy!)")
+    print("💾 Using SQLite database (fast and reliable!)")
 
     # Use debug=False for production deployment
     is_production = os.environ.get('RENDER') or os.environ.get('PRODUCTION')

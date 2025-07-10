@@ -52,7 +52,7 @@ git push origin main
    - Your app starts on Render's assigned port
 
 3. **Runtime**:
-   - JSON database files are created in the `/tmp` directory
+   - SQLite database file is created in the application directory
    - Sample data is auto-generated if no students exist
 
 ## 🎯 Your App Features on Render
@@ -94,7 +94,7 @@ Your app is perfectly configured for Render deployment. The setup includes:
 - ✅ **Port binding** - Uses Render's PORT environment variable
 - ✅ **Production mode** - Debug disabled in production
 - ✅ **Static files** - Frontend served correctly
-- ✅ **JSON database** - File-based storage ready
+- ✅ **SQLite database** - Fast, reliable database ready
 
 ## 🤲 JazakAllahu Khairan!
 
