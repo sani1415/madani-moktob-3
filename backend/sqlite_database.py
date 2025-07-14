@@ -74,6 +74,23 @@ class SQLiteDatabase:
             )
         ''')
         
+        # Create education progress table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS education_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class_name TEXT NOT NULL,
+                subject_name TEXT NOT NULL,
+                book_name TEXT NOT NULL,
+                total_pages INTEGER NOT NULL,
+                completed_pages INTEGER DEFAULT 0,
+                last_updated TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(class_name, subject_name, book_name)
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -378,3 +395,83 @@ class SQLiteDatabase:
         self.save_students(sample_students)
         print(f"✅ Created {len(sample_students)} sample students in SQLite database")
         return sample_students
+    
+    # Education Progress methods
+    def get_education_progress(self, class_name=None):
+        """Get education progress for all classes or specific class"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        if class_name:
+            cursor.execute('''
+                SELECT * FROM education_progress 
+                WHERE class_name = ? 
+                ORDER BY subject_name, book_name
+            ''', (class_name,))
+        else:
+            cursor.execute('''
+                SELECT * FROM education_progress 
+                ORDER BY class_name, subject_name, book_name
+            ''')
+        
+        progress = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            # Remove internal fields
+            if 'created_at' in item:
+                del item['created_at']
+            if 'updated_at' in item:
+                del item['updated_at']
+            progress.append(item)
+        
+        conn.close()
+        return progress
+    
+    def add_education_progress(self, progress_data):
+        """Add or update education progress"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT OR REPLACE INTO education_progress 
+            (class_name, subject_name, book_name, total_pages, completed_pages, last_updated, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            progress_data.get('class_name'),
+            progress_data.get('subject_name'),
+            progress_data.get('book_name'),
+            progress_data.get('total_pages'),
+            progress_data.get('completed_pages', 0),
+            progress_data.get('last_updated'),
+            progress_data.get('notes', '')
+        ))
+        
+        conn.commit()
+        conn.close()
+        return True
+    
+    def update_education_progress(self, progress_id, completed_pages, notes=None):
+        """Update completed pages for a specific progress record"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE education_progress 
+            SET completed_pages = ?, last_updated = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (completed_pages, datetime.now().strftime('%Y-%m-%d'), notes, progress_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+    
+    def delete_education_progress(self, progress_id):
+        """Delete education progress record"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('DELETE FROM education_progress WHERE id = ?', (progress_id,))
+        
+        conn.commit()
+        conn.close()
+        return True
