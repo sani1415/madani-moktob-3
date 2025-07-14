@@ -183,13 +183,8 @@ if __name__ == '__main__':
     print("🕌 Madani Maktab - SQLite Server")
     print("=" * 40)
     
-    # Check if we have students, if not create sample data
+        # Get students from database (no auto-generation)
     students = db.get_students()
-    if len(students) == 0:
-        print("📝 No students found, creating sample data...")
-        db.create_sample_data()
-        students = db.get_students()
-    
     print(f"📊 Loaded {len(students)} students from SQLite database")
     print("📁 Database file: madani_moktob.db")
     print("   - students table")
