@@ -10,9 +10,17 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import os
+
 class SQLiteDatabase:
-    def __init__(self, db_file="madani_moktob.db"):
-        self.db_file = db_file
+    def __init__(self, db_file=None):
+        if db_file is None:
+            # Get the directory where this script is located
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # Go up one level to the project root and use madani_moktob.db
+            self.db_file = os.path.join(os.path.dirname(current_dir), "madani_moktob.db")
+        else:
+            self.db_file = db_file
         self.init_database()
     
     def get_connection(self):
