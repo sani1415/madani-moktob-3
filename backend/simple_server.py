@@ -153,6 +153,59 @@ def add_holiday():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Education Progress API Routes
+@app.route('/api/education', methods=['GET'])
+def get_education_progress():
+    try:
+        class_name = request.args.get('class')
+        progress = db.get_education_progress(class_name)
+        return jsonify(progress)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education', methods=['POST'])
+def add_education_progress():
+    try:
+        progress_data = request.json
+        if not progress_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['class_name', 'subject_name', 'book_name', 'total_pages']
+        for field in required_fields:
+            if field not in progress_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        db.add_education_progress(progress_data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/<int:progress_id>', methods=['PUT'])
+def update_education_progress(progress_id):
+    try:
+        update_data = request.json
+        if not update_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        completed_pages = update_data.get('completed_pages')
+        notes = update_data.get('notes', '')
+        
+        if completed_pages is None:
+            return jsonify({'error': 'Completed pages is required'}), 400
+        
+        db.update_education_progress(progress_id, completed_pages, notes)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/<int:progress_id>', methods=['DELETE'])
+def delete_education_progress(progress_id):
+    try:
+        db.delete_education_progress(progress_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
     """Create sample students data in SQLite database"""

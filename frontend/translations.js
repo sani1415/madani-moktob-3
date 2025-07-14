@@ -555,7 +555,7 @@ function updateHeaderTexts() {
 // Update navigation texts
 function updateNavigationTexts() {
     const navLinks = document.querySelectorAll('.nav-link');
-    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'settings'];
+    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'education', 'settings'];
     
     navLinks.forEach((link, index) => {
         const icon = link.querySelector('i').outerHTML;
@@ -629,7 +629,7 @@ function updateAttendanceTexts() {
         saveBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveAttendance')}`;
     }
     
-    const allClassesOption = document.querySelector('#classFilter option[value=""]');
+    const allClassesOption = document.querySelector('#educationClassFilter option[value=""]');
     if (allClassesOption) {
         allClassesOption.textContent = t('allClasses');
     }

@@ -190,7 +190,7 @@ function toggleMobileMenu() {
 }
 
 // Navigation Functions
-async function showSection(sectionId) {
+async function showSection(sectionId, event) {
     // Hide all sections
     const sections = document.querySelectorAll('.section');
     sections.forEach(section => section.classList.remove('active'));
@@ -203,7 +203,9 @@ async function showSection(sectionId) {
     document.getElementById(sectionId).classList.add('active');
     
     // Add active class to clicked nav link
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
     
     // Close mobile menu on mobile devices
     const navList = document.getElementById('navList');
@@ -227,6 +229,8 @@ async function showSection(sectionId) {
             studentsListContainer.style.display = 'block';
             studentRegistrationForm.style.display = 'none';
         }
+    } else if (sectionId === 'education') {
+        await loadEducationProgress();
     }
 }
 
@@ -4082,6 +4086,222 @@ document.addEventListener('DOMContentLoaded', function() {
             const confirmBtn = document.getElementById('confirmResetBtn');
             const inputValue = this.value.trim().toUpperCase();
             confirmBtn.disabled = inputValue !== 'RESET';
+        });
+    }
+});
+
+// Education Progress Functions
+let educationProgress = [];
+
+async function loadEducationProgress() {
+    try {
+        const response = await fetch('/api/education');
+        if (response.ok) {
+            educationProgress = await response.json();
+            displayBooksList();
+        } else {
+            console.error('Failed to load education progress');
+        }
+    } catch (error) {
+        console.error('Error loading education progress:', error);
+    }
+}
+
+function displayBooksList() {
+    const booksList = document.getElementById('booksList');
+    if (!booksList) return;
+    
+    if (educationProgress.length === 0) {
+        booksList.innerHTML = '<p class="no-data">No books added yet. Click "Add New Book" to get started.</p>';
+        return;
+    }
+    
+    booksList.innerHTML = educationProgress.map(book => {
+        const progressPercentage = Math.round((book.completed_pages / book.total_pages) * 100);
+        const remainingPages = book.total_pages - book.completed_pages;
+        
+        return `
+            <div class="book-card" data-id="${book.id}">
+                <div class="book-header">
+                    <h4>${book.book_name}</h4>
+                    <span class="book-class">${book.class_name}</span>
+                </div>
+                <div class="book-subject">${book.subject_name}</div>
+                <div class="book-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        ${book.completed_pages} / ${book.total_pages} pages (${progressPercentage}%)
+                    </div>
+                </div>
+                <div class="book-stats">
+                    <div class="stat">
+                        <span class="label">Completed:</span>
+                        <span class="value">${book.completed_pages} pages</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Remaining:</span>
+                        <span class="value">${remainingPages} pages</span>
+                    </div>
+                </div>
+                ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ''}
+                <div class="book-actions">
+                    <button onclick="updateBookProgress(${book.id})" class="btn btn-primary btn-small">
+                        <i class="fas fa-edit"></i> Update Progress
+                    </button>
+                    <button onclick="deleteBookProgress(${book.id})" class="btn btn-danger btn-small">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAddBookForm() {
+    document.getElementById('addBookForm').style.display = 'block';
+    document.getElementById('bookProgressList').style.display = 'none';
+    document.getElementById('bookForm').reset();
+}
+
+function hideAddBookForm() {
+    document.getElementById('addBookForm').style.display = 'none';
+    document.getElementById('bookProgressList').style.display = 'block';
+}
+
+async function addBookProgress() {
+    const formData = {
+        class_name: document.getElementById('bookClass').value,
+        subject_name: document.getElementById('bookSubject').value,
+        book_name: document.getElementById('bookName').value,
+        total_pages: parseInt(document.getElementById('totalPages').value),
+        completed_pages: parseInt(document.getElementById('completedPages').value) || 0,
+        notes: document.getElementById('bookNotes').value
+    };
+    
+    // Validation
+    if (!formData.class_name || !formData.subject_name || !formData.book_name || !formData.total_pages) {
+        showModal('Error', 'Please fill in all required fields.');
+        return;
+    }
+    
+    if (formData.completed_pages > formData.total_pages) {
+        showModal('Error', 'Completed pages cannot be more than total pages.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/education', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book progress added successfully!');
+            hideAddBookForm();
+            await loadEducationProgress();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to add book progress');
+        }
+    } catch (error) {
+        console.error('Error adding book progress:', error);
+        showModal('Error', 'Network error. Please try again.');
+    }
+}
+
+async function updateBookProgress(bookId) {
+    const book = educationProgress.find(b => b.id === bookId);
+    if (!book) return;
+    
+    const newCompletedPages = prompt(`Enter completed pages for "${book.book_name}" (0-${book.total_pages}):`, book.completed_pages);
+    
+    if (newCompletedPages === null) return; // User cancelled
+    
+    const completedPages = parseInt(newCompletedPages);
+    if (isNaN(completedPages) || completedPages < 0 || completedPages > book.total_pages) {
+        showModal('Error', 'Please enter a valid number between 0 and ' + book.total_pages);
+        return;
+    }
+    
+    const notes = prompt('Add any notes about this progress update (optional):', book.notes || '');
+    
+    try {
+        const response = await fetch(`/api/education/${bookId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                completed_pages: completedPages,
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book progress updated successfully!');
+            await loadEducationProgress();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to update book progress');
+        }
+    } catch (error) {
+        console.error('Error updating book progress:', error);
+        showModal('Error', 'Network error. Please try again.');
+    }
+}
+
+async function deleteBookProgress(bookId) {
+    const book = educationProgress.find(b => b.id === bookId);
+    if (!book) return;
+    
+    if (!confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/education/${bookId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book progress deleted successfully!');
+            await loadEducationProgress();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to delete book progress');
+        }
+    } catch (error) {
+        console.error('Error deleting book progress:', error);
+        showModal('Error', 'Network error. Please try again.');
+    }
+}
+
+function filterBooksByClass() {
+    const selectedClass = document.getElementById('classFilter').value;
+    const bookCards = document.querySelectorAll('.book-card');
+    
+    bookCards.forEach(card => {
+        const bookClass = card.querySelector('.book-class').textContent;
+        if (!selectedClass || bookClass === selectedClass) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Add event listener for book form
+document.addEventListener('DOMContentLoaded', function() {
+    const bookForm = document.getElementById('bookForm');
+    if (bookForm) {
+        bookForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addBookProgress();
         });
     }
 });
