@@ -20,7 +20,7 @@ class SQLiteDatabase:
             # Go up one level to the project root and use madani_moktob.db
             self.db_file = os.path.join(os.path.dirname(current_dir), "madani_moktob.db")
         else:
-            self.db_file = db_file
+             self.db_file = db_file
         self.init_database()
     
     def get_connection(self):
