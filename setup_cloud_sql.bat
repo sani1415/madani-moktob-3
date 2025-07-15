@@ -80,25 +80,40 @@ echo 🚀 Starting Cloud SQL setup...
 
 REM Step 1: Create MySQL instance
 echo 📦 Creating MySQL instance...
-gcloud sql instances create madani-moktob-db ^
-    --database-version=MYSQL_8_0 ^
-    --tier=db-f1-micro ^
-    --region=%REGION% ^
-    --root-password="%DB_ROOT_PASSWORD%" ^
-    --storage-size=10GB ^
-    --storage-type=SSD ^
-    --backup-start-time=02:00 ^
-    --enable-bin-log ^
-    --authorized-networks=0.0.0.0/0 ^
-    --quiet
-
-if %errorlevel% neq 0 (
-    echo ❌ Failed to create MySQL instance
-    pause
-    exit /b 1
+REM Check if instance already exists
+gcloud sql instances describe madani-moktob-db --format="value(name)" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ MySQL instance 'madani-moktob-db' already exists. Skipping creation.
+) else (
+    REM Instance does not exist, so create it
+    echo 🚀 Creating new MySQL instance...
+    gcloud sql instances create madani-moktob-db ^
+        --database-version=MYSQL_8_0 ^
+        --tier=db-f1-micro ^
+        --region=%REGION% ^
+        --root-password="%DB_ROOT_PASSWORD%" ^
+        --storage-size=10GB ^
+        --storage-type=SSD ^
+        --backup-start-time=02:00 ^
+        --enable-bin-log ^
+        --authorized-networks=0.0.0.0/0 ^
+        --quiet
+    
+    REM Check if creation was successful or if instance already exists
+    if %errorlevel% neq 0 (
+        REM Try to describe the instance to see if it was actually created
+        gcloud sql instances describe madani-moktob-db --format="value(name)" >nul 2>&1
+        if %errorlevel% equ 0 (
+            echo ✅ MySQL instance exists (may have been created by another process)
+        ) else (
+            echo ❌ Failed to create MySQL instance
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo ✅ MySQL instance created successfully
+    )
 )
-
-echo ✅ MySQL instance created
 
 REM Step 2: Create database
 echo 🗄️ Creating database...
@@ -107,12 +122,10 @@ gcloud sql databases create madani_moktob ^
     --quiet
 
 if %errorlevel% neq 0 (
-    echo ❌ Failed to create database
-    pause
-    exit /b 1
+    echo ⚠️  Database may already exist, continuing...
+) else (
+    echo ✅ Database created
 )
-
-echo ✅ Database created
 
 REM Step 3: Create user
 echo 👤 Creating database user...
@@ -122,12 +135,21 @@ gcloud sql users create madani_user ^
     --quiet
 
 if %errorlevel% neq 0 (
-    echo ❌ Failed to create database user
-    pause
-    exit /b 1
+    echo ⚠️  User may already exist, updating password...
+    gcloud sql users set-password madani_user ^
+        --instance=madani-moktob-db ^
+        --password="%DB_USER_PASSWORD%" ^
+        --quiet
+    if %errorlevel% equ 0 (
+        echo ✅ User password updated
+    ) else (
+        echo ❌ Failed to update user password
+        pause
+        exit /b 1
+    )
+) else (
+    echo ✅ Database user created
 )
-
-echo ✅ Database user created
 
 REM Step 4: Get connection details
 echo 🔍 Getting connection details...
@@ -205,4 +227,4 @@ echo    3. Hard refresh the page to verify data persistence
 echo    4. Remove 0.0.0.0/0 from authorized networks for security
 echo.
 echo 📚 For more information, see: CLOUD_SQL_SETUP.md
-pause 
+pause
