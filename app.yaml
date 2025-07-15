@@ -3,6 +3,13 @@ service: default
 
 env_variables:
   PRODUCTION: "true"
+  # Cloud SQL Configuration
+  # Replace these values with your actual Cloud SQL details
+  DB_HOST: "127.0.0.1"  # Use 127.0.0.1 for Cloud SQL Proxy
+  DB_USER: "madani_user"
+  DB_PASSWORD: "YOUR_DB_PASSWORD_HERE"  # Replace with actual password
+  DB_NAME: "madani_moktob"
+  DB_PORT: "3306"
 
 # Scale down to zero when not in use (saves costs)
 automatic_scaling:
