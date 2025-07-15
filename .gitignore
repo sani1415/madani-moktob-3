@@ -8,3 +8,8 @@ dist/
 *.sqlite
 *.sqlite3
 backend/madani_moktob.db
+
+# Local setup files (to avoid merge conflicts)
+setup_cloud_sql.bat
+setup_cloud_sql.sh
+setup_input.txt

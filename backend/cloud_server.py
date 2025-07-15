@@ -246,9 +246,17 @@ def health():
     try:
         # Test database connection
         students = db.get_students()
+        
+        # Determine database type based on the database instance
+        if hasattr(db, '__class__') and 'CloudSQL' in db.__class__.__name__:
+            database_type = "Google Cloud SQL (MySQL)"
+        else:
+            database_type = "SQLite Database"
+        
         return jsonify({
             'status': 'healthy',
-            'database': 'connected',
+            'message': f'Madani Maktab {database_type} Server is running',
+            'database_type': database_type,
             'students_count': len(students),
             'timestamp': datetime.now().isoformat()
         })
