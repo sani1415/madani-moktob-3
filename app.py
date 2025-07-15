@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Madani Maktab - Simple Startup Script
-Run this file to start your Islamic school attendance management system with SQLite database!
+Madani Maktab - Cloud-Ready Startup Script
+Run this file to start your Islamic school attendance management system!
+Automatically uses SQLite for local development and Cloud SQL for production.
 """
 
 import os
@@ -30,25 +31,35 @@ def check_requirements():
             return False
 
 def start_server():
-    """Start the Flask server with SQLite database"""
-    print("\n🚀 Starting Madani Maktab SQLite server...")
-    print("📖 Your Islamic school attendance system will be available at:")
-    print("   http://localhost:5000")
+    """Start the Flask server with appropriate database"""
+    print("\n🚀 Starting Madani Maktab server...")
+    
+    # Check if we're in production (Cloud SQL) or development (SQLite)
+    if (os.getenv('DB_HOST') and os.getenv('DB_USER') and 
+        os.getenv('DB_PASSWORD') and os.getenv('DB_NAME')):
+        print("🌐 Production mode: Using Google Cloud SQL")
+        print("📖 Your Islamic school attendance system will be available at:")
+        print("   https://your-app-url (Google Cloud Run)")
+    else:
+        print("💾 Development mode: Using SQLite database")
+        print("📖 Your Islamic school attendance system will be available at:")
+        print("   http://localhost:5000")
+    
     print("\n💡 Press Ctrl+C to stop the server")
     print("="*50)
     
-    # Change to backend directory and run the simple server
+    # Change to backend directory and run the cloud server
     os.chdir('backend')
-    subprocess.run([sys.executable, "simple_server.py"])
+    subprocess.run([sys.executable, "cloud_server.py"])
 
 def main():
     print("🕌 Madani Maktab - Islamic School Attendance Management System")
-    print("� Using SQLite Database")
+    print("☁️ Cloud-Ready with Automatic Database Selection")
     print("="*60)
     
     # Check if we're in the right directory
-    if not os.path.exists('backend/simple_server.py'):
-        print("❌ Error: backend/simple_server.py not found!")
+    if not os.path.exists('backend/cloud_server.py'):
+        print("❌ Error: backend/cloud_server.py not found!")
         print("Make sure you're running this script from the project root directory")
         return
     
@@ -56,9 +67,18 @@ def main():
     if not check_requirements():
         return
     
-    print("\n✅ Using SQLite database - fast and reliable!")
-    print("💾 All data will be stored in madani_moktob.db")
-    print("📊 Better performance for growing schools")
+    # Check environment
+    if (os.getenv('DB_HOST') and os.getenv('DB_USER') and 
+        os.getenv('DB_PASSWORD') and os.getenv('DB_NAME')):
+        print("\n✅ Production mode detected!")
+        print("🌐 Using Google Cloud SQL for persistent data storage")
+        print("💾 Your data will persist across deployments and restarts")
+        print("🔒 Secure and scalable database solution")
+    else:
+        print("\n✅ Development mode detected!")
+        print("💾 Using SQLite database - fast and reliable for local development")
+        print("📊 All data will be stored in madani_moktob.db")
+        print("💡 For production, set Cloud SQL environment variables")
     
     # Start server
     start_server()
