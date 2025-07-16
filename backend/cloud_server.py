@@ -15,10 +15,16 @@ from sqlite_database import SQLiteDatabase
 
 # Import Cloud SQL database adapter (only when needed)
 def import_cloud_sql():
+    print("🔍 Attempting to import Cloud SQL database module...")
     try:
         from cloud_sql_database import CloudSQLDatabase
+        print("✅ Successfully imported CloudSQLDatabase")
         return CloudSQLDatabase
-    except ImportError:
+    except ImportError as e:
+        print(f"❌ Failed to import Cloud SQL database: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ Unexpected error importing Cloud SQL database: {e}")
         return None
 
 app = Flask(__name__, static_folder='../frontend')
@@ -27,17 +33,45 @@ CORS(app)
 # Initialize database based on environment
 def get_database():
     """Get the appropriate database based on environment variables"""
+    print("🔍 Starting database selection process...")
+    
+    # Debug: Print all environment variables
+    print("📋 Environment variables:")
+    db_host = os.getenv('DB_HOST')
+    db_user = os.getenv('DB_USER')
+    db_password = os.getenv('DB_PASSWORD')
+    db_name = os.getenv('DB_NAME')
+    db_port = os.getenv('DB_PORT', '3306')
+    
+    print(f"   DB_HOST: {db_host}")
+    print(f"   DB_USER: {db_user}")
+    print(f"   DB_PASSWORD: {'*' * len(db_password) if db_password else 'None'}")
+    print(f"   DB_NAME: {db_name}")
+    print(f"   DB_PORT: {db_port}")
+    
     # Check if Cloud SQL environment variables are set
-    if (os.getenv('DB_HOST') and os.getenv('DB_USER') and 
-        os.getenv('DB_PASSWORD') and os.getenv('DB_NAME')):
-        print("🌐 Using Google Cloud SQL database")
+    if (db_host and db_user and db_password and db_name):
+        print("🌐 All Cloud SQL environment variables are present")
+        print("🔍 Attempting to use Google Cloud SQL database...")
+        
         CloudSQLDatabase = import_cloud_sql()
         if CloudSQLDatabase is None:
             print("❌ Cloud SQL database not available. Please install mysql-connector-python")
             print("💡 Run: pip install mysql-connector-python")
+            print("🔄 Falling back to SQLite database")
             return SQLiteDatabase()
-        return CloudSQLDatabase()
+        
+        print("🔍 Attempting to instantiate CloudSQLDatabase...")
+        try:
+            cloud_db = CloudSQLDatabase()
+            print("✅ Successfully created CloudSQLDatabase instance")
+            return cloud_db
+        except Exception as e:
+            print(f"❌ Failed to create CloudSQLDatabase instance: {e}")
+            print("🔄 Falling back to SQLite database")
+            return SQLiteDatabase()
     else:
+        print("💾 Cloud SQL environment variables not found")
         print("💾 Using SQLite database (local development)")
         return SQLiteDatabase()
 

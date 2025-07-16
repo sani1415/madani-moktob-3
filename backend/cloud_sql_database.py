@@ -12,6 +12,7 @@ from mysql.connector import Error
 
 class CloudSQLDatabase:
     def __init__(self):
+        print("🔍 CloudSQLDatabase: Starting initialization...")
         # Get database connection details from environment variables
         self.db_config = {
             'host': os.getenv('DB_HOST', 'localhost'),
@@ -20,21 +21,43 @@ class CloudSQLDatabase:
             'database': os.getenv('DB_NAME', 'madani_moktob'),
             'port': int(os.getenv('DB_PORT', 3306))
         }
-        self.init_database()
+        
+        print("🔍 CloudSQLDatabase: Configuration loaded:")
+        print(f"   Host: {self.db_config['host']}")
+        print(f"   User: {self.db_config['user']}")
+        print(f"   Database: {self.db_config['database']}")
+        print(f"   Port: {self.db_config['port']}")
+        print(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
+        
+        print("🔍 CloudSQLDatabase: Attempting to initialize database...")
+        try:
+            self.init_database()
+            print("✅ CloudSQLDatabase: Initialization completed successfully")
+        except Exception as e:
+            print(f"❌ CloudSQLDatabase: Initialization failed: {e}")
+            raise
     
     def get_connection(self):
         """Get a database connection"""
+        print("🔍 CloudSQLDatabase: Attempting to connect to MySQL...")
         try:
             conn = mysql.connector.connect(**self.db_config)
+            print("✅ CloudSQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
-            print(f"Error connecting to MySQL: {e}")
+            print(f"❌ CloudSQLDatabase: Error connecting to MySQL: {e}")
+            raise
+        except Exception as e:
+            print(f"❌ CloudSQLDatabase: Unexpected error connecting to MySQL: {e}")
             raise
     
     def init_database(self):
         """Initialize database tables if they don't exist"""
+        print("🔍 CloudSQLDatabase: Starting database initialization...")
         try:
+            print("🔍 CloudSQLDatabase: Getting connection...")
             conn = self.get_connection()
+            print("🔍 CloudSQLDatabase: Creating cursor...")
             cursor = conn.cursor()
             
             # Create students table
