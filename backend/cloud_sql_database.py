@@ -7,12 +7,16 @@ MySQL-based database for persistent storage in Google Cloud Run
 import mysql.connector
 import json
 import os
+import logging
 from datetime import datetime
 from mysql.connector import Error
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 class CloudSQLDatabase:
     def __init__(self):
-        print("🔍 CloudSQLDatabase: Starting initialization...")
+        logger.info("🔍 CloudSQLDatabase: Starting initialization...")
         # Get database connection details from environment variables
         self.db_config = {
             'host': os.getenv('DB_HOST', 'localhost'),
@@ -22,42 +26,42 @@ class CloudSQLDatabase:
             'port': int(os.getenv('DB_PORT', 3306))
         }
         
-        print("🔍 CloudSQLDatabase: Configuration loaded:")
-        print(f"   Host: {self.db_config['host']}")
-        print(f"   User: {self.db_config['user']}")
-        print(f"   Database: {self.db_config['database']}")
-        print(f"   Port: {self.db_config['port']}")
-        print(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
+        logger.info("🔍 CloudSQLDatabase: Configuration loaded:")
+        logger.info(f"   Host: {self.db_config['host']}")
+        logger.info(f"   User: {self.db_config['user']}")
+        logger.info(f"   Database: {self.db_config['database']}")
+        logger.info(f"   Port: {self.db_config['port']}")
+        logger.info(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
         
-        print("🔍 CloudSQLDatabase: Attempting to initialize database...")
+        logger.info("🔍 CloudSQLDatabase: Attempting to initialize database...")
         try:
             self.init_database()
-            print("✅ CloudSQLDatabase: Initialization completed successfully")
+            logger.info("✅ CloudSQLDatabase: Initialization completed successfully")
         except Exception as e:
-            print(f"❌ CloudSQLDatabase: Initialization failed: {e}")
+            logger.error(f"❌ CloudSQLDatabase: Initialization failed: {e}")
             raise
     
     def get_connection(self):
         """Get a database connection"""
-        print("🔍 CloudSQLDatabase: Attempting to connect to MySQL...")
+        logger.info("🔍 CloudSQLDatabase: Attempting to connect to MySQL...")
         try:
             conn = mysql.connector.connect(**self.db_config)
-            print("✅ CloudSQLDatabase: Successfully connected to MySQL")
+            logger.info("✅ CloudSQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
-            print(f"❌ CloudSQLDatabase: Error connecting to MySQL: {e}")
+            logger.error(f"❌ CloudSQLDatabase: Error connecting to MySQL: {e}")
             raise
         except Exception as e:
-            print(f"❌ CloudSQLDatabase: Unexpected error connecting to MySQL: {e}")
+            logger.error(f"❌ CloudSQLDatabase: Unexpected error connecting to MySQL: {e}")
             raise
     
     def init_database(self):
         """Initialize database tables if they don't exist"""
-        print("🔍 CloudSQLDatabase: Starting database initialization...")
+        logger.info("🔍 CloudSQLDatabase: Starting database initialization...")
         try:
-            print("🔍 CloudSQLDatabase: Getting connection...")
+            logger.info("🔍 CloudSQLDatabase: Getting connection...")
             conn = self.get_connection()
-            print("🔍 CloudSQLDatabase: Creating cursor...")
+            logger.info("🔍 CloudSQLDatabase: Creating cursor...")
             cursor = conn.cursor()
             
             # Create students table
