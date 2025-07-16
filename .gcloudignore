@@ -69,5 +69,5 @@ start_madani_maktab.bat
 *.temp
 
 # Docker (for App Engine deployment)
-Dockerfile
+# Dockerfile  # Commented out - needed for Cloud Run
 .dockerignore 
