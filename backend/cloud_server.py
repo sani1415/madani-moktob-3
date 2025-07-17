@@ -306,6 +306,30 @@ def health():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+@app.route('/api/debug')
+def debug():
+    """Debug endpoint to check environment variables and database selection"""
+    try:
+        db_host = os.getenv('DB_HOST')
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        db_name = os.getenv('DB_NAME')
+        db_port = os.getenv('DB_PORT', '3306')
+        
+        return jsonify({
+            'environment_variables': {
+                'DB_HOST': db_host,
+                'DB_USER': db_user,
+                'DB_PASSWORD': '***' if db_password else None,
+                'DB_NAME': db_name,
+                'DB_PORT': db_port
+            },
+            'database_type': type(db).__name__,
+            'all_vars_present': bool(db_host and db_user and db_password and db_name)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False) 
