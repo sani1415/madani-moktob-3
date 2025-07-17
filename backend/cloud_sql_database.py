@@ -18,30 +18,13 @@ class CloudSQLDatabase:
     def __init__(self):
         logger.info("🔍 CloudSQLDatabase: Starting initialization...")
         # Get database connection details from environment variables
-        db_host = os.getenv('DB_HOST', 'localhost')
-        db_user = os.getenv('DB_USER', 'root')
-        db_password = os.getenv('DB_PASSWORD', '')
-        db_name = os.getenv('DB_NAME', 'madani_moktob')
-        db_port = int(os.getenv('DB_PORT', 3306))
-        
-        # Check if using Unix socket (Cloud SQL)
-        if db_host.startswith('/cloudsql/'):
-            logger.info("🔍 CloudSQLDatabase: Using Unix socket connection for Cloud SQL")
-            self.db_config = {
-                'unix_socket': db_host,
-                'user': db_user,
-                'password': db_password,
-                'database': db_name
-            }
-        else:
-            logger.info("🔍 CloudSQLDatabase: Using TCP connection")
-            self.db_config = {
-                'host': db_host,
-                'user': db_user,
-                'password': db_password,
-                'database': db_name,
-                'port': db_port
-            }
+        self.db_config = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'database': os.getenv('DB_NAME', 'madani_moktob'),
+            'port': int(os.getenv('DB_PORT', 3306))
+        }
         
         logger.info("🔍 CloudSQLDatabase: Configuration loaded:")
         logger.info(f"   Host: {self.db_config['host']}")

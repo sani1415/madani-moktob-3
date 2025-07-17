@@ -17,5 +17,5 @@ EXPOSE 8080
 ENV PYTHONPATH=/app/backend
 ENV PRODUCTION=true
 
-# Run the application using cloud_server.py for automatic database selection
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--chdir", "backend", "cloud_server:app"] 
+# Run the application using cloud_server.py for automatic database selection with increased timeout
+CMD ["gunicorn", "--timeout", "120", "--bind", "0.0.0.0:8080", "--chdir", "backend", "cloud_server:app"]
