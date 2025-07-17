@@ -4147,8 +4147,11 @@ function displayBooksList() {
                 </div>
                 ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ''}
                 <div class="book-actions">
+                    <button onclick="editBookDetails(${book.id})" class="btn btn-secondary btn-small">
+                        <i class="fas fa-edit"></i> Edit Details
+                    </button>
                     <button onclick="updateBookProgress(${book.id})" class="btn btn-primary btn-small">
-                        <i class="fas fa-edit"></i> Update Progress
+                        <i class="fas fa-chart-line"></i> Update Progress
                     </button>
                     <button onclick="deleteBookProgress(${book.id})" class="btn btn-danger btn-small">
                         <i class="fas fa-trash"></i> Delete
@@ -4304,4 +4307,136 @@ document.addEventListener('DOMContentLoaded', function() {
             addBookProgress();
         });
     }
+    
+    // Add event listener for edit book form
+    const editBookForm = document.getElementById('editBookForm');
+    if (editBookForm) {
+        editBookForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateBookDetails();
+        });
+    }
 });
+
+// Edit book details functionality
+function editBookDetails(bookId) {
+    const book = educationProgress.find(b => b.id === bookId);
+    if (!book) {
+        showModal('Error', 'Book not found');
+        return;
+    }
+    
+    // Populate the edit form
+    document.getElementById('editBookId').value = book.id;
+    document.getElementById('editBookClass').value = book.class_name;
+    document.getElementById('editBookSubject').value = book.subject_name;
+    document.getElementById('editBookName').value = book.book_name;
+    document.getElementById('editTotalPages').value = book.total_pages;
+    document.getElementById('editCompletedPages').value = book.completed_pages;
+    document.getElementById('editBookNotes').value = book.notes || '';
+    
+    // Show the edit modal
+    document.getElementById('editBookModal').style.display = 'block';
+}
+
+function closeEditBookModal() {
+    document.getElementById('editBookModal').style.display = 'none';
+    document.getElementById('editBookForm').reset();
+}
+
+async function updateBookDetails() {
+    const bookId = document.getElementById('editBookId').value;
+    const formData = {
+        class_name: document.getElementById('editBookClass').value,
+        subject_name: document.getElementById('editBookSubject').value,
+        book_name: document.getElementById('editBookName').value,
+        total_pages: parseInt(document.getElementById('editTotalPages').value),
+        completed_pages: parseInt(document.getElementById('editCompletedPages').value) || 0,
+        notes: document.getElementById('editBookNotes').value
+    };
+    
+    // Validation
+    if (!formData.class_name || !formData.subject_name || !formData.book_name || !formData.total_pages) {
+        showModal('Error', 'Please fill in all required fields.');
+        return;
+    }
+    
+    if (formData.completed_pages > formData.total_pages) {
+        showModal('Error', 'Completed pages cannot be more than total pages.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/education/${bookId}/edit`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book details updated successfully!');
+            closeEditBookModal();
+            await loadEducationProgress();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to update book details');
+        }
+    } catch (error) {
+        console.error('Error updating book details:', error);
+        showModal('Error', 'Network error. Please try again.');
+    }
+}
+
+// Delete all education data functionality
+function showDeleteAllEducationModal() {
+    const modalContent = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚠️ Delete All Education Data</h3>
+            </div>
+            <div class="modal-body">
+                <p><strong>Warning:</strong> This action will permanently delete all education progress data including:</p>
+                <ul>
+                    <li>All book progress records</li>
+                    <li>All class and subject information</li>
+                    <li>All completion statistics</li>
+                    <li>All notes and comments</li>
+                </ul>
+                <p><strong>This action cannot be undone!</strong></p>
+                <p>Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="deleteAllEducationData()" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Yes, Delete All Data
+                </button>
+                <button onclick="closeModal()" class="btn btn-secondary">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal('Delete All Education Data', modalContent, true);
+}
+
+async function deleteAllEducationData() {
+    try {
+        const response = await fetch('/api/education/all', {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'All education data has been deleted successfully!');
+            closeModal();
+            await loadEducationProgress();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to delete all education data');
+        }
+    } catch (error) {
+        console.error('Error deleting all education data:', error);
+        showModal('Error', 'Network error. Please try again.');
+    }
+}

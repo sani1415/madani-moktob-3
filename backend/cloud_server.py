@@ -268,6 +268,35 @@ def delete_education_progress(progress_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/education/<int:progress_id>/edit', methods=['PUT'])
+def edit_education_progress(progress_id):
+    try:
+        progress_data = request.json
+        if not progress_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['class_name', 'subject_name', 'book_name', 'total_pages']
+        for field in required_fields:
+            if field not in progress_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Update the education progress with new details
+        success = db.edit_education_progress_details(progress_id, progress_data)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update education progress'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/all', methods=['DELETE'])
+def delete_all_education_progress():
+    try:
+        db.delete_all_education_progress()
+        return jsonify({'success': True, 'message': 'All education progress data deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
     try:

@@ -628,4 +628,53 @@ class CloudSQLDatabase:
             
         except Error as e:
             print(f"Error deleting education progress: {e}")
+            raise
+    
+    def edit_education_progress_details(self, progress_id, progress_data):
+        """Edit education progress details (class, subject, book name, total pages, etc.)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE education_progress 
+                SET class_name = %s, subject_name = %s, book_name = %s, 
+                    total_pages = %s, completed_pages = %s, notes = %s,
+                    last_updated = %s
+                WHERE id = %s
+            ''', (
+                progress_data.get('class_name'),
+                progress_data.get('subject_name'),
+                progress_data.get('book_name'),
+                progress_data.get('total_pages'),
+                progress_data.get('completed_pages', 0),
+                progress_data.get('notes', ''),
+                datetime.now().strftime('%Y-%m-%d'),
+                progress_id
+            ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error editing education progress details: {e}")
+            raise
+    
+    def delete_all_education_progress(self):
+        """Delete all education progress records"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM education_progress')
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error deleting all education progress: {e}")
             raise 

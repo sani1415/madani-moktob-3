@@ -2782,6 +2782,69 @@ body {
     }
 }
 
+/* Edit Book Modal Styles */
+#editBookModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#editBookModal .modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#editBookModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#editBookModal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.form-actions .btn {
+    min-width: 100px;
+}
+
+@media (max-width: 768px) {
+    .education-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    #editBookModal .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+
 /* Education Section Styles */
 .education-content {
     padding: 20px 0;
@@ -2792,6 +2855,12 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+}
+
+.education-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 .book-form-container {
