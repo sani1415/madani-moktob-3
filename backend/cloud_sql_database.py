@@ -33,13 +33,7 @@ class CloudSQLDatabase:
         logger.info(f"   Port: {self.db_config['port']}")
         logger.info(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
         
-        logger.info("🔍 CloudSQLDatabase: Attempting to initialize database...")
-        try:
-            self.init_database()
-            logger.info("✅ CloudSQLDatabase: Initialization completed successfully")
-        except Exception as e:
-            logger.error(f"❌ CloudSQLDatabase: Initialization failed: {e}")
-            raise
+        logger.info("✅ CloudSQLDatabase: Initialization completed successfully (lazy connection)")
     
     def get_connection(self):
         """Get a database connection"""
@@ -55,9 +49,9 @@ class CloudSQLDatabase:
             logger.error(f"❌ CloudSQLDatabase: Unexpected error connecting to MySQL: {e}")
             raise
     
-    def init_database(self):
+    def _ensure_tables_exist(self):
         """Initialize database tables if they don't exist"""
-        logger.info("🔍 CloudSQLDatabase: Starting database initialization...")
+        logger.info("🔍 CloudSQLDatabase: Ensuring tables exist...")
         try:
             logger.info("🔍 CloudSQLDatabase: Getting connection...")
             conn = self.get_connection()
@@ -204,6 +198,9 @@ class CloudSQLDatabase:
     def get_students(self):
         """Get all students"""
         try:
+            # Initialize database tables if they don't exist
+            self._ensure_tables_exist()
+            
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
@@ -221,7 +218,7 @@ class CloudSQLDatabase:
             return students
             
         except Error as e:
-            print(f"Error getting students: {e}")
+            logger.error(f"Error getting students: {e}")
             return []
     
     def save_students(self, students):
