@@ -39,7 +39,12 @@ class CloudSQLDatabase:
         """Get a database connection"""
         logger.info("🔍 CloudSQLDatabase: Attempting to connect to MySQL...")
         try:
-            conn = mysql.connector.connect(**self.db_config)
+            # Add connection timeout to prevent hanging
+            config = self.db_config.copy()
+            config['connect_timeout'] = 10  # 10 seconds timeout
+            config['autocommit'] = True
+            
+            conn = mysql.connector.connect(**config)
             logger.info("✅ CloudSQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
@@ -118,10 +123,13 @@ class CloudSQLDatabase:
             conn.commit()
             cursor.close()
             conn.close()
-            print("✅ Database tables initialized successfully")
+            logger.info("✅ Database tables initialized successfully")
             
         except Error as e:
-            print(f"❌ Error initializing database: {e}")
+            logger.error(f"❌ Error initializing database: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Unexpected error initializing database: {e}")
             raise
     
     def get_class_number(self, class_name):
@@ -219,6 +227,9 @@ class CloudSQLDatabase:
             
         except Error as e:
             logger.error(f"Error getting students: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error getting students: {e}")
             return []
     
     def save_students(self, students):
