@@ -20,4 +20,4 @@ jobs:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /public_html/idarah786.com/ # Change if your web root is different
+        server-dir: idarah786.com/ # Change if your web root is different
