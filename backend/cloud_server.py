@@ -32,40 +32,41 @@ def import_cloud_sql():
         logger.error(f"❌ Unexpected error importing Cloud SQL database: {e}")
         return None
 
-app = Flask(__name__, static_folder='../frontend')
+# ✅ Fixed: Use correct path to frontend for ExonHost
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_PATH = os.path.join(BASE_DIR, "../frontend")
+
+app = Flask(__name__, static_folder=FRONTEND_PATH)
 CORS(app)
 
 # Initialize database based on environment
 def get_database():
-    """Get the appropriate database based on environment variables"""
     logger.info("🔍 Starting database selection process...")
-    
-    # Debug: Print all environment variables
-    logger.info("📋 Environment variables:")
+
     db_host = os.getenv('DB_HOST')
     db_user = os.getenv('DB_USER')
     db_password = os.getenv('DB_PASSWORD')
     db_name = os.getenv('DB_NAME')
     db_port = os.getenv('DB_PORT', '3306')
-    
+
+    logger.info("📋 Environment variables:")
     logger.info(f"   DB_HOST: {db_host}")
     logger.info(f"   DB_USER: {db_user}")
     logger.info(f"   DB_PASSWORD: {'*' * len(db_password) if db_password else 'None'}")
     logger.info(f"   DB_NAME: {db_name}")
     logger.info(f"   DB_PORT: {db_port}")
-    
-    # Check if Cloud SQL environment variables are set
+
     if (db_host and db_user and db_password and db_name):
         logger.info("🌐 All Cloud SQL environment variables are present")
         logger.info("🔍 Attempting to use Google Cloud SQL database...")
-        
+
         CloudSQLDatabase = import_cloud_sql()
         if CloudSQLDatabase is None:
             logger.error("❌ Cloud SQL database not available. Please install mysql-connector-python")
             logger.info("💡 Run: pip install mysql-connector-python")
             logger.info("🔄 Falling back to SQLite database")
             return SQLiteDatabase()
-        
+
         logger.info("🔍 Attempting to instantiate CloudSQLDatabase...")
         try:
             cloud_db = CloudSQLDatabase()
@@ -82,6 +83,15 @@ def get_database():
 
 # Initialize database
 db = get_database()
+
+# ✅ Serve frontend files with correct path
+@app.route('/')
+def serve_index():
+    return send_from_directory(FRONTEND_PATH, 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(FRONTEND_PATH, filename)
 
 # Serve frontend files
 @app.route('/')
