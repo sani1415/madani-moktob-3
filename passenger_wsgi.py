@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""
-Madani Maktab - Stable Passenger Entry Point for cPanel
-"""
+# Madani Maktab - CPanel WSGI Entrypoint
 
 import sys
 import os
 
-# Ensure the backend folder is on the import path
+# Ensure the backend folder is in Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 # Import the Flask app from cloud_server.py
-from cloud_server import app as application
+from backend.cloud_server import app as application
