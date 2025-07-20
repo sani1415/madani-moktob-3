@@ -95,7 +95,7 @@ def serve_static(filename):
 
 # Serve frontend files
 @app.route('/')
-def serve_index():
+def serve_index_main():
     return send_from_directory('../frontend', 'index.html')
 
 @app.route('/<path:filename>')
