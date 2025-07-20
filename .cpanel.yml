@@ -7,3 +7,4 @@ deployment:
     - /bin/cp -R frontend $DEPLOYPATH
     - /bin/cp app.py $DEPLOYPATH
     - /bin/cp requirements.txt $DEPLOYPATH
+
