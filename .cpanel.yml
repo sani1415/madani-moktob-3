@@ -5,6 +5,5 @@ deployment:
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R backend $DEPLOYPATH
     - /bin/cp -R frontend $DEPLOYPATH
-    - /bin/cp app.py $DEPLOYPATH
+    - /bin/cp main.py $DEPLOYPATH
     - /bin/cp requirements.txt $DEPLOYPATH
-    
