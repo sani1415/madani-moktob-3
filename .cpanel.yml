@@ -1,10 +1,9 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/idarahco/madani_maktab/
+    - export DEPLOYPATH=/home/idarahco/public_html/idarah786.com/madani_maktab/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R backend $DEPLOYPATH
     - /bin/cp -R frontend $DEPLOYPATH
     - /bin/cp app.py $DEPLOYPATH
     - /bin/cp requirements.txt $DEPLOYPATH
-    - /bin/cp .env $DEPLOYPATH || true
