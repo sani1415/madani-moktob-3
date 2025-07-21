@@ -30,6 +30,10 @@ def setup_utf8_encoding():
         
         print("✅ Connected successfully!")
         
+        # Disable foreign key checks to allow table alteration
+        print("🔓 Disabling foreign key checks...")
+        cursor.execute("SET FOREIGN_KEY_CHECKS=0")
+        
         # Set database character set
         print("🔧 Setting database character set...")
         cursor.execute("ALTER DATABASE `{}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci".format(db_config['database']))
@@ -40,10 +44,15 @@ def setup_utf8_encoding():
         
         for table in tables:
             try:
+                print(f"   - Updating table: {table}")
                 cursor.execute(f"ALTER TABLE `{table}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
-                print(f"✅ Updated {table}")
+                print(f"   ✅ Successfully updated {table}")
             except Error as e:
-                print(f"⚠️  Table {table} not found or already updated: {e}")
+                print(f"   ⚠️  Warning for table {table}: {e}")
+        
+        # Re-enable foreign key checks
+        print("🔒 Re-enabling foreign key checks...")
+        cursor.execute("SET FOREIGN_KEY_CHECKS=1")
         
         conn.commit()
         print("✅ UTF-8 encoding setup completed!")
@@ -84,14 +93,15 @@ def setup_utf8_encoding():
         cursor.execute("SELECT name, fatherName, district, class FROM students_new WHERE id = %s", (test_data['id'],))
         result = cursor.fetchone()
         
-        if result:
-            print("✅ Bengali text test successful!")
+        if result and '?' not in result[0]:
+            print("✅✅✅ Bengali text test successful! ✅✅✅")
             print(f"   Name: {result[0]}")
             print(f"   Father: {result[1]}")
             print(f"   District: {result[2]}")
             print(f"   Class: {result[3]}")
         else:
-            print("❌ Bengali text test failed!")
+            print("❌❌❌ Bengali text test failed! Still showing question marks. ❌❌❌")
+            print(f"   Result from database: {result}")
         
         conn.commit()
         cursor.close()
@@ -105,4 +115,4 @@ def setup_utf8_encoding():
 if __name__ == "__main__":
     print("🕌 Madani Maktab - UTF-8 Encoding Setup")
     print("=" * 50)
-    setup_utf8_encoding() 
+    setup_utf8_encoding()
