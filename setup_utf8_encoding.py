@@ -1,118 +1,100 @@
 #!/usr/bin/env python3
 """
-Setup UTF-8 Encoding for Madani Maktab Database
-This script helps fix Bengali character encoding issues
+Setup UTF-8 Encoding for Madani Maktab Database by Re-creating Tables
+WARNING: This script DELETES existing student and attendance data to fix encoding issues.
 """
 
 import os
+import sys
 import mysql.connector
 from mysql.connector import Error
 
-def setup_utf8_encoding():
-    """Setup UTF-8 encoding for the database"""
+# Add backend to path to import database class from the correct location
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+
+def recreate_tables():
+    """Drops problematic tables and recreates them with correct UTF-8 encoding."""
     
-    # Database configuration
+    # Dynamically import the database class to ensure paths are correct
+    try:
+        from cloud_sql_database import CloudSQLDatabase
+    except ImportError:
+        print("❌ Error: Could not import CloudSQLDatabase class from backend.")
+        print("   Please ensure you are running this script from the project root directory.")
+        return
+
+    print("⚠️ WARNING: This script will delete all data in 'students_new' and 'attendance_new' tables.")
+    confirm = input("Type 'DELETE' to confirm and continue: ")
+    if confirm != 'DELETE':
+        print("❌ Aborted. No changes were made.")
+        return
+
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
         'user': os.getenv('DB_USER', 'root'),
         'password': os.getenv('DB_PASSWORD', ''),
         'database': os.getenv('DB_NAME', 'madani_moktob'),
         'port': int(os.getenv('DB_PORT', 3306)),
-        'charset': 'utf8mb4',
-        'collation': 'utf8mb4_unicode_ci',
-        'use_unicode': True
+        'charset': 'utf8mb4'
     }
-    
+
     try:
-        print("🔍 Connecting to database...")
+        print("\n🔍 Connecting to database...")
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-        
         print("✅ Connected successfully!")
-        
-        # Disable foreign key checks to allow table alteration
-        print("🔓 Disabling foreign key checks...")
-        cursor.execute("SET FOREIGN_KEY_CHECKS=0")
-        
-        # Set database character set
-        print("🔧 Setting database character set...")
-        cursor.execute("ALTER DATABASE `{}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci".format(db_config['database']))
-        
-        # Update existing tables
-        print("🔧 Updating table character sets...")
-        tables = ['students_new', 'attendance_new', 'holidays_new', 'education_progress_new']
-        
-        for table in tables:
-            try:
-                print(f"   - Updating table: {table}")
-                cursor.execute(f"ALTER TABLE `{table}` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
-                print(f"   ✅ Successfully updated {table}")
-            except Error as e:
-                print(f"   ⚠️  Warning for table {table}: {e}")
-        
-        # Re-enable foreign key checks
-        print("🔒 Re-enabling foreign key checks...")
-        cursor.execute("SET FOREIGN_KEY_CHECKS=1")
-        
+
+        # 1. Drop existing tables
+        print("🗑️ Deleting old tables...")
+        try:
+            # Must drop attendance first due to foreign key
+            cursor.execute("DROP TABLE IF EXISTS `attendance_new`")
+            print("   - `attendance_new` table deleted.")
+            cursor.execute("DROP TABLE IF EXISTS `students_new`")
+            print("   - `students_new` table deleted.")
+        except Error as e:
+            print(f"   - Could not delete tables, they may not exist. Error: {e}")
+
         conn.commit()
-        print("✅ UTF-8 encoding setup completed!")
         
-        # Test Bengali text
-        print("🧪 Testing Bengali text insertion...")
+        # 2. Re-create tables using the method from your app
+        print("\n🔧 Re-creating tables with correct encoding...")
+        db_instance = CloudSQLDatabase()
+        db_instance._ensure_tables_exist() # This will run the CREATE TABLE commands
+        print("✅ Tables re-created successfully!")
+
+        # 3. Test Bengali text insertion
+        print("\n🧪 Testing Bengali text insertion...")
         test_data = {
-            'id': 'TEST001',
-            'name': 'আব্দুল্লাহ আহমেদ',
-            'fatherName': 'মোহাম্মদ আলী',
-            'mobileNumber': '01712345678',
-            'district': 'ঢাকা',
-            'upazila': 'মোহাম্মদপুর',
-            'class': 'প্রথম শ্রেণি',
-            'rollNumber': 'TEST001',
-            'registrationDate': '2025-01-01'
+            'id': 'TEST001', 'name': 'আব্দুল্লাহ আহমেদ', 'fatherName': 'মোহাম্মদ আলী',
+            'mobileNumber': '01712345678', 'district': 'ঢাকা', 'upazila': 'মোহাম্মদপুর',
+            'class': 'প্রথম শ্রেণি', 'rollNumber': 'TEST001', 'registrationDate': '2025-01-01'
         }
-        
-        # Insert test data
-        cursor.execute('''
-            INSERT INTO students_new (id, name, fatherName, mobileNumber, district, upazila, class, rollNumber, registrationDate)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            name = VALUES(name),
-            fatherName = VALUES(fatherName),
-            mobileNumber = VALUES(mobileNumber),
-            district = VALUES(district),
-            upazila = VALUES(upazila),
-            class = VALUES(class),
-            registrationDate = VALUES(registrationDate)
-        ''', (
-            test_data['id'], test_data['name'], test_data['fatherName'],
-            test_data['mobileNumber'], test_data['district'], test_data['upazila'],
-            test_data['class'], test_data['rollNumber'], test_data['registrationDate']
-        ))
+        db_instance.add_student(test_data)
         
         # Retrieve and verify
-        cursor.execute("SELECT name, fatherName, district, class FROM students_new WHERE id = %s", (test_data['id'],))
+        cursor.execute("SELECT name, fatherName FROM students_new WHERE id = %s", ('TEST001',))
         result = cursor.fetchone()
         
         if result and '?' not in result[0]:
-            print("✅✅✅ Bengali text test successful! ✅✅✅")
-            print(f"   Name: {result[0]}")
-            print(f"   Father: {result[1]}")
-            print(f"   District: {result[2]}")
-            print(f"   Class: {result[3]}")
+            print("\n🎉🎉🎉 SUCCESS! Bengali text is now saving correctly! 🎉🎉🎉")
+            print(f"   Name from DB: {result[0]}")
+            print(f"   Father from DB: {result[1]}")
+            print("\nYou can now use your application normally.")
         else:
-            print("❌❌❌ Bengali text test failed! Still showing question marks. ❌❌❌")
-            print(f"   Result from database: {result}")
-        
-        conn.commit()
+            print("\n❌❌❌ Test failed. The issue persists. ❌❌❌")
+            print("Please contact your hosting support (Exonhost) and ask them to ensure your database user has full ALTER and DROP permissions and that the server default collation is `utf8mb4_unicode_ci`.")
+
         cursor.close()
         conn.close()
-        
+
     except Error as e:
-        print(f"❌ Error: {e}")
+        print(f"\n❌ A database error occurred: {e}")
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"\n❌ An unexpected error occurred: {e}")
+
 
 if __name__ == "__main__":
-    print("🕌 Madani Maktab - UTF-8 Encoding Setup")
+    print("🕌 Madani Maktab - Table Fix and Re-creation Tool")
     print("=" * 50)
-    setup_utf8_encoding()
+    recreate_tables()
