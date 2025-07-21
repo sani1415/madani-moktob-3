@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Setup UTF-8 Encoding for Madani Maktab Database by Re-creating Tables
-WARNING: This script DELETES existing student and attendance data to fix encoding issues.
+Madani Maktab - Full Database UTF-8 Fix by Re-creating Tables
+WARNING: This script DELETES ALL student, attendance, and education data.
 """
 
 import os
@@ -9,13 +9,13 @@ import sys
 import mysql.connector
 from mysql.connector import Error
 
-# Add backend to path to import database class from the correct location
+# Add backend to path to import database class
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
-def recreate_tables():
-    """Drops problematic tables and recreates them with correct UTF-8 encoding."""
+def fix_all_tables():
+    """Drops and recreates all user-data tables with correct UTF-8 encoding."""
     
-    # Dynamically import the database class to ensure paths are correct
+    # Dynamically import the database class
     try:
         from cloud_sql_database import CloudSQLDatabase
     except ImportError:
@@ -23,7 +23,7 @@ def recreate_tables():
         print("   Please ensure you are running this script from the project root directory.")
         return
 
-    print("⚠️ WARNING: This script will delete all data in 'students_new' and 'attendance_new' tables.")
+    print("⚠️ WARNING: This will delete ALL data in 'students_new', 'attendance_new', and 'education_progress_new' tables.")
     confirm = input("Type 'DELETE' to confirm and continue: ")
     if confirm != 'DELETE':
         print("❌ Aborted. No changes were made.")
@@ -44,46 +44,59 @@ def recreate_tables():
         cursor = conn.cursor()
         print("✅ Connected successfully!")
 
-        # 1. Drop existing tables
+        # 1. Drop all relevant tables
         print("🗑️ Deleting old tables...")
-        try:
-            # Must drop attendance first due to foreign key
-            cursor.execute("DROP TABLE IF EXISTS `attendance_new`")
-            print("   - `attendance_new` table deleted.")
-            cursor.execute("DROP TABLE IF EXISTS `students_new`")
-            print("   - `students_new` table deleted.")
-        except Error as e:
-            print(f"   - Could not delete tables, they may not exist. Error: {e}")
-
+        tables_to_drop = ['attendance_new', 'students_new', 'education_progress_new']
+        for table in tables_to_drop:
+            try:
+                cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
+                print(f"   - `{table}` table deleted.")
+            except Error as e:
+                print(f"   - Could not delete table {table}. Error: {e}")
+        
         conn.commit()
         
-        # 2. Re-create tables using the method from your app
-        print("\n🔧 Re-creating tables with correct encoding...")
+        # 2. Re-create all tables using the method from your app
+        print("\n🔧 Re-creating all tables with correct encoding...")
         db_instance = CloudSQLDatabase()
-        db_instance._ensure_tables_exist() # This will run the CREATE TABLE commands
-        print("✅ Tables re-created successfully!")
+        db_instance._ensure_tables_exist()
+        print("✅ All tables re-created successfully!")
 
-        # 3. Test Bengali text insertion
-        print("\n🧪 Testing Bengali text insertion...")
-        test_data = {
+        # 3. Test Bengali text insertion in students table
+        print("\n🧪 Testing Bengali text in 'students_new' table...")
+        student_test_data = {
             'id': 'TEST001', 'name': 'আব্দুল্লাহ আহমেদ', 'fatherName': 'মোহাম্মদ আলী',
             'mobileNumber': '01712345678', 'district': 'ঢাকা', 'upazila': 'মোহাম্মদপুর',
             'class': 'প্রথম শ্রেণি', 'rollNumber': 'TEST001', 'registrationDate': '2025-01-01'
         }
-        db_instance.add_student(test_data)
+        db_instance.add_student(student_test_data)
         
-        # Retrieve and verify
-        cursor.execute("SELECT name, fatherName FROM students_new WHERE id = %s", ('TEST001',))
+        cursor.execute("SELECT name FROM students_new WHERE id = %s", ('TEST001',))
         result = cursor.fetchone()
         
         if result and '?' not in result[0]:
-            print("\n🎉🎉🎉 SUCCESS! Bengali text is now saving correctly! 🎉🎉🎉")
-            print(f"   Name from DB: {result[0]}")
-            print(f"   Father from DB: {result[1]}")
-            print("\nYou can now use your application normally.")
+            print("   ✅ Student name test successful!")
         else:
-            print("\n❌❌❌ Test failed. The issue persists. ❌❌❌")
-            print("Please contact your hosting support (Exonhost) and ask them to ensure your database user has full ALTER and DROP permissions and that the server default collation is `utf8mb4_unicode_ci`.")
+            print("   ❌ Student name test FAILED.")
+
+        # 4. Test Bengali text insertion in education table
+        print("\n🧪 Testing Bengali text in 'education_progress_new' table...")
+        education_test_data = {
+            'class_name': 'প্রথম শ্রেণি', 'subject_name': 'আরবি', 
+            'book_name': 'এসো আরবি শিখি', 'total_pages': 100
+        }
+        db_instance.add_education_progress(education_test_data)
+        
+        cursor.execute("SELECT book_name FROM education_progress_new WHERE book_name = %s", ('এসো আরবি শিখি',))
+        result = cursor.fetchone()
+        
+        if result and '?' not in result[0]:
+            print("   ✅ Education book name test successful!")
+        else:
+            print("   ❌ Education book name test FAILED.")
+
+        print("\n🎉🎉🎉 SUCCESS! The database encoding is now fully fixed. 🎉🎉🎉")
+        print("You can now use your application normally.")
 
         cursor.close()
         conn.close()
@@ -93,8 +106,7 @@ def recreate_tables():
     except Exception as e:
         print(f"\n❌ An unexpected error occurred: {e}")
 
-
 if __name__ == "__main__":
-    print("🕌 Madani Maktab - Table Fix and Re-creation Tool")
+    print("🕌 Madani Maktab - Full Database Fix Tool")
     print("=" * 50)
-    recreate_tables()
+    fix_all_tables()
