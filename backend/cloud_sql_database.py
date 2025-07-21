@@ -23,7 +23,10 @@ class CloudSQLDatabase:
             'user': os.getenv('DB_USER', 'root'),
             'password': os.getenv('DB_PASSWORD', ''),
             'database': os.getenv('DB_NAME', 'madani_moktob'),
-            'port': int(os.getenv('DB_PORT', 3306))
+            'port': int(os.getenv('DB_PORT', 3306)),
+            'charset': 'utf8mb4',
+            'collation': 'utf8mb4_unicode_ci',
+            'use_unicode': True
         }
         
         logger.info("🔍 CloudSQLDatabase: Configuration loaded:")
@@ -76,7 +79,7 @@ class CloudSQLDatabase:
                     rollNumber VARCHAR(20) UNIQUE,
                     registrationDate VARCHAR(20),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
             # Create attendance table
@@ -90,7 +93,7 @@ class CloudSQLDatabase:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (student_id) REFERENCES students_new(id) ON DELETE CASCADE,
                     UNIQUE KEY unique_student_date (student_id, date)
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
             # Create holidays table
@@ -100,12 +103,12 @@ class CloudSQLDatabase:
                     date VARCHAR(20) UNIQUE NOT NULL,
                     name VARCHAR(255) NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
             # Create education progress table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS education_progress (
+                CREATE TABLE IF NOT EXISTS education_progress_new (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     class_name VARCHAR(50) NOT NULL,
                     subject_name VARCHAR(100) NOT NULL,
@@ -117,7 +120,7 @@ class CloudSQLDatabase:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     UNIQUE KEY unique_class_subject_book (class_name, subject_name, book_name)
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
             conn.commit()
