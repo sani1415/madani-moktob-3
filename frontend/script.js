@@ -4112,7 +4112,7 @@ function displayBooksList() {
     if (!booksList) return;
     
     if (educationProgress.length === 0) {
-        booksList.innerHTML = '<p class="no-data">No books added yet. Click "Add New Book" to get started.</p>';
+        booksList.innerHTML = `<p class="no-data">${t('noBooksAddedYet')}</p>`;
         return;
     }
     
@@ -4148,13 +4148,13 @@ function displayBooksList() {
                 ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ''}
                 <div class="book-actions">
                     <button onclick="editBookDetails(${book.id})" class="btn btn-secondary btn-small">
-                        <i class="fas fa-edit"></i> Edit Details
+                        <i class="fas fa-edit"></i> ${t('editDetails')}
                     </button>
                     <button onclick="updateBookProgress(${book.id})" class="btn btn-primary btn-small">
-                        <i class="fas fa-chart-line"></i> Update Progress
+                        <i class="fas fa-chart-line"></i> ${t('updateProgress')}
                     </button>
                     <button onclick="deleteBookProgress(${book.id})" class="btn btn-danger btn-small">
-                        <i class="fas fa-trash"></i> Delete
+                        <i class="fas fa-trash"></i> ${t('deleteBook')}
                     </button>
                 </div>
             </div>
@@ -4262,7 +4262,7 @@ async function deleteBookProgress(bookId) {
     const book = educationProgress.find(b => b.id === bookId);
     if (!book) return;
     
-    if (!confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
+    if (!confirm(`${t('confirmDeleteBook')} "${book.book_name}"?`)) {
         return;
     }
     
@@ -4272,11 +4272,11 @@ async function deleteBookProgress(bookId) {
         });
         
         if (response.ok) {
-            showModal('Success', 'Book progress deleted successfully!');
+            showModal(t('success'), t('bookDeletedSuccessfully'));
             await loadEducationProgress();
         } else {
             const error = await response.json();
-            showModal('Error', error.error || 'Failed to delete book progress');
+            showModal(t('error'), error.error || t('failedToDeleteBook'));
         }
     } catch (error) {
         console.error('Error deleting book progress:', error);
@@ -4394,10 +4394,10 @@ function showDeleteAllEducationModal() {
     const modalContent = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>⚠️ Delete All Education Data</h3>
+                <h3>⚠️ ${t('deleteAllEducationData')}</h3>
             </div>
             <div class="modal-body">
-                <p><strong>Warning:</strong> This action will permanently delete all education progress data including:</p>
+                <p><strong>Warning:</strong> ${t('deleteAllEducationWarning')}</p>
                 <ul>
                     <li>All book progress records</li>
                     <li>All class and subject information</li>
@@ -4409,7 +4409,7 @@ function showDeleteAllEducationModal() {
             </div>
             <div class="modal-footer">
                 <button onclick="deleteAllEducationData()" class="btn btn-danger">
-                    <i class="fas fa-trash-alt"></i> Yes, Delete All Data
+                    <i class="fas fa-trash-alt"></i> ${t('yesDeleteAllData')}
                 </button>
                 <button onclick="closeModal()" class="btn btn-secondary">
                     Cancel
@@ -4418,7 +4418,7 @@ function showDeleteAllEducationModal() {
         </div>
     `;
     
-    showModal('Delete All Education Data', modalContent, true);
+    showModal(t('deleteAllEducationData'), modalContent, true);
 }
 
 async function deleteAllEducationData() {
@@ -4428,12 +4428,12 @@ async function deleteAllEducationData() {
         });
         
         if (response.ok) {
-            showModal('Success', 'All education data has been deleted successfully!');
+            showModal(t('success'), t('allEducationDataDeleted'));
             closeModal();
             await loadEducationProgress();
         } else {
             const error = await response.json();
-            showModal('Error', error.error || 'Failed to delete all education data');
+            showModal(t('error'), error.error || t('failedToDeleteAllEducation'));
         }
     } catch (error) {
         console.error('Error deleting all education data:', error);

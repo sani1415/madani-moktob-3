@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Test - Education Section</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .language-selector {
+            margin-bottom: 20px;
+        }
+        .education-content {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Translation Test - Education Section</h1>
+    
+    <div class="language-selector">
+        <label for="languageSelector">Select Language:</label>
+        <select id="languageSelector" onchange="changeLanguage(this.value)">
+            <option value="en">English</option>
+            <option value="bn">বাংলা (Bengali)</option>
+        </select>
+    </div>
+
+    <div class="test-section">
+        <h2 id="educationTitle">Education Progress Tracking</h2>
+        <div class="education-content">
+            <h3 id="bookProgressTitle">Book Progress Management</h3>
+            <div class="education-actions">
+                <button class="btn btn-primary" id="addBookBtn">
+                    <i class="fas fa-plus"></i> Add New Book
+                </button>
+                <button class="btn btn-danger" id="deleteAllBtn">
+                    <i class="fas fa-trash-alt"></i> Delete All Data
+                </button>
+            </div>
+            
+            <div id="booksList">
+                <p class="no-data" id="noBooksMessage">No books added yet. Click "Add New Book" to get started.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Translation Keys Used:</h3>
+        <ul>
+            <li><strong>EducationProgressTracking:</strong> <span id="key1">Education Progress Tracking</span></li>
+            <li><strong>bookProgressManagement:</strong> <span id="key2">Book Progress Management</span></li>
+            <li><strong>addNewBook:</strong> <span id="key3">Add New Book</span></li>
+            <li><strong>deleteAllData:</strong> <span id="key4">Delete All Data</span></li>
+            <li><strong>noBooksAddedYet:</strong> <span id="key5">No books added yet. Click "Add New Book" to get started.</span></li>
+        </ul>
+    </div>
+
+    <script src="frontend/translations.js"></script>
+    <script>
+        // Initialize the translation system
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLanguage();
+            updateEducationTexts();
+        });
+
+        // Override the updateEducationTexts function for testing
+        function updateEducationTexts() {
+            const educationTitle = document.getElementById('educationTitle');
+            if (educationTitle) {
+                educationTitle.textContent = t('EducationProgressTracking');
+            }
+            
+            const bookProgressTitle = document.getElementById('bookProgressTitle');
+            if (bookProgressTitle) {
+                bookProgressTitle.textContent = t('bookProgressManagement');
+            }
+            
+            const addBookBtn = document.getElementById('addBookBtn');
+            if (addBookBtn) {
+                addBookBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addNewBook')}`;
+            }
+            
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
+            if (deleteAllBtn) {
+                deleteAllBtn.innerHTML = `<i class="fas fa-trash-alt"></i> ${t('deleteAllData')}`;
+            }
+            
+            const noBooksMessage = document.getElementById('noBooksMessage');
+            if (noBooksMessage) {
+                noBooksMessage.textContent = t('noBooksAddedYet');
+            }
+            
+            // Update the translation keys display
+            document.getElementById('key1').textContent = t('EducationProgressTracking');
+            document.getElementById('key2').textContent = t('bookProgressManagement');
+            document.getElementById('key3').textContent = t('addNewBook');
+            document.getElementById('key4').textContent = t('deleteAllData');
+            document.getElementById('key5').textContent = t('noBooksAddedYet');
+        }
+    </script>
+</body>
+</html> 

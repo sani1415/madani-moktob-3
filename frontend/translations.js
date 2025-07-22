@@ -113,6 +113,34 @@ const translations = {
         classExists: "This class already exists.",
         classAdded: "class has been added successfully.",
         classDeleted: "class has been deleted successfully.",
+
+        // Education
+        EducationProgressTracking: "Education Progress Tracking",
+        bookProgressManagement: "Book Progress Management",
+        addNewBook: "Add New Book",
+        deleteAllData: "Delete All Data",
+        addNewBookProgress: "Add New Book Progress",
+        backToList: "Back to List",
+        bookClass: "Class",
+        bookSubject: "Subject",
+        bookName: "Book Name",
+        totalPages: "Total Pages",
+        completedPages: "Completed Pages",
+        bookNotes: "Notes",
+        saveBookProgress: "Save Book Progress",
+        editBookDetails: "Edit Book Details",
+        noBooksAddedYet: "No books added yet. Click \"Add New Book\" to get started.",
+        editDetails: "Edit Details",
+        updateProgress: "Update Progress",
+        deleteBook: "Delete",
+        confirmDeleteBook: "Are you sure you want to delete",
+        bookDeletedSuccessfully: "Book progress deleted successfully!",
+        failedToDeleteBook: "Failed to delete book progress",
+        deleteAllEducationData: "Delete All Education Data",
+        deleteAllEducationWarning: "This action will permanently delete all education progress data including:",
+        yesDeleteAllData: "Yes, Delete All Data",
+        allEducationDataDeleted: "All education data has been deleted successfully!",
+        failedToDeleteAllEducation: "Failed to delete all education data",
         
         // Common buttons and actions
         ok: "OK",
@@ -279,6 +307,7 @@ const translations = {
         dailyAttendance: "দৈনিক উপস্থিতি",
         reports: "রিপোর্ট",
         settings: "সেটিংস",
+        education: "শিক্ষা",
         
         // Dashboard
         totalStudents: "মোট ছাত্র",
@@ -363,7 +392,7 @@ const translations = {
         hijriPlusOne: "+১ দিন (এগিয়ে)",
         hijriMinusOne: "-১ দিন (পিছিয়ে)",
         applicationSettings: "অ্যাপ সেটিংস",
-        applicationName: "অ্যাপ নাম",
+        applicationName: "অ্যাপের নাম",
         appNamePlaceholder: "অ্যাপের নাম লিখুন",
         updateAppNameBtn: "নাম আপডেট করুন",
         enterAppName: "অনুগ্রহ করে অ্যাপের নাম লিখুন।",
@@ -381,6 +410,34 @@ const translations = {
         classExists: "এই শ্রেণী ইতিমধ্যে বিদ্যমান।",
         classAdded: "শ্রেণী সফলভাবে যোগ করা হয়েছে।",
         classDeleted: "শ্রেণী সফলভাবে মুছে দেওয়া হয়েছে।",
+
+        // Education
+        EducationProgressTracking: "শিক্ষা প্রগতি ট্র্যাকিং",
+        bookProgressManagement: "বই প্রগতি ব্যবস্থাপনা",
+        addNewBook: "নতুন বই যোগ করুন",
+        deleteAllData: "সব ডেটা মুছুন",
+        addNewBookProgress: "নতুন বই প্রগতি যোগ করুন",
+        backToList: "তালিকায় ফিরে যান",
+        bookClass: "শ্রেণী",
+        bookSubject: "বিষয়",
+        bookName: "বইয়ের নাম",
+        totalPages: "মোট পাতা",
+        completedPages: "সম্পন্ন পাতা",
+        bookNotes: "নোট",
+        saveBookProgress: "বই প্রগতি সংরক্ষণ করুন",
+        editBookDetails: "বই বিবরণ সম্পাদনা করুন",
+        noBooksAddedYet: "এখনো কোন বই যোগ করা হয়নি। শুরু করতে \"নতুন বই যোগ করুন\" ক্লিক করুন।",
+        editDetails: "বিবরণ সম্পাদনা করুন",
+        updateProgress: "প্রগতি আপডেট করুন",
+        deleteBook: "মুছুন",
+        confirmDeleteBook: "আপনি কি নিশ্চিত যে আপনি বই প্রগতি মুছে দিতে চান",
+        bookDeletedSuccessfully: "বই প্রগতি সফলভাবে মুছে দেওয়া হয়েছে!",
+        failedToDeleteBook: "বই প্রগতি মুছতে ব্যর্থ হয়েছে",
+        deleteAllEducationData: "সব শিক্ষা ডেটা মুছুন",
+        deleteAllEducationWarning: "এই কাজটি স্থায়ীভাবে সব শিক্ষা প্রগতি ডেটা মুছে দেবে যার মধ্যে রয়েছে:",
+        yesDeleteAllData: "হ্যাঁ, সব ডেটা মুছুন",
+        allEducationDataDeleted: "সব শিক্ষা ডেটা সফলভাবে মুছে দেওয়া হয়েছে!",
+        failedToDeleteAllEducation: "সব শিক্ষা ডেটা মুছতে ব্যর্থ হয়েছে",
         
         // Holiday Management
         holidayManagement: "ছুটির দিন ব্যবস্থাপনা",
@@ -538,6 +595,7 @@ function updateAllTexts() {
     updateReportsTexts();
     updateSettingsTexts();
     updateStudentListTexts();
+    updateEducationTexts();
 }
 
 // Update header texts
@@ -768,6 +826,81 @@ function updateSettingsTexts() {
         }
     });
 }
+
+// Update education texts
+function updateEducationTexts() {
+    const educationTitle = document.querySelector('#education h2');
+    if (educationTitle) {
+        educationTitle.textContent = t('EducationProgressTracking');
+    }
+    
+    const bookProgressTitle = document.querySelector('#education .education-header h3');
+    if (bookProgressTitle) {
+        bookProgressTitle.textContent = t('bookProgressManagement');
+    }
+    
+    const addBookBtn = document.querySelector('#education .education-actions .btn-primary');
+    if (addBookBtn) {
+        addBookBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addNewBook')}`;
+    }
+    
+    const deleteAllBtn = document.querySelector('#education .education-actions .btn-danger');
+    if (deleteAllBtn) {
+        deleteAllBtn.innerHTML = `<i class="fas fa-trash-alt"></i> ${t('deleteAllData')}`;
+    }
+    
+    // Update form elements
+    const formTitle = document.querySelector('#addBookForm .form-header h3');
+    if (formTitle) {
+        formTitle.textContent = t('addNewBookProgress');
+    }
+    
+    const backBtn = document.querySelector('#addBookForm .form-header .btn');
+    if (backBtn) {
+        backBtn.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToList')}`;
+    }
+    
+    // Update form labels
+    const formLabels = document.querySelectorAll('#addBookForm label');
+    const labelTexts = ['bookClass', 'bookSubject', 'bookName', 'totalPages', 'completedPages', 'bookNotes'];
+    
+    formLabels.forEach((label, index) => {
+        if (labelTexts[index]) {
+            const required = label.textContent.includes('*') ? ' *' : '';
+            label.textContent = t(labelTexts[index]) + required;
+        }
+    });
+    
+    const saveBookBtn = document.querySelector('#bookForm button[type="submit"]');
+    if (saveBookBtn) {
+        saveBookBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveBookProgress')}`;
+    }
+    
+    // Update edit modal
+    const editModalTitle = document.querySelector('#editBookModal .modal-header h3');
+    if (editModalTitle) {
+        editModalTitle.textContent = t('editBookDetails');
+    }
+    
+    const closeEditBtn = document.querySelector('#editBookModal .modal-header .btn');
+    if (closeEditBtn) {
+        closeEditBtn.innerHTML = `<i class="fas fa-times"></i>`;
+    }
+    
+    // Update edit form labels
+    const editFormLabels = document.querySelectorAll('#editBookForm label');
+    editFormLabels.forEach((label, index) => {
+        if (labelTexts[index]) {
+            const required = label.textContent.includes('*') ? ' *' : '';
+            label.textContent = t(labelTexts[index]) + required;
+        }
+    });
+    
+    // Refresh the books list to update dynamically generated content
+    if (typeof displayBooksList === 'function') {
+        displayBooksList();
+    }
+}
     
 // Update student list texts
 function updateStudentListTexts() {
@@ -803,6 +936,9 @@ function updateSectionContent(sectionId) {
             break;
         case 'reports':
             updateReportsTexts();
+            break;
+        case 'education':
+            updateEducationTexts();
             break;
         case 'settings':
             updateSettingsTexts();
