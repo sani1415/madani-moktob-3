@@ -9,6 +9,23 @@ import os
 import sys
 import subprocess
 
+# Load environment variables from .env file if it exists
+def load_env_file():
+    """Load environment variables from .env file"""
+    env_file = '.env'
+    if os.path.exists(env_file):
+        print(f"📄 Loading environment variables from {env_file}")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+        print("✅ Environment variables loaded successfully")
+
+# Load .env file at startup
+load_env_file()
+
 def check_requirements():
     """Check if required packages are installed"""
     print("🔍 Checking requirements...")
@@ -36,10 +53,10 @@ def start_server():
     
     # Check if we're in production (Cloud SQL) or development (SQLite)
     if (os.getenv('DB_HOST') and os.getenv('DB_USER') and 
-        os.getenv('DB_PASSWORD') and os.getenv('DB_NAME')):
-        print("🌐 Production mode: Using Google Cloud SQL")
+        os.getenv('DB_NAME')):
+        print("🌐 MySQL mode: Using MySQL database")
         print("📖 Your Islamic school attendance system will be available at:")
-        print("   https://your-app-url (Google Cloud Run)")
+        print("   http://localhost:5000")
     else:
         print("💾 Development mode: Using SQLite database")
         print("📖 Your Islamic school attendance system will be available at:")
@@ -69,16 +86,16 @@ def main():
     
     # Check environment
     if (os.getenv('DB_HOST') and os.getenv('DB_USER') and 
-        os.getenv('DB_PASSWORD') and os.getenv('DB_NAME')):
-        print("\n✅ Production mode detected!")
-        print("🌐 Using Google Cloud SQL for persistent data storage")
+        os.getenv('DB_NAME')):
+        print("\n✅ MySQL mode detected!")
+        print("🌐 Using MySQL database for persistent data storage")
         print("💾 Your data will persist across deployments and restarts")
         print("🔒 Secure and scalable database solution")
     else:
         print("\n✅ Development mode detected!")
         print("💾 Using SQLite database - fast and reliable for local development")
         print("📊 All data will be stored in madani_moktob.db")
-        print("💡 For production, set Cloud SQL environment variables")
+        print("💡 For MySQL, set DB_HOST, DB_USER, and DB_NAME environment variables")
     
     # Start server
     start_server()

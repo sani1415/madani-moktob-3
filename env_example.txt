@@ -1,0 +1,15 @@
+# Madani Maktab - Environment Variables Example
+# Copy this file to .env and fill in your actual values
+
+# Google Cloud SQL Database Configuration
+DB_HOST=your-cloud-sql-instance-ip
+DB_USER=your-database-username
+DB_PASSWORD=your-database-password
+DB_NAME=your-database-name
+DB_PORT=3306
+
+# Google Cloud Project (optional)
+GOOGLE_CLOUD_PROJECT=your-project-id
+
+# Server Configuration
+PORT=5000 

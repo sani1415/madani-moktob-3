@@ -56,9 +56,9 @@ def get_database():
     logger.info(f"   DB_NAME: {db_name}")
     logger.info(f"   DB_PORT: {db_port}")
 
-    if (db_host and db_user and db_password and db_name):
-        logger.info("🌐 All Cloud SQL environment variables are present")
-        logger.info("🔍 Attempting to use Google Cloud SQL database...")
+    if (db_host and db_user and db_name):
+        logger.info("🌐 All required Cloud SQL environment variables are present")
+        logger.info("🔍 Attempting to use MySQL database...")
 
         CloudSQLDatabase = import_cloud_sql()
         if CloudSQLDatabase is None:
@@ -327,7 +327,7 @@ def health():
         
         # Determine database type based on the database instance
         if hasattr(db, '__class__') and 'CloudSQL' in db.__class__.__name__:
-            database_type = "Google Cloud SQL (MySQL)"
+            database_type = "MySQL Database"
         else:
             database_type = "SQLite Database"
         
@@ -364,7 +364,7 @@ def debug():
                 'DB_PORT': db_port
             },
             'database_type': type(db).__name__,
-            'all_vars_present': bool(db_host and db_user and db_password and db_name)
+            'all_vars_present': bool(db_host and db_user and db_name)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

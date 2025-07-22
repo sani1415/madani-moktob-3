@@ -13,3 +13,9 @@ backend/madani_moktob.db
 setup_cloud_sql.bat
 setup_cloud_sql.sh
 setup_input.txt
+
+# Environment files
+.env
+.env.local
+.env.production
+local_env.txt
