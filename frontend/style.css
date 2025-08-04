@@ -263,6 +263,10 @@ body {
     background-color: #fff3cd !important;
     border-color: #ffeaa7 !important;
     color: #856404 !important;
+    min-height: 32px;
+    max-height: 32px;
+    width: 32px;
+    height: 32px;
 }
 
 .calendar-day.holiday::after {
@@ -670,6 +674,91 @@ body {
     color: #e74c3c;
 }
 
+.summary-item.clickable {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.summary-item.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #e74c3c;
+}
+
+.click-hint {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
+/* Absent Days Modal Styles */
+.absent-days-modal {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.absent-days-modal .modal-header h3 {
+    color: #e74c3c;
+    margin: 0;
+}
+
+.period-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #e74c3c;
+}
+
+.period-info p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.no-absent-days {
+    text-align: center;
+    color: #27ae60;
+    font-style: italic;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.absent-days-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.absent-day-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.absent-day-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-color: #e74c3c;
+}
+
+.absent-date {
+    font-weight: 600;
+    color: #e74c3c;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.absent-reason {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+
 .attendance-calendar {
     margin-top: 20px;
 }
@@ -681,17 +770,7 @@ body {
     margin-bottom: 15px;
 }
 
-.student-calendar-navigation {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 15px;
-    gap: 10px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 6px;
-    border: 1px solid #dee2e6;
-}
+
 
 .calendar-grid {
     display: grid;
@@ -699,6 +778,8 @@ body {
     gap: 5px;
     max-height: 300px;
     overflow-y: auto;
+    align-items: center;
+    justify-items: center;
 }
 
 .calendar-day {
@@ -710,46 +791,15 @@ body {
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 32px;
+    max-height: 32px;
+    width: 32px;
+    height: 32px;
 }
 
-.calendar-day.present {
-    background: #27ae60;
-    color: white;
-}
 
-.calendar-day.absent {
-    background: #e74c3c;
-    color: white;
-}
-
-.calendar-day.no-data {
-    background: #ddd;
-    color: #666;
-}
-
-.calendar-day.header {
-    background: #2c3e50;
-    color: white;
-    font-weight: 600;
-}
-
-.calendar-day.empty {
-    background: transparent;
-    border: none;
-}
-
-.calendar-day.future-day {
-    background: #f8f9fa;
-    color: #999;
-    border: 1px dashed #ddd;
-}
-
-.calendar-day.before-academic-year {
-    background: #f8f9fa;
-    color: #adb5bd;
-    border: 1px dashed #dee2e6;
-    opacity: 0.6;
-}
 
 .clickable-name {
     color: #3498db;
@@ -2070,6 +2120,8 @@ body {
     padding: 8px;
     width: 100%;
     max-width: 420px;
+    align-items: center;
+    justify-items: center;
 }
 
 .calendar-header {
@@ -2078,7 +2130,7 @@ body {
     padding: 8px 4px;
     text-align: center;
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 12px;
     border-radius: 4px;
     min-height: 32px;
     display: flex;
@@ -2086,20 +2138,7 @@ body {
     justify-content: center;
 }
 
-.calendar-day {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    min-height: 32px; /* Smaller day cells */
-    max-height: 32px;
-    font-size: 0.85rem;
-}
-
+/* Calendar day status classes */
 .calendar-day.empty {
     background: transparent;
     cursor: default;
@@ -2120,26 +2159,60 @@ body {
     color: white;
 }
 
-.calendar-day.holiday-day {
+.calendar-day.present {
+    background: #27ae60;
+    color: white;
+}
+
+.calendar-day.absent {
+    background: #e74c3c;
+    color: white;
+}
+
+.calendar-day.leave {
     background: #f39c12;
     color: white;
 }
 
-/*
-.calendar-day.weekend-day {
-    background: #95a5a6;
+.calendar-day.no-data {
+    background: #ddd;
+    color: #666;
+}
+
+.calendar-day.holiday-day {
+    background: #f39c12;
     color: white;
 }
-*/
 
 .calendar-day.future-day {
     background: #ecf0f1;
     color: #7f8c8d;
 }
 
+.calendar-day.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.calendar-day.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.calendar-day.header {
+    background: #2c3e50;
+    color: white;
+    font-weight: 600;
+    min-height: 32px;
+    max-height: 32px;
+    width: 32px;
+    height: 32px;
+}
+
 .day-number {
     font-weight: bold;
-    font-size: 0.8rem;
+    font-size: 12px;
 }
 
 .calendar-day:hover:not(.empty) {
@@ -2202,6 +2275,22 @@ body {
     background: #f8f9fa;
     border: 1px dashed #dee2e6;
     opacity: 0.6;
+}
+
+.legend-color.present {
+    background: #27ae60;
+}
+
+.legend-color.absent {
+    background: #e74c3c;
+}
+
+.legend-color.leave {
+    background: #f39c12;
+}
+
+.legend-color.no-data {
+    background: #ddd;
 }
 
 .summary-stats {
@@ -2286,6 +2375,8 @@ body {
     .calendar-day {
         min-height: 28px;
         max-height: 28px;
+        width: 28px;
+        height: 28px;
         font-size: 0.75rem;
     }
     
@@ -2297,6 +2388,9 @@ body {
         padding: 6px 2px;
         font-size: 0.75rem;
         min-height: 28px;
+        max-height: 28px;
+        width: 28px;
+        height: 28px;
     }
     
     .summary-stats .stats-grid {

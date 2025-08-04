@@ -90,6 +90,9 @@ async function initializeAppWithDatabase() {
         
         // Load attendance for today and update dashboard
         loadAttendanceForDate();
+        
+        // Update date input max to prevent future date selection
+        updateDateInputMax();
         setTimeout(() => {
             updateDashboard();
             console.log('Dashboard updated after attendance load');
@@ -961,8 +964,18 @@ function initializeTodayAttendance() {
 
 async function loadTodayAttendance() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('attendanceDate').value = today;
+    const attendanceDateInput = document.getElementById('attendanceDate');
+    attendanceDateInput.value = today;
+    attendanceDateInput.max = today; // Set max date to today
     await loadAttendanceForDate();
+}
+
+function updateDateInputMax() {
+    const today = new Date().toISOString().split('T')[0];
+    const attendanceDateInput = document.getElementById('attendanceDate');
+    if (attendanceDateInput) {
+        attendanceDateInput.max = today;
+    }
 }
 
 async function loadAttendanceForDate() {
@@ -971,6 +984,16 @@ async function loadAttendanceForDate() {
     
     if (!selectedDate) {
         showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    // Check if selected date is in the future
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const selectedDateObj = new Date(selectedDate);
+    
+    if (selectedDateObj > today) {
+        showModal(t('error'), t('cannotTakeAttendanceForFutureDate'));
         return;
     }
     
@@ -1972,9 +1995,10 @@ function generateStudentDetailContent(student) {
                         <h5>${t('totalPresent')}</h5>
                         <div class="number">${attendanceStats.present}</div>
                     </div>
-                    <div class="summary-item absent">
+                    <div class="summary-item absent clickable" onclick="showAbsentDaysModal('${student.id}', '${startDateStr}', '${endDateStr}')">
                         <h5>${t('totalAbsent')}</h5>
                         <div class="number">${attendanceStats.absent}</div>
+                        <small class="click-hint">${t('clickToViewDetails')}</small>
                     </div>
                     <div class="summary-item">
                         <h5>${t('leaveDays')}</h5>
@@ -1983,33 +2007,6 @@ function generateStudentDetailContent(student) {
                     <div class="summary-item">
                         <h5>${t('attendanceRate')}</h5>
                         <div class="number">${attendanceStats.attendanceRate}%</div>
-                    </div>
-                </div>
-                
-                <div class="attendance-calendar">
-                    <div class="calendar-header">
-                        <h5>${t('attendanceCalendar')}</h5>
-                    </div>
-                    <div class="student-calendar-navigation">
-                        <button onclick="navigateStudentCalendar(-1)" class="nav-btn" title="Previous Month">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <div class="month-year-display">
-                            <select id="studentMonthSelector" onchange="changeStudentCalendarMonth()" class="month-selector">
-                                ${generateMonthOptions()}
-                            </select>
-                            <input type="number" id="studentYearSelector" value="${currentStudentDetailYear}" min="2020" max="2030" 
-                                   onchange="changeStudentCalendarYear()" class="year-selector">
-                </div>
-                        <button onclick="navigateStudentCalendar(1)" class="nav-btn" title="Next Month">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                        <button onclick="goToCurrentMonthStudent()" class="nav-btn today-btn" title="Go to Current Month">
-                            <i class="fas fa-calendar-day"></i>
-                        </button>
-                    </div>
-                    <div id="studentCalendarContainer">
-                        ${generateStudentAttendanceCalendar(student, currentStudentDetailMonth, currentStudentDetailYear)}
                     </div>
                 </div>
             </div>
@@ -2068,128 +2065,101 @@ function calculateStudentAttendanceStats(student, startDate, endDate) {
     };
 }
 
-function generateMonthOptions() {
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    return monthNames.map((month, index) => 
-        `<option value="${index}" ${index === currentStudentDetailMonth ? 'selected' : ''}>${month}</option>`
-    ).join('');
-}
+function getStudentAbsentDays(studentId, startDate, endDate) {
+    const absentDays = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-function generateStudentAttendanceCalendar(student, month, year) {
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    // Get first day of the month and days in month
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
-    
-    let calendarHTML = '<div class="calendar-grid">';
-    
-    // Add day headers
-    daysOfWeek.forEach(day => {
-        calendarHTML += `<div class="calendar-day header">${day}</div>`;
-    });
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDayOfWeek; i++) {
-        calendarHTML += '<div class="calendar-day empty"></div>';
-    }
-    
-    // Generate calendar days
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        // Use local date to avoid timezone issues with toISOString()
-        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        const today = new Date();
-        
-        let className = 'calendar-day no-data';
-        let title = `${dateStr} - No data`;
-        
-        // Check if it's a future date
-        if (date > today) {
-            className = 'calendar-day future-day';
-            title = `${dateStr} - Future date`;
-        } else if (isHoliday(dateStr)) {
-                className = 'calendar-day holiday';
-            title = `${dateStr} - Holiday: ${getHolidayName(dateStr)}`;
-        } else if (attendance[dateStr] && attendance[dateStr][student.id]) {
-            const record = attendance[dateStr][student.id];
-            className = `calendar-day ${record.status}`;
-            title = `${dateStr} - ${record.status}`;
-            if (record.reason) {
-                title += ` (${record.reason})`;
-            }
+    for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        if (isHoliday(dateStr)) {
+            continue;
         }
         
-        calendarHTML += `<div class="${className}" title="${title}">${day}</div>`;
-    }
-    
-    calendarHTML += '</div>';
-    return calendarHTML;
-}
-
-// Student calendar navigation functions
-function navigateStudentCalendar(direction) {
-    currentStudentDetailMonth += direction;
-    
-    if (currentStudentDetailMonth > 11) {
-        currentStudentDetailMonth = 0;
-        currentStudentDetailYear++;
-    } else if (currentStudentDetailMonth < 0) {
-        currentStudentDetailMonth = 11;
-        currentStudentDetailYear--;
-    }
-    
-    refreshStudentCalendar();
-}
-
-function changeStudentCalendarMonth() {
-    const monthSelector = document.getElementById('studentMonthSelector');
-    if (monthSelector) {
-        currentStudentDetailMonth = parseInt(monthSelector.value);
-        refreshStudentCalendar();
-    }
-}
-
-function changeStudentCalendarYear() {
-    const yearSelector = document.getElementById('studentYearSelector');
-    if (yearSelector) {
-        currentStudentDetailYear = parseInt(yearSelector.value);
-        refreshStudentCalendar();
-    }
-}
-
-function refreshStudentCalendar() {
-    if (currentStudentData) {
-        const calendarContainer = document.getElementById('studentCalendarContainer');
-        const monthSelector = document.getElementById('studentMonthSelector');
-        const yearSelector = document.getElementById('studentYearSelector');
-        
-        if (calendarContainer) {
-            calendarContainer.innerHTML = generateStudentAttendanceCalendar(currentStudentData, currentStudentDetailMonth, currentStudentDetailYear);
+        // Only include days where attendance was recorded
+        if (!attendance[dateStr] || Object.keys(attendance[dateStr]).length === 0) {
+            continue;
         }
-        
-        if (monthSelector) {
-            monthSelector.innerHTML = generateMonthOptions();
-        }
-        
-        if (yearSelector) {
-            yearSelector.value = currentStudentDetailYear;
+
+        const record = attendance[dateStr] ? attendance[dateStr][studentId] : null;
+
+        if (record && record.status === 'absent') {
+            absentDays.push({
+                date: dateStr,
+                reason: record.reason || '',
+                formattedDate: formatDate(dateStr)
+            });
+        } else if (!record) {
+            // If attendance was recorded for the day but the student has no record,
+            // they are considered absent for that day's report.
+            absentDays.push({
+                date: dateStr,
+                reason: '',
+                formattedDate: formatDate(dateStr)
+            });
         }
     }
+    
+    return absentDays;
 }
 
-function goToCurrentMonthStudent() {
+function showAbsentDaysModal(studentId, startDate, endDate) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const absentDays = getStudentAbsentDays(studentId, startDate, endDate);
+    
+    let periodLabel;
     const today = new Date();
-    currentStudentDetailMonth = today.getMonth();
-    currentStudentDetailYear = today.getFullYear();
-    refreshStudentCalendar();
+    const endDateStr_today = today.toISOString().split('T')[0];
+    
+    if (currentSummaryPeriod === 'last30Days') {
+        periodLabel = t('last30Days');
+    } else {
+        periodLabel = t('fromBeginning');
+    }
+
+    let absentDaysHTML = '';
+    if (absentDays.length === 0) {
+        absentDaysHTML = `<p class="no-absent-days">${t('noAbsentDays')}</p>`;
+    } else {
+        absentDaysHTML = `
+            <div class="absent-days-list">
+                ${absentDays.map(day => `
+                    <div class="absent-day-item">
+                        <div class="absent-date">${day.formattedDate}</div>
+                        ${day.reason ? `<div class="absent-reason">${t('reason')}: ${day.reason}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    const modalContent = `
+        <div class="modal-content absent-days-modal">
+            <div class="modal-header">
+                <h3>${t('absentDays')} - ${student.name}</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="period-info">
+                    <p><strong>${t('period')}:</strong> ${periodLabel}</p>
+                    <p><strong>${t('totalAbsentDays')}:</strong> ${absentDays.length}</p>
+                </div>
+                ${absentDaysHTML}
+            </div>
+        </div>
+    `;
+
+    showModal('', modalContent);
 }
+
+
+
+
+
+
 
 function changeSummaryPeriod(period) {
     currentSummaryPeriod = period;
@@ -2538,8 +2508,8 @@ function generateCalendarDays(year, month, startDayOfWeek, daysInMonth) {
         }
         // Check if it's a future date (after checking attendance status)
         else if (date > today) {
-            dayClass += ' future-day';
-            dayTitle = 'Future date';
+            dayClass += ' future-day disabled';
+            dayTitle = 'Future date - Cannot take attendance';
         }
         // School day but no attendance taken
         else {
