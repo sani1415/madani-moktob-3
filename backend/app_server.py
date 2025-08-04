@@ -15,21 +15,18 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import SQLite database adapter
-from sqlite_database import SQLiteDatabase
-
-# Import Cloud SQL database adapter (only when needed)
-def import_cloud_sql():
-    logger.info("🔍 Attempting to import Cloud SQL database module...")
+# Import MySQL database adapter
+def import_mysql():
+    logger.info("🔍 Attempting to import MySQL database module...")
     try:
-        from cloud_sql_database import CloudSQLDatabase
-        logger.info("✅ Successfully imported CloudSQLDatabase")
-        return CloudSQLDatabase
+        from mysql_database import MySQLDatabase
+        logger.info("✅ Successfully imported MySQLDatabase")
+        return MySQLDatabase
     except ImportError as e:
-        logger.error(f"❌ Failed to import Cloud SQL database: {e}")
+        logger.error(f"❌ Failed to import MySQL database: {e}")
         return None
     except Exception as e:
-        logger.error(f"❌ Unexpected error importing Cloud SQL database: {e}")
+        logger.error(f"❌ Unexpected error importing MySQL database: {e}")
         return None
 
 # ✅ Fixed: Use correct path to frontend for ExonHost
@@ -60,26 +57,24 @@ def get_database():
         logger.info("🌐 All required Cloud SQL environment variables are present")
         logger.info("🔍 Attempting to use MySQL database...")
 
-        CloudSQLDatabase = import_cloud_sql()
-        if CloudSQLDatabase is None:
-            logger.error("❌ Cloud SQL database not available. Please install mysql-connector-python")
+        MySQLDatabase = import_mysql()
+        if MySQLDatabase is None:
+            logger.error("❌ MySQL database not available. Please install mysql-connector-python")
             logger.info("💡 Run: pip install mysql-connector-python")
-            logger.info("🔄 Falling back to SQLite database")
-            return SQLiteDatabase()
+            raise Exception("MySQL database is required")
 
-        logger.info("🔍 Attempting to instantiate CloudSQLDatabase...")
+        logger.info("🔍 Attempting to instantiate MySQLDatabase...")
         try:
-            cloud_db = CloudSQLDatabase()
-            logger.info("✅ Successfully created CloudSQLDatabase instance")
-            return cloud_db
+            mysql_db = MySQLDatabase()
+            logger.info("✅ Successfully created MySQLDatabase instance")
+            return mysql_db
         except Exception as e:
-            logger.error(f"❌ Failed to create CloudSQLDatabase instance: {e}")
-            logger.info("🔄 Falling back to SQLite database")
-            return SQLiteDatabase()
+            logger.error(f"❌ Failed to create MySQLDatabase instance: {e}")
+            raise Exception(f"Failed to connect to MySQL: {e}")
     else:
-        logger.info("💾 Cloud SQL environment variables not found")
-        logger.info("💾 Using SQLite database (local development)")
-        return SQLiteDatabase()
+        logger.info("💾 MySQL environment variables not found")
+        logger.info("💾 MySQL environment variables are required")
+        raise Exception("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
 
 # Initialize database
 db = get_database()
@@ -92,15 +87,6 @@ def serve_index():
 @app.route('/<path:filename>')
 def serve_static(filename):
     return send_from_directory(FRONTEND_PATH, filename)
-
-# Serve frontend files
-@app.route('/')
-def serve_index_main():
-    return send_from_directory('../frontend', 'index.html')
-
-@app.route('/<path:filename>')
-def serve_static_file(filename):
-    return send_from_directory('../frontend', filename)
 
 # API Routes
 @app.route('/api/students', methods=['GET'])
@@ -326,10 +312,10 @@ def health():
         students = db.get_students()
         
         # Determine database type based on the database instance
-        if hasattr(db, '__class__') and 'CloudSQL' in db.__class__.__name__:
+        if hasattr(db, '__class__') and 'MySQL' in db.__class__.__name__:
             database_type = "MySQL Database"
         else:
-            database_type = "SQLite Database"
+            database_type = "Unknown Database"
         
         return jsonify({
             'status': 'healthy',

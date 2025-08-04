@@ -91,10 +91,10 @@ def test_connection():
     try:
         # Import the database module
         sys.path.append('backend')
-        from cloud_sql_database import CloudSQLDatabase
+        from mysql_database import MySQLDatabase
         
         # Test connection
-        db = CloudSQLDatabase()
+        db = MySQLDatabase()
         conn = db.get_connection()
         conn.close()
         

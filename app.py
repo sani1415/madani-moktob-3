@@ -65,9 +65,9 @@ def start_server():
     print("\n💡 Press Ctrl+C to stop the server")
     print("="*50)
     
-    # Change to backend directory and run the cloud server
+    # Change to backend directory and run the app server
     os.chdir('backend')
-    subprocess.run([sys.executable, "cloud_server.py"])
+    subprocess.run([sys.executable, "app_server.py"])
 
 def main():
     print("🕌 Madani Maktab - Islamic School Attendance Management System")
@@ -75,8 +75,8 @@ def main():
     print("="*60)
     
     # Check if we're in the right directory
-    if not os.path.exists('backend/cloud_server.py'):
-        print("❌ Error: backend/cloud_server.py not found!")
+    if not os.path.exists('backend/app_server.py'):
+        print("❌ Error: backend/app_server.py not found!")
         print("Make sure you're running this script from the project root directory")
         return
     

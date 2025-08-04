@@ -14,9 +14,9 @@ from mysql.connector import Error
 # Configure logging
 logger = logging.getLogger(__name__)
 
-class CloudSQLDatabase:
+class MySQLDatabase:
     def __init__(self):
-        logger.info("🔍 CloudSQLDatabase: Starting initialization...")
+        logger.info("🔍 MySQLDatabase: Starting initialization...")
         # Get database connection details from environment variables
         self.db_config = {
             'host': os.getenv('DB_HOST', 'localhost'),
@@ -29,18 +29,18 @@ class CloudSQLDatabase:
             'use_unicode': True
         }
         
-        logger.info("🔍 CloudSQLDatabase: Configuration loaded:")
+        logger.info("🔍 MySQLDatabase: Configuration loaded:")
         logger.info(f"   Host: {self.db_config['host']}")
         logger.info(f"   User: {self.db_config['user']}")
         logger.info(f"   Database: {self.db_config['database']}")
         logger.info(f"   Port: {self.db_config['port']}")
         logger.info(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
         
-        logger.info("✅ CloudSQLDatabase: Initialization completed successfully (lazy connection)")
+        logger.info("✅ MySQLDatabase: Initialization completed successfully (lazy connection)")
     
     def get_connection(self):
         """Get a database connection"""
-        logger.info("🔍 CloudSQLDatabase: Attempting to connect to MySQL...")
+        logger.info("🔍 MySQLDatabase: Attempting to connect to MySQL...")
         try:
             # Add connection timeout to prevent hanging
             config = self.db_config.copy()
@@ -48,22 +48,22 @@ class CloudSQLDatabase:
             config['autocommit'] = True
             
             conn = mysql.connector.connect(**config)
-            logger.info("✅ CloudSQLDatabase: Successfully connected to MySQL")
+            logger.info("✅ MySQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
-            logger.error(f"❌ CloudSQLDatabase: Error connecting to MySQL: {e}")
+            logger.error(f"❌ MySQLDatabase: Error connecting to MySQL: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ CloudSQLDatabase: Unexpected error connecting to MySQL: {e}")
+            logger.error(f"❌ MySQLDatabase: Unexpected error connecting to MySQL: {e}")
             raise
     
     def _ensure_tables_exist(self):
         """Initialize database tables if they don't exist"""
-        logger.info("🔍 CloudSQLDatabase: Ensuring tables exist...")
+        logger.info("🔍 MySQLDatabase: Ensuring tables exist...")
         try:
-            logger.info("🔍 CloudSQLDatabase: Getting connection...")
+            logger.info("🔍 MySQLDatabase: Getting connection...")
             conn = self.get_connection()
-            logger.info("🔍 CloudSQLDatabase: Creating cursor...")
+            logger.info("🔍 MySQLDatabase: Creating cursor...")
             cursor = conn.cursor()
             
             # Create students table
