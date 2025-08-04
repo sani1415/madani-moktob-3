@@ -1,6 +1,6 @@
 # 🕌 Madani Maktab - Islamic School Attendance System
 
-A simple, beginner-friendly web application for managing student attendance in Islamic schools. Built with Python Flask and SQLite - a fast, reliable database that requires no complex setup!
+A comprehensive web application for managing student attendance in Islamic schools. Built with Python Flask and MySQL - providing robust, scalable data storage for growing educational institutions.
 
 ## ✨ Features
 
@@ -10,51 +10,62 @@ A simple, beginner-friendly web application for managing student attendance in I
 - 📊 **Smart Dashboard** - View attendance statistics by class
 - 🌐 **Bilingual Support** - English and Bengali (বাংলা)
 - 📱 **Mobile Friendly** - Works on phones, tablets, and computers
-- 💾 **Simple Storage** - Uses SQLite database (built into Python, no setup needed)
+- 💾 **Robust Storage** - Uses MySQL database for reliable data persistence
+- 🎓 **Education Progress** - Track book completion and learning progress
+- 📈 **Comprehensive Reports** - Detailed attendance and progress reports
 
 ## 🚀 Quick Start
 
-### 1. Run the Application
+### 1. Setup MySQL Database
+```bash
+# Run the MySQL setup script
+python setup_xampp_mysql.py
+```
+*This will create the database and configure your environment*
+
+### 2. Run the Application
 ```bash
 python app.py
 ```
-*This single command will automatically check and install requirements, then start the server*
+*This will start the server with MySQL database*
 
-### 2. Open in Browser
-Go to: **http://localhost:5000** (or check the port shown in terminal)
+### 3. Open in Browser
+Go to: **http://localhost:5000**
 
-### 3. Start Using
+### 4. Start Using
 - Register students in the "Student Registration" section
 - Take daily attendance in the "Attendance" section  
 - View reports and statistics on the dashboard
+- Track education progress in the "Education" section
 
 ## 📁 Project Structure
 
 ```
 madani-moktob-3/
-├── 🚀 app.py                    # Single startup file
+├── 🚀 app.py                    # Main startup file
 ├── 📁 backend/
-│   ├── simple_server.py         # Flask web server
-│   ├── sqlite_database.py       # SQLite database management
-│   ├── migrate_to_sqlite.py     # Migration tool (if upgrading from JSON)
-│   └── 📁 tests/                # Test files
-├── � madani_moktob.db          # SQLite database file
+│   ├── app_server.py            # Flask web server
+│   ├── mysql_database.py        # MySQL database management
+│   └── passenger_wsgi.py        # cPanel production entry point
 ├── 📁 frontend/                 # Web interface files
 │   ├── index.html              # Main webpage
 │   ├── style.css               # Styling
 │   ├── script.js               # Main functionality
 │   ├── hijri.js                # Islamic calendar
-│   ├── translations.js         # Language support
-│   └── db_adapter.js           # Database connector
+│   └── translations.js         # Language support
+├── setup_xampp_mysql.py        # MySQL setup utility
+├── passenger_wsgi.py           # cPanel WSGI entry point
+├── .cpanel.yml                 # cPanel deployment config
 └── requirements.txt            # Python dependencies
 ```
 
 ## 🛠️ Technology
 
-- **Backend**: Python Flask (simple web server)
-- **Frontend**: HTML, CSS, JavaScript (easy to understand)
-- **Database**: SQLite (fast, reliable, built into Python)
+- **Backend**: Python Flask (robust web server)
+- **Frontend**: HTML, CSS, JavaScript (modern web interface)
+- **Database**: MySQL (enterprise-grade database)
 - **Calendar**: Custom Hijri calendar system
+- **Hosting**: cPanel compatible (Exxon host)
 
 ## 📖 How to Use
 
@@ -70,6 +81,12 @@ madani-moktob-3/
 4. Mark each student Present/Absent
 5. Click "Save Attendance"
 
+### Tracking Education Progress
+1. Go to "Education Progress" section
+2. Add books and subjects for each class
+3. Track completed pages
+4. Monitor learning progress
+
 ### Viewing Reports
 1. Go to "Reports" section
 2. Select date range
@@ -84,40 +101,41 @@ madani-moktob-3/
 
 ## 🔧 System Requirements
 
-- **Python 3.8+** (most computers have this)
+- **Python 3.8+**
+- **MySQL Database** (XAMPP for local development)
 - **Modern web browser** (Chrome, Firefox, Safari, Edge)
-- **Basic computer skills** (no technical expertise needed)
+- **cPanel hosting** (for production deployment)
 
 ## 💾 Data Storage
 
-All your data is stored in a single SQLite database file: `madani_moktob.db`
-- **students table** - All student information
-- **attendance table** - Daily attendance records  
-- **holidays table** - School holiday calendar
+All your data is stored in MySQL database with these tables:
+- **students** - All student information
+- **attendance** - Daily attendance records  
+- **holidays** - School holiday calendar
+- **education_progress** - Book completion tracking
 
-**Backup Tip**: Copy the `madani_moktob.db` file to backup all your information!
-
-### 🔄 Migrating from JSON
-If you were using the JSON version before, run this command to migrate your data:
-```bash
-cd backend
-python migrate_to_sqlite.py
-```
+**Backup Tip**: Use cPanel's database backup feature to backup your MySQL data!
 
 ## 🌟 Perfect For
 
 - ✅ Islamic schools and madrasas
 - ✅ Small to medium educational institutions  
-- ✅ Teachers with basic computer skills
-- ✅ Schools wanting simple attendance tracking
-- ✅ Institutions preferring local data storage
+- ✅ Schools needing reliable data storage
+- ✅ Institutions with multiple users
+- ✅ Schools wanting professional-grade system
 
-## 🌐 Deploy to the Web
+## 🌐 Deploy to Production
 
-Want to make your system available online? Choose your preferred platform:
+### cPanel Hosting (Recommended)
+1. Upload files to your cPanel hosting
+2. Create MySQL database in cPanel
+3. Configure environment variables
+4. Access your application online
 
-- **🚀 Render** - See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions (free hosting)
-- **🌐 Google Cloud** - See [DEPLOYMENT-GCP.md](DEPLOYMENT-GCP.md) for Google Cloud Platform deployment (App Engine & Cloud Run)
+### Local Development
+- Use XAMPP for local MySQL database
+- Run `python app.py` for development server
+- Access at `http://localhost:5000`
 
 ## 🤲 Islamic Features
 
@@ -129,13 +147,33 @@ Want to make your system available online? Choose your preferred platform:
 ## 📞 Getting Help
 
 If you encounter any issues:
-1. Make sure Python is installed on your computer
-2. Check that you're using the correct browser address
-3. Verify all files are in the correct folders
-4. Try refreshing your browser
+1. Check MySQL connection settings
+2. Verify environment variables are set
+3. Ensure all files are uploaded correctly
+4. Check cPanel error logs
+
+## 🔧 Development
+
+### Local Setup
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup MySQL database
+python setup_xampp_mysql.py
+
+# Run development server
+python app.py
+```
+
+### Production Deployment
+- Upload to cPanel hosting
+- Configure MySQL database
+- Set environment variables
+- Access via your domain
 
 ---
 
 **JazakAllahu Khairan** for using this system to serve Islamic education! 
 
-*This system was designed to be simple, reliable, and beneficial for the Muslim community.* 
+*This system provides enterprise-grade reliability for Islamic educational institutions.* 
