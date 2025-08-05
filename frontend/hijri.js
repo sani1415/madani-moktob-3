@@ -267,3 +267,32 @@ class HijriCalendar {
 
 // Create global instance
 window.hijriCalendar = new HijriCalendar();
+
+// Global function for backward compatibility
+function getHijriDate(gregorianDateString, adjustment = 0) {
+    if (!window.hijriCalendar) {
+        console.error('Hijri calendar not initialized');
+        return { year: 0, month: 1, day: 1, monthName: 'Unknown' };
+    }
+    
+    // Apply adjustment if provided
+    if (adjustment !== 0) {
+        const originalAdjustment = window.hijriCalendar.getAdjustment();
+        window.hijriCalendar.setAdjustment(adjustment);
+        const hijriDate = window.hijriCalendar.gregorianToHijri(new Date(gregorianDateString));
+        window.hijriCalendar.setAdjustment(originalAdjustment);
+        return {
+            ...hijriDate,
+            monthName: window.hijriCalendar.monthNames.en[hijriDate.month - 1]
+        };
+    }
+    
+    const hijriDate = window.hijriCalendar.gregorianToHijri(new Date(gregorianDateString));
+    return {
+        ...hijriDate,
+        monthName: window.hijriCalendar.monthNames.en[hijriDate.month - 1]
+    };
+}
+
+// Make getHijriDate globally available
+window.getHijriDate = getHijriDate;
