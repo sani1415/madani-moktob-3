@@ -106,12 +106,23 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create books table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS books (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    book_name VARCHAR(255) NOT NULL,
+                    class_id INT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
             # Create education progress table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS education_progress (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     class_name VARCHAR(50) NOT NULL,
                     subject_name VARCHAR(100) NOT NULL,
+                    book_id INT,
                     book_name VARCHAR(255) NOT NULL,
                     total_pages INT NOT NULL,
                     completed_pages INT DEFAULT 0,
@@ -119,7 +130,8 @@ class MySQLDatabase:
                     notes TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_class_subject_book (class_name, subject_name, book_name)
+                    UNIQUE KEY unique_class_subject_book (class_name, subject_name, book_name),
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
@@ -630,4 +642,95 @@ class MySQLDatabase:
             
         except Error as e:
             print(f"Error deleting all education progress: {e}")
+            raise
+
+    # Book Management Methods
+    def get_books(self, class_id=None):
+        """Get all books or books for a specific class"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            if class_id:
+                cursor.execute('SELECT * FROM books WHERE class_id = %s ORDER BY book_name', (class_id,))
+            else:
+                cursor.execute('SELECT * FROM books ORDER BY book_name')
+            
+            books = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return books
+            
+        except Error as e:
+            print(f"Error getting books: {e}")
+            raise
+    
+    def add_book(self, book_name, class_id=None):
+        """Add a new book"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('INSERT INTO books (book_name, class_id) VALUES (%s, %s)', (book_name, class_id))
+            book_id = cursor.lastrowid
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return book_id
+            
+        except Error as e:
+            print(f"Error adding book: {e}")
+            raise
+    
+    def update_book(self, book_id, book_name, class_id=None):
+        """Update an existing book"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('UPDATE books SET book_name = %s, class_id = %s WHERE id = %s', 
+                         (book_name, class_id, book_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error updating book: {e}")
+            raise
+    
+    def delete_book(self, book_id):
+        """Delete a book"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM books WHERE id = %s', (book_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error deleting book: {e}")
+            raise
+    
+    def get_book_by_id(self, book_id):
+        """Get a specific book by ID"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('SELECT * FROM books WHERE id = %s', (book_id,))
+            book = cursor.fetchone()
+            
+            cursor.close()
+            conn.close()
+            return book
+            
+        except Error as e:
+            print(f"Error getting book by ID: {e}")
             raise

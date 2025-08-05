@@ -1,0 +1,18 @@
+# Feature Request Rule (Token Optimized)
+
+When user requests a new feature, respond with this structure BEFORE coding:
+
+## 🎯 [Feature Name]
+**Purpose:** [One sentence description]
+
+## 🔍 Implementation Plan
+- **Files to modify:** [List key files]
+- **New components:** [If any]
+- **Database changes:** [If needed]
+
+## ⚠️ Considerations
+- **Challenges:** [Key risks/issues]
+- **Impact:** [On existing functionality]
+
+## ❓ Permission
+Proceed with this approach? [Yes/No/Modify]

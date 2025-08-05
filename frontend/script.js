@@ -76,6 +76,7 @@ async function initializeAppWithDatabase() {
         updateClassDropdowns();
         displayClasses();
         displayHolidays();
+        await loadBooks();
         
         // Set today's date
         const today = new Date().toISOString().split('T')[0];
@@ -234,6 +235,10 @@ async function showSection(sectionId, event) {
         }
     } else if (sectionId === 'education') {
         await loadEducationProgress();
+    } else if (sectionId === 'settings') {
+        displayClasses();
+        displayHolidays();
+        await loadBooks(); // Load books when settings section is shown
     }
 }
 
@@ -4144,17 +4149,26 @@ function hideAddBookForm() {
 }
 
 async function addBookProgress() {
+    const bookId = document.getElementById('bookName').value;
+    const selectedBook = books.find(book => book.id == bookId);
+    
+    if (!selectedBook) {
+        showModal('Error', 'Please select a book from the dropdown.');
+        return;
+    }
+    
     const formData = {
         class_name: document.getElementById('bookClass').value,
         subject_name: document.getElementById('bookSubject').value,
-        book_name: document.getElementById('bookName').value,
+        book_id: parseInt(bookId),
+        book_name: selectedBook.book_name,
         total_pages: parseInt(document.getElementById('totalPages').value),
         completed_pages: parseInt(document.getElementById('completedPages').value) || 0,
         notes: document.getElementById('bookNotes').value
     };
     
     // Validation
-    if (!formData.class_name || !formData.subject_name || !formData.book_name || !formData.total_pages) {
+    if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
         showModal('Error', 'Please fill in all required fields.');
         return;
     }
@@ -4300,7 +4314,7 @@ function editBookDetails(bookId) {
     document.getElementById('editBookId').value = book.id;
     document.getElementById('editBookClass').value = book.class_name;
     document.getElementById('editBookSubject').value = book.subject_name;
-    document.getElementById('editBookName').value = book.book_name;
+    document.getElementById('editBookName').value = book.book_id || '';
     document.getElementById('editTotalPages').value = book.total_pages;
     document.getElementById('editCompletedPages').value = book.completed_pages;
     document.getElementById('editBookNotes').value = book.notes || '';
@@ -4315,18 +4329,27 @@ function closeEditBookModal() {
 }
 
 async function updateBookDetails() {
-    const bookId = document.getElementById('editBookId').value;
+    const progressId = document.getElementById('editBookId').value;
+    const bookId = document.getElementById('editBookName').value;
+    const selectedBook = books.find(book => book.id == bookId);
+    
+    if (!selectedBook) {
+        showModal('Error', 'Please select a book from the dropdown.');
+        return;
+    }
+    
     const formData = {
         class_name: document.getElementById('editBookClass').value,
         subject_name: document.getElementById('editBookSubject').value,
-        book_name: document.getElementById('editBookName').value,
+        book_id: parseInt(bookId),
+        book_name: selectedBook.book_name,
         total_pages: parseInt(document.getElementById('editTotalPages').value),
         completed_pages: parseInt(document.getElementById('editCompletedPages').value) || 0,
         notes: document.getElementById('editBookNotes').value
     };
     
     // Validation
-    if (!formData.class_name || !formData.subject_name || !formData.book_name || !formData.total_pages) {
+    if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
         showModal('Error', 'Please fill in all required fields.');
         return;
     }
@@ -4337,7 +4360,7 @@ async function updateBookDetails() {
     }
     
     try {
-        const response = await fetch(`/api/education/${bookId}/edit`, {
+        const response = await fetch(`/api/education/${progressId}/edit`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -4393,20 +4416,304 @@ function showDeleteAllEducationModal() {
 
 async function deleteAllEducationData() {
     try {
+        const confirmed = confirm('Are you sure you want to delete all education progress data? This action cannot be undone.');
+        if (!confirmed) return;
+        
         const response = await fetch('/api/education/all', {
             method: 'DELETE'
         });
         
         if (response.ok) {
-            showModal(t('success'), t('allEducationDataDeleted'));
-            closeModal();
+            showModal('Success', 'All education progress data deleted successfully');
             await loadEducationProgress();
         } else {
             const error = await response.json();
-            showModal(t('error'), error.error || t('failedToDeleteAllEducation'));
+            showModal('Error', error.error || 'Failed to delete education data');
         }
     } catch (error) {
-        console.error('Error deleting all education data:', error);
-        showModal('Error', 'Network error. Please try again.');
+        console.error('Error deleting education data:', error);
+        showModal('Error', 'Failed to delete education data');
     }
 }
+
+// Book Management Functions
+let books = []; // Global books array
+
+async function loadBooks() {
+    try {
+        console.log('Loading books...');
+        const response = await fetch('/api/books');
+        console.log('Response status:', response.status);
+        
+        if (response.ok) {
+            books = await response.json();
+            console.log('Books loaded:', books);
+            displayBooks();
+            updateBookDropdowns();
+        } else {
+            console.error('Failed to load books, status:', response.status);
+        }
+    } catch (error) {
+        console.error('Error loading books:', error);
+    }
+}
+
+function displayBooks() {
+    // Display books in settings section
+    const settingsBooksList = document.getElementById('settingsBooksList');
+    if (settingsBooksList) {
+        console.log('Displaying books in settings:', books);
+        console.log('Books count:', books.length);
+        
+        if (books.length === 0) {
+            settingsBooksList.innerHTML = '<p class="no-data">No books added yet. Add your first book above.</p>';
+        } else {
+            settingsBooksList.innerHTML = books.map(book => `
+                <div class="book-item" data-book-id="${book.id}">
+                    <div class="book-info">
+                        <h4>${book.book_name}</h4>
+                        <p class="book-class">${book.class_id ? getClassNameById(book.class_id) : 'All Classes'}</p>
+                    </div>
+                    <div class="book-actions">
+                        <button onclick="editBook(${book.id})" class="btn btn-secondary btn-small">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button onclick="deleteBook(${book.id})" class="btn btn-danger btn-small">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } else {
+        console.error('settingsBooksList element not found');
+    }
+}
+
+function getClassNameById(classId) {
+    const classMap = {
+        1: 'প্রথম শ্রেণি',
+        2: 'দ্বিতীয় শ্রেণি',
+        3: 'তৃতীয় শ্রেণি',
+        4: 'চতুর্থ শ্রেণি',
+        5: 'পঞ্চম শ্রেণি'
+    };
+    return classMap[classId] || 'Unknown Class';
+}
+
+function getClassIdByName(className) {
+    const classMap = {
+        'প্রথম শ্রেণি': 1,
+        'দ্বিতীয় শ্রেণি': 2,
+        'তৃতীয় শ্রেণি': 3,
+        'চতুর্থ শ্রেণি': 4,
+        'পঞ্চম শ্রেণি': 5
+    };
+    return classMap[className] || null;
+}
+
+async function addBook() {
+    const bookName = document.getElementById('newBookName').value.trim();
+    const classId = document.getElementById('newBookClass').value || null;
+    
+    if (!bookName) {
+        showModal('Error', 'Please enter a book name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/books', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                book_name: bookName,
+                class_id: classId
+            })
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book added successfully');
+            document.getElementById('newBookName').value = '';
+            document.getElementById('newBookClass').value = '';
+            await loadBooks();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to add book');
+        }
+    } catch (error) {
+        console.error('Error adding book:', error);
+        showModal('Error', 'Failed to add book');
+    }
+}
+
+async function editBook(bookId) {
+    console.log('Edit book called with ID:', bookId);
+    const book = books.find(b => b.id === bookId);
+    if (!book) {
+        console.error('Book not found with ID:', bookId);
+        return;
+    }
+    
+    console.log('Found book:', book);
+    
+    const editBookId = document.getElementById('bookManagementEditId');
+    const editBookName = document.getElementById('bookManagementEditName');
+    const editBookClass = document.getElementById('bookManagementEditClass');
+    const editBookModal = document.getElementById('bookManagementEditModal');
+    
+    if (!editBookId || !editBookName || !editBookClass || !editBookModal) {
+        console.error('Edit modal elements not found');
+        return;
+    }
+    
+    editBookId.value = book.id;
+    editBookName.value = book.book_name;
+    editBookClass.value = book.class_id || '';
+    
+    console.log('Populated form with:', {
+        id: editBookId.value,
+        name: editBookName.value,
+        class: editBookClass.value
+    });
+    
+    // Show the modal
+    editBookModal.style.display = 'block';
+    console.log('Modal should be visible now');
+}
+
+function closeBookManagementEditModal() {
+    document.getElementById('bookManagementEditModal').style.display = 'none';
+    document.getElementById('bookManagementEditForm').reset();
+}
+
+async function updateBook() {
+    console.log('Update book function called');
+    
+    const bookId = document.getElementById('bookManagementEditId').value;
+    const bookName = document.getElementById('bookManagementEditName').value.trim();
+    const classId = document.getElementById('bookManagementEditClass').value || null;
+    
+    console.log('Form values:', { bookId, bookName, classId });
+    
+    if (!bookName) {
+        showModal('Error', 'Please enter a book name');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/books/${bookId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                book_name: bookName,
+                class_id: classId
+            })
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book updated successfully');
+            closeBookManagementEditModal();
+            await loadBooks();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to update book');
+        }
+    } catch (error) {
+        console.error('Error updating book:', error);
+        showModal('Error', 'Failed to update book');
+    }
+}
+
+async function deleteBook(bookId) {
+    const confirmed = confirm('Are you sure you want to delete this book? This action cannot be undone.');
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch(`/api/books/${bookId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showModal('Success', 'Book deleted successfully');
+            await loadBooks();
+        } else {
+            const error = await response.json();
+            showModal('Error', error.error || 'Failed to delete book');
+        }
+    } catch (error) {
+        console.error('Error deleting book:', error);
+        showModal('Error', 'Failed to delete book');
+    }
+}
+
+function updateBookDropdowns() {
+    // Update main book dropdown
+    const bookDropdown = document.getElementById('bookName');
+    if (bookDropdown) {
+        bookDropdown.innerHTML = '<option value="">Select Book</option>' + 
+            books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+    }
+    
+    // Update edit book dropdown
+    const editBookDropdown = document.getElementById('editBookName');
+    if (editBookDropdown) {
+        editBookDropdown.innerHTML = '<option value="">Select Book</option>' + 
+            books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+    }
+}
+
+async function loadBooksForClass(classId) {
+    try {
+        const url = classId ? `/api/books/class/${classId}` : '/api/books';
+        const response = await fetch(url);
+        if (response.ok) {
+            const classBooks = await response.json();
+            return classBooks;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading books for class:', error);
+        return [];
+    }
+}
+
+async function updateBookDropdownForClass(classId) {
+    const bookDropdown = document.getElementById('bookName');
+    if (!bookDropdown) return;
+    
+    const classBooks = await loadBooksForClass(classId);
+    bookDropdown.innerHTML = '<option value="">Select Book</option>' + 
+        classBooks.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+}
+
+// Event listeners for book management
+document.addEventListener('DOMContentLoaded', function() {
+    // Load books when page loads
+    loadBooks();
+    
+    // Add event listener for book management form submission
+    const bookManagementEditForm = document.getElementById('bookManagementEditForm');
+    if (bookManagementEditForm) {
+        console.log('Book management edit form found, adding event listener');
+        bookManagementEditForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Book management edit form submitted');
+            updateBook();
+        });
+    } else {
+        console.error('Book management edit form not found');
+    }
+    
+    // Add event listener for class selection change in education form
+    const bookClassSelect = document.getElementById('bookClass');
+    if (bookClassSelect) {
+        bookClassSelect.addEventListener('change', function() {
+            const classId = getClassIdByName(this.value);
+            updateBookDropdownForClass(classId);
+        });
+    }
+});

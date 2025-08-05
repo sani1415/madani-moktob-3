@@ -3120,3 +3120,154 @@ body {
         flex-direction: column;
     }
 }
+
+/* Book Management Styles */
+.book-management {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.add-book {
+    margin-bottom: 20px;
+}
+
+.add-book .form-row {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+}
+
+.add-book .form-group {
+    flex: 1;
+}
+
+.add-book .form-group:last-child {
+    flex: 0 0 auto;
+}
+
+.books-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.book-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.book-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+}
+
+.book-info h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.book-class {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0;
+}
+
+.book-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.book-actions .btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.no-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Book Edit Modal Styles */
+#editBookModal .modal-content,
+#bookManagementEditModal .modal-content {
+    max-width: 600px;
+    width: 90%;
+}
+
+#editBookModal .modal-header,
+#bookManagementEditModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+#editBookModal .modal-header h3,
+#bookManagementEditModal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 20px;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.form-actions .btn {
+    min-width: 100px;
+}
+
+/* Responsive Design for Book Management */
+@media (max-width: 768px) {
+    .add-book .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .add-book .form-group:last-child {
+        flex: 1;
+    }
+    
+    .book-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .book-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    #editBookModal .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}

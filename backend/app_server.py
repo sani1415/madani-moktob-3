@@ -88,6 +88,10 @@ def serve_index():
 def serve_static(filename):
     return send_from_directory(FRONTEND_PATH, filename)
 
+@app.route('/test-books')
+def test_books():
+    return send_from_directory('.', 'test_frontend.html')
+
 # API Routes
 @app.route('/api/students', methods=['GET'])
 def get_students():
@@ -290,6 +294,79 @@ def delete_all_education_progress():
     try:
         db.delete_all_education_progress()
         return jsonify({'success': True, 'message': 'All education progress data deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Book Management API Endpoints
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    try:
+        class_id = request.args.get('class_id', type=int)
+        books = db.get_books(class_id)
+        return jsonify(books)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/books', methods=['POST'])
+def add_book():
+    try:
+        data = request.json
+        if not data or 'book_name' not in data:
+            return jsonify({'error': 'Book name is required'}), 400
+        
+        book_name = data['book_name']
+        class_id = data.get('class_id')
+        
+        book_id = db.add_book(book_name, class_id)
+        return jsonify({'success': True, 'book_id': book_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/books/<int:book_id>', methods=['PUT'])
+def update_book(book_id):
+    try:
+        data = request.json
+        if not data or 'book_name' not in data:
+            return jsonify({'error': 'Book name is required'}), 400
+        
+        book_name = data['book_name']
+        class_id = data.get('class_id')
+        
+        success = db.update_book(book_id, book_name, class_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update book'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/books/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    try:
+        success = db.delete_book(book_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to delete book'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/books/<int:book_id>', methods=['GET'])
+def get_book(book_id):
+    try:
+        book = db.get_book_by_id(book_id)
+        if book:
+            return jsonify(book)
+        else:
+            return jsonify({'error': 'Book not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/books/class/<int:class_id>', methods=['GET'])
+def get_books_by_class(class_id):
+    try:
+        books = db.get_books(class_id)
+        return jsonify(books)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

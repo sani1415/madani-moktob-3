@@ -438,7 +438,9 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="bookName">Book Name *</label>
-                                    <input type="text" id="bookName" placeholder="e.g., Primary Mathematics Book 1" required>
+                                    <select id="bookName" required>
+                                        <option value="">Select Book</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="totalPages">Total Pages *</label>
@@ -493,7 +495,9 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="editBookName">Book Name *</label>
-                                        <input type="text" id="editBookName" placeholder="e.g., Primary Mathematics Book 1" required>
+                                        <select id="editBookName" required>
+                                            <option value="">Select Book</option>
+                                        </select>
                                     </div>
                                     <div class="form-group">
                                         <label for="editTotalPages">Total Pages *</label>
@@ -581,6 +585,35 @@
                         </div>
                         <div id="classesList" class="classes-list">
                             <!-- Classes will be displayed here -->
+                        </div>
+                    </div>
+
+                    <h3>Manage Books</h3>
+                    <div class="book-management">
+                        <div class="add-book">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" id="newBookName" placeholder="Enter book name">
+                                </div>
+                                <div class="form-group">
+                                    <select id="newBookClass">
+                                        <option value="">All Classes</option>
+                                        <option value="1">প্রথম শ্রেণি</option>
+                                        <option value="2">দ্বিতীয় শ্রেণি</option>
+                                        <option value="3">তৃতীয় শ্রেণি</option>
+                                        <option value="4">চতুর্থ শ্রেণি</option>
+                                        <option value="5">পঞ্চম শ্রেণি</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <button onclick="addBook()" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Add Book
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="settingsBooksList" class="books-list">
+                            <!-- Books will be displayed here -->
                         </div>
                     </div>
 
@@ -713,6 +746,47 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Book Management Edit Modal -->
+    <div id="bookManagementEditModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Book</h3>
+                <button type="button" onclick="closeBookManagementEditModal()" class="btn btn-secondary btn-small">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="bookManagementEditForm" class="form">
+                <input type="hidden" id="bookManagementEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bookManagementEditName">Book Name *</label>
+                        <input type="text" id="bookManagementEditName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookManagementEditClass">Class</label>
+                        <select id="bookManagementEditClass">
+                            <option value="">All Classes</option>
+                            <option value="1">প্রথম শ্রেণি</option>
+                            <option value="2">দ্বিতীয় শ্রেণি</option>
+                            <option value="3">তৃতীয় শ্রেণি</option>
+                            <option value="4">চতুর্থ শ্রেণি</option>
+                            <option value="5">পঞ্চম শ্রেণি</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" onclick="closeBookManagementEditModal()" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
