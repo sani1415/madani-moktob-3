@@ -996,9 +996,25 @@ function clearAcademicYearStart() {
     }
 }
 
+function initializeAcademicYearStart() {
+    // Load academic year start date from localStorage
+    const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
+    if (savedStartDate) {
+        window.academicYearStartDate = savedStartDate;
+        console.log('Loaded academic year start date:', window.academicYearStartDate);
+        
+        // Update date restrictions
+        updateDateRestrictions();
+        
+        // Update display
+        displayAcademicYearStart();
+    }
+}
+
 function displayAcademicYearStart() {
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     const displaySpan = document.getElementById('academicYearStartDisplay');
+    const displayContainer = document.getElementById('currentAcademicYearDisplay');
     
     if (window.academicYearStartDate) {
         // Set the input value
@@ -1010,6 +1026,11 @@ function displayAcademicYearStart() {
         if (displaySpan) {
             displaySpan.textContent = formatDate(window.academicYearStartDate);
         }
+        
+        // Show the display container
+        if (displayContainer) {
+            displayContainer.style.display = 'block';
+        }
     } else {
         // Clear the input
         if (academicYearStartInput) {
@@ -1020,58 +1041,77 @@ function displayAcademicYearStart() {
         if (displaySpan) {
             displaySpan.textContent = 'Not set';
         }
+        
+        // Hide the display container
+        if (displayContainer) {
+            displayContainer.style.display = 'none';
+        }
     }
 }
 
 function updateDateRestrictions() {
     if (!window.academicYearStartDate) {
+        // Clear restrictions if no academic year start date is set
+        clearDateRestrictions();
         return;
     }
     
     console.log('Updating date restrictions from academic year start:', window.academicYearStartDate);
     
-    // Update attendance date input
-    const dateInput = document.getElementById('attendanceDate');
-    if (dateInput) {
-        dateInput.min = window.academicYearStartDate;
-        if (dateInput.value && dateInput.value < window.academicYearStartDate) {
-            dateInput.value = window.academicYearStartDate;
-        }
-        console.log(`Set minimum date for attendanceDate to ${window.academicYearStartDate}`);
-    }
+    // List of date input IDs that should be restricted
+    const dateInputIds = [
+        'reportStartDate',
+        'reportEndDate',
+        'attendanceDate',
+        'holidayStartDate',
+        'holidayEndDate'
+    ];
     
-    // Update holiday date inputs
-    const holidayDateInput = document.getElementById('holidayDate');
-    if (holidayDateInput) {
-        holidayDateInput.min = window.academicYearStartDate;
-        if (holidayDateInput.value && holidayDateInput.value < window.academicYearStartDate) {
-            holidayDateInput.value = window.academicYearStartDate;
+    dateInputIds.forEach(inputId => {
+        const dateInput = document.getElementById(inputId);
+        if (dateInput) {
+            // Set minimum date to academic year start
+            dateInput.min = window.academicYearStartDate;
+            
+            // If current value is before academic year start, clear it
+            if (dateInput.value && dateInput.value < window.academicYearStartDate) {
+                dateInput.value = '';
+                console.log(`Cleared ${inputId} as it was before academic year start`);
+            }
+            
+            console.log(`Set minimum date for ${inputId} to ${window.academicYearStartDate}`);
         }
-    }
+    });
     
     // Update academic year start input
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     if (academicYearStartInput) {
-        academicYearStartInput.min = window.academicYearStartDate;
         academicYearStartInput.value = window.academicYearStartDate;
     }
 }
 
 function clearDateRestrictions() {
-    // Remove minimum date restrictions
-    const dateInput = document.getElementById('attendanceDate');
-    if (dateInput) {
-        dateInput.min = '';
-    }
+    // List of date input IDs that should have restrictions cleared
+    const dateInputIds = [
+        'reportStartDate',
+        'reportEndDate',
+        'attendanceDate',
+        'holidayStartDate',
+        'holidayEndDate'
+    ];
     
-    const holidayDateInput = document.getElementById('holidayDate');
-    if (holidayDateInput) {
-        holidayDateInput.min = '';
-    }
+    dateInputIds.forEach(inputId => {
+        const dateInput = document.getElementById(inputId);
+        if (dateInput) {
+            dateInput.min = '';
+            console.log(`Cleared minimum date restriction for ${inputId}`);
+        }
+    });
     
+    // Clear academic year start input
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     if (academicYearStartInput) {
-        academicYearStartInput.min = '';
+        academicYearStartInput.value = '';
     }
 }
 
@@ -1124,4 +1164,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-export { educationProgress, books, updateClassDropdowns, addClass, deleteClass, displayClasses, editClass, addHoliday, deleteHoliday, displayHolidays, isHoliday, getHolidayName, displayBooksList, showAddBookForm, hideAddBookForm, filterBooksByClass, editBookDetails, closeEditBookModal, showDeleteAllEducationModal, closeBookManagementEditModal, displayBooks, getClassNameById, getClassIdByName, addBook, editBook, deleteBook, updateBookDropdowns, saveAcademicYearStart, clearAcademicYearStart, displayAcademicYearStart, updateDateRestrictions, clearDateRestrictions, saveAppName }
+export { educationProgress, books, updateClassDropdowns, addClass, deleteClass, displayClasses, editClass, addHoliday, deleteHoliday, displayHolidays, isHoliday, getHolidayName, displayBooksList, showAddBookForm, hideAddBookForm, filterBooksByClass, editBookDetails, closeEditBookModal, showDeleteAllEducationModal, closeBookManagementEditModal, displayBooks, getClassNameById, getClassIdByName, addBook, editBook, deleteBook, updateBookDropdowns, initializeAcademicYearStart, saveAcademicYearStart, clearAcademicYearStart, displayAcademicYearStart, updateDateRestrictions, clearDateRestrictions, saveAppName }

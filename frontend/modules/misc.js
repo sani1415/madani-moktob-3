@@ -366,6 +366,38 @@ function debugClassNames() {
     });
 }
 
+function addHijriToReports(startDate, endDate) {
+    // This function can be called when generating reports to include Hijri dates
+    const reportResults = document.getElementById('reportResults');
+    if (reportResults && window.hijriCalendar) {
+        // Add Hijri date information to report headers if needed
+        const currentLang = localStorage.getItem('language') || 'en';
+        
+        if (startDate && endDate) {
+            const startHijri = hijriCalendar.getHijriForDate(startDate);
+            const endHijri = hijriCalendar.getHijriForDate(endDate);
+            
+            let reportHeader = document.getElementById('reportHijriHeader');
+            if (!reportHeader) {
+                reportHeader = document.createElement('div');
+                reportHeader.id = 'reportHijriHeader';
+                reportHeader.className = 'report-hijri-header';
+                reportResults.insertBefore(reportHeader, reportResults.firstChild);
+            }
+            
+            const startHijriStr = hijriCalendar.formatHijriDate(startHijri, currentLang);
+            const endHijriStr = hijriCalendar.formatHijriDate(endHijri, currentLang);
+            
+            reportHeader.innerHTML = `
+                <div class="hijri-date-range" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; text-align: center;">
+                    <i class="fas fa-moon"></i>
+                    <span><strong>হিজরি তারিখ:</strong> ${startHijriStr} - ${endHijriStr}</span>
+                </div>
+            `;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const confirmationInput = document.getElementById('resetConfirmationInput');
     if (confirmationInput) {
@@ -378,4 +410,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-export { currentCalendarMonth, currentCalendarYear, toggleMobileMenu, showSection, testCalendarRefresh, debugSavedDates, showAttendanceCalendar, generateFromBeginningReport, generateReport, generateReportWithDates, saveData, showModal, closeModal, showEncodingErrorModal, debugClassNames }
+export { currentCalendarMonth, currentCalendarYear, toggleMobileMenu, showSection, testCalendarRefresh, debugSavedDates, showAttendanceCalendar, generateFromBeginningReport, generateReport, generateReportWithDates, saveData, showModal, closeModal, showEncodingErrorModal, debugClassNames, addHijriToReports }
