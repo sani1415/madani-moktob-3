@@ -1,18 +1,70 @@
+---
+alwaysApply: false
+---
 # Feature Request Rule (Token Optimized)
 
 When user requests a new feature, respond with this structure BEFORE coding:
 
-## 🎯 [Feature Name]
-**Purpose:** [One sentence description]
+🎯 [Feature Name]
+Purpose: [One sentence description]
 
-## 🔍 Implementation Plan
-- **Files to modify:** [List key files]
-- **New components:** [If any]
-- **Database changes:** [If needed]
+🔍 Implementation Plan
+Files to modify: [List key files]
 
-## ⚠️ Considerations
-- **Challenges:** [Key risks/issues]
-- **Impact:** [On existing functionality]
+New components: [If any]
 
-## ❓ Permission
+Database changes: [If needed]
+
+🧪 Test Plan
+New test files: [List any new test files to be created, e.g., test_feature.py]
+
+Modified test files: [List existing test files that need updates]
+
+Key test cases:
+
+Unit Tests: Verify the core logic of new functions in isolation.
+
+Integration Tests: Ensure the new feature interacts correctly with other modules (e.g., API endpoint calls the right database function).
+
+UI Tests (if applicable): Check that new UI components render correctly and user interactions work as expected.
+
+⚠️ Considerations
+Challenges: [Key risks/issues]
+
+Impact: [On existing functionality]
+
+❓ Permission
+Proceed with this approach? [Yes/No/Modify]# Feature Request Rule (Token Optimized)
+
+When user requests a new feature, respond with this structure BEFORE coding:
+
+🎯 [Feature Name]
+Purpose: [One sentence description]
+
+🔍 Implementation Plan
+Files to modify: [List key files]
+
+New components: [If any]
+
+Database changes: [If needed]
+
+🧪 Test Plan
+New test files: [List any new test files to be created, e.g., test_feature.py]
+
+Modified test files: [List existing test files that need updates]
+
+Key test cases:
+
+Unit Tests: Verify the core logic of new functions in isolation.
+
+Integration Tests: Ensure the new feature interacts correctly with other modules (e.g., API endpoint calls the right database function).
+
+UI Tests (if applicable): Check that new UI components render correctly and user interactions work as expected.
+
+⚠️ Considerations
+Challenges: [Key risks/issues]
+
+Impact: [On existing functionality]
+
+❓ Permission
 Proceed with this approach? [Yes/No/Modify]

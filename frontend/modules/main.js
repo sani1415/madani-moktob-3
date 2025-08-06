@@ -45,17 +45,22 @@ window.showAttendanceCalendar = Misc.showAttendanceCalendar;
 window.loadAttendanceForDate = Attendance.loadAttendanceForDate;
 window.showStudentDetail = Attendance.showStudentDetail;
 window.updateDateInputMax = Attendance.updateDateInputMax;
+window.calculateStudentAttendanceStats = Attendance.calculateStudentAttendanceStats;
+window.getStudentAbsentDays = Attendance.getStudentAbsentDays;
+window.showAbsentDaysModal = Attendance.showAbsentDaysModal;
 
 // Report functions
 window.generateReport = Misc.generateReport;
 window.generateFromBeginningReport = Misc.generateFromBeginningReport;
 window.backToReports = Attendance.backToReports;
+window.addHijriToReports = Misc.addHijriToReports;
 
 // Settings functions
 window.showAddBookForm = Settings.showAddBookForm;
 window.showDeleteAllEducationModal = Settings.showDeleteAllEducationModal;
 window.hideAddBookForm = Settings.hideAddBookForm;
 window.closeEditBookModal = Settings.closeEditBookModal;
+window.initializeAcademicYearStart = Settings.initializeAcademicYearStart;
 window.saveAcademicYearStart = Settings.saveAcademicYearStart;
 window.clearAcademicYearStart = Settings.clearAcademicYearStart;
 window.saveAppName = Settings.saveAppName;
@@ -202,6 +207,11 @@ async function initializeApp() {
         // Update dashboard
         if (typeof updateDashboard === 'function') {
             updateDashboard();
+        }
+        
+        // Initialize academic year start date
+        if (typeof initializeAcademicYearStart === 'function') {
+            initializeAcademicYearStart();
         }
         
         // Initialize Hijri settings
