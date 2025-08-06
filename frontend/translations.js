@@ -958,3 +958,6 @@ function updateSectionContent(sectionId) {
             break;
     }
 }
+
+// Export the translation function
+export { t, changeLanguage, initializeLanguage, updateAllTexts };

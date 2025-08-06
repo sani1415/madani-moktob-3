@@ -73,20 +73,34 @@ def get_database():
             raise Exception(f"Failed to connect to MySQL: {e}")
     else:
         logger.info("💾 MySQL environment variables not found")
-        logger.info("💾 MySQL environment variables are required")
-        raise Exception("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
+        logger.info("💾 Attempting to use default MySQL configuration...")
+        
+        # Try to use default MySQL configuration for local development
+        try:
+            MySQLDatabase = import_mysql()
+            if MySQLDatabase is None:
+                raise Exception("MySQL database not available")
+            
+            mysql_db = MySQLDatabase()
+            logger.info("✅ Successfully created MySQLDatabase instance with default config")
+            return mysql_db
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to MySQL with default config: {e}")
+            logger.error("❌ Please set up MySQL environment variables or install MySQL")
+            raise Exception("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
 
 # Initialize database
-db = get_database()
+try:
+    db = get_database()
+except Exception as e:
+    logger.error(f"❌ Failed to initialize database: {e}")
+    logger.error("❌ Server cannot start without database")
+    raise e
 
 # ✅ Serve frontend files with correct path
 @app.route('/')
 def serve_index():
     return send_from_directory(FRONTEND_PATH, 'index.html')
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(FRONTEND_PATH, filename)
 
 @app.route('/test-books')
 def test_books():
@@ -193,6 +207,26 @@ def save_attendance():
             
         return jsonify({'success': True})
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/test-delete', methods=['DELETE'])
+def test_delete():
+    print("DEBUG: test_delete called")
+    return jsonify({'success': True, 'message': 'Test delete works'})
+
+@app.route('/api/test-delete2', methods=['DELETE'])
+def test_delete2():
+    print("DEBUG: test_delete2 called")
+    return jsonify({'success': True, 'message': 'Test delete2 works'})
+
+@app.route('/api/holidays/delete/<path:date>', methods=['DELETE'])
+def delete_holiday(date):
+    print(f"DEBUG: delete_holiday called with date: {date}")
+    try:
+        db.delete_holiday(date)
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"DEBUG: Error in delete_holiday: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/holidays', methods=['GET'])
@@ -431,6 +465,14 @@ def debug():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Static file serving (must be last to avoid catching API routes)
+@app.route('/<path:filename>')
+def serve_static(filename):
+    # Don't serve static files for API routes
+    if filename.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    return send_from_directory(FRONTEND_PATH, filename)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

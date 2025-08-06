@@ -486,6 +486,23 @@ class MySQLDatabase:
             print(f"Error adding holiday: {e}")
             raise
     
+    def delete_holiday(self, date):
+        """Delete a holiday by date"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM holidays WHERE date = %s', (date,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error deleting holiday: {e}")
+            raise
+    
     # Education Progress methods
     def get_education_progress(self, class_name=None):
         """Get education progress for all classes or specific class"""
