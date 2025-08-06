@@ -1226,8 +1226,8 @@ async function saveAttendance() {
         savedAttendanceDates.add(selectedDate);
         console.log(`Added ${selectedDate} to savedAttendanceDates, total saved dates: ${savedAttendanceDates.size}`);
         
-        // Apply sticky attendance to future dates
-        await applyStickyAttendanceToFuture(selectedDate);
+        // Note: Removed automatic sticky attendance to future dates
+        // Users can manually use "Copy Previous Day" feature if needed
         
         // Reset save button appearance
         const saveButton = document.querySelector('.btn-save-attendance');
