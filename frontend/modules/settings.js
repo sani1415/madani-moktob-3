@@ -1,9 +1,24 @@
 // Global variables for education progress and books
 let educationProgress = [];
 let books = [];
-let classes = [];
-let students = [];
-let holidays = [];
+// Note: classes, students, and holidays are now global variables from State module
+// let classes = []; // Removed - using global classes from State
+// let students = []; // Removed - using global students from State  
+// let holidays = []; // Removed - using global holidays from State
+
+// Helper function to save data to localStorage
+function saveData() {
+    if (window.classes) {
+        localStorage.setItem('madaniMaktabClasses', JSON.stringify(window.classes));
+    }
+    if (window.students) {
+        localStorage.setItem('madaniMaktabStudents', JSON.stringify(window.students));
+    }
+    if (window.holidays) {
+        localStorage.setItem('madaniMaktabHolidays', JSON.stringify(window.holidays));
+    }
+    console.log('💾 Data saved to localStorage');
+}
 
 // Class management functions
 function updateClassDropdowns() {
@@ -23,16 +38,18 @@ function updateClassDropdowns() {
             }
             
             // Add class options
-            classes.forEach(className => {
-                const option = document.createElement('option');
-                option.value = className;
-                option.textContent = className;
-                dropdown.appendChild(option);
-            });
-            
-            // Restore previous value if it still exists
-            if (currentValue && classes.includes(currentValue)) {
-                dropdown.value = currentValue;
+            if (window.classes) {
+                window.classes.forEach(className => {
+                    const option = document.createElement('option');
+                    option.value = className;
+                    option.textContent = className;
+                    dropdown.appendChild(option);
+                });
+                
+                // Restore previous value if it still exists
+                if (currentValue && window.classes.includes(currentValue)) {
+                    dropdown.value = currentValue;
+                }
             }
         }
     });
@@ -46,12 +63,13 @@ function addClass() {
         return;
     }
     
-    if (classes.includes(newClassName)) {
+    if (window.classes && window.classes.includes(newClassName)) {
         showModal('Error', 'Class already exists');
         return;
     }
     
-    classes.push(newClassName);
+    // Update global classes array
+    window.classes.push(newClassName);
     saveData();
     updateClassDropdowns();
     displayClasses();
@@ -62,10 +80,11 @@ function addClass() {
 
 function deleteClass(className) {
     if (confirm(`Are you sure you want to delete "${className}"? This action cannot be undone.`)) {
-        classes = classes.filter(cls => cls !== className);
+        // Update global classes array
+        window.classes = window.classes.filter(cls => cls !== className);
         
         // Remove students from this class
-        students = students.filter(student => student.class !== className);
+        window.students = window.students.filter(student => student.class !== className);
         
         saveData();
         updateClassDropdowns();
@@ -76,17 +95,31 @@ function deleteClass(className) {
 }
 
 function displayClasses() {
-    const classesList = document.getElementById('classesList');
+    console.log('🔍 displayClasses called');
+    console.log('🔍 classes array:', window.classes);
+    console.log('🔍 classes length:', window.classes ? window.classes.length : 'undefined');
     
-    if (classes.length === 0) {
+    const classesList = document.getElementById('classesList');
+    console.log('🔍 classesList element:', classesList);
+    
+    if (!classesList) {
+        console.error('❌ classesList element not found');
+        return;
+    }
+    
+    if (!window.classes || window.classes.length === 0) {
+        console.log('📝 No classes to display, showing "No classes" message');
         classesList.innerHTML = '<p>No classes added yet</p>';
         return;
     }
     
-    classesList.innerHTML = classes.map(className => `
-        <div class="class-item">
-            <span class="class-name" id="className-${className.replace(/\s+/g, '')}">${className}</span>
-            <div class="class-actions">
+    console.log('📝 Displaying classes:', window.classes);
+    classesList.innerHTML = window.classes.map(className => `
+        <div class="list-item">
+            <div class="list-item-info">
+                <strong>${className}</strong>
+            </div>
+            <div>
                 <button onclick="editClass('${className}')" class="btn btn-secondary btn-small" title="Edit Class">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -96,11 +129,31 @@ function displayClasses() {
             </div>
         </div>
     `).join('');
+    
+    console.log('✅ Classes displayed successfully');
 }
 
 function editClass(oldClassName) {
-    const classNameSpan = document.getElementById(`className-${oldClassName.replace(/\s+/g, '')}`);
-    const currentName = classNameSpan.textContent;
+    // Find the list item containing this class name
+    const listItems = document.querySelectorAll('#classesList .list-item');
+    let targetListItem = null;
+    let targetStrong = null;
+    
+    for (const item of listItems) {
+        const strongElement = item.querySelector('.list-item-info strong');
+        if (strongElement && strongElement.textContent === oldClassName) {
+            targetListItem = item;
+            targetStrong = strongElement;
+            break;
+        }
+    }
+    
+    if (!targetListItem || !targetStrong) {
+        showModal('Error', 'Class element not found');
+        return;
+    }
+    
+    const currentName = targetStrong.textContent;
     
     // Create input field
     const input = document.createElement('input');
@@ -109,8 +162,8 @@ function editClass(oldClassName) {
     input.className = 'class-edit-input';
     input.style.width = '150px';
     
-    // Replace span with input
-    classNameSpan.parentNode.replaceChild(input, classNameSpan);
+    // Replace strong with input
+    targetStrong.parentNode.replaceChild(input, targetStrong);
     input.focus();
     input.select();
     
@@ -118,19 +171,19 @@ function editClass(oldClassName) {
     const saveEdit = () => {
         const newName = input.value.trim();
         if (newName && newName !== oldClassName) {
-            if (classes.includes(newName)) {
+            if (window.classes && window.classes.includes(newName)) {
                 showModal('Error', 'Class already exists');
                 return;
             }
             
             // Update class name
-            const classIndex = classes.indexOf(oldClassName);
+            const classIndex = window.classes.indexOf(oldClassName);
             if (classIndex !== -1) {
-                classes[classIndex] = newName;
+                window.classes[classIndex] = newName;
             }
             
             // Update students' class names
-            students.forEach(student => {
+            window.students.forEach(student => {
                 if (student.class === oldClassName) {
                     student.class = newName;
                 }
@@ -182,14 +235,14 @@ async function addHoliday() {
     }
     
     // Check if any date in the range conflicts with existing holidays
-    const conflictingHoliday = holidays.find(h => {
+    const conflictingHoliday = window.holidays ? window.holidays.find(h => {
         const existingStart = new Date(h.startDate);
         const existingEnd = new Date(h.endDate);
         const newStart = new Date(startDate);
         const newEnd = new Date(finalEndDate);
         
         return (newStart <= existingEnd && newEnd >= existingStart);
-    });
+    }) : null;
     
     if (conflictingHoliday) {
         showModal('Error', 'Holiday dates conflict with existing holiday: ' + conflictingHoliday.name);
@@ -212,14 +265,16 @@ async function addHoliday() {
         });
         
         if (response.ok) {
-            // Add to local array
-            holidays.push({ 
-                startDate, 
-                endDate: finalEndDate, 
-                name,
-                date: startDate
-            });
-            holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            // Add to global array
+            if (window.holidays) {
+                window.holidays.push({ 
+                    startDate, 
+                    endDate: finalEndDate, 
+                    name,
+                    date: startDate
+                });
+                window.holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            }
             
             displayHolidays();
             
@@ -241,7 +296,7 @@ async function addHoliday() {
 }
 
 async function deleteHoliday(index) {
-    const holiday = holidays[index];
+    const holiday = window.holidays ? window.holidays[index] : null;
     if (!holiday) {
         showModal('Error', 'Holiday not found');
         return;
@@ -258,7 +313,7 @@ async function deleteHoliday(index) {
         });
         
         if (response.ok) {
-            holidays.splice(index, 1);
+            if (window.holidays) window.holidays.splice(index, 1);
             displayHolidays();
             showModal('Success', 'Holiday deleted successfully');
         } else {
@@ -275,26 +330,24 @@ function displayHolidays() {
     const holidaysList = document.getElementById('holidaysList');
     if (!holidaysList) return;
     
-    if (holidays.length === 0) {
+    if (!window.holidays || window.holidays.length === 0) {
         holidaysList.innerHTML = '<p>No holidays configured.</p>';
         return;
     }
     
-    holidaysList.innerHTML = holidays.map((holiday, index) => {
+    holidaysList.innerHTML = window.holidays.map((holiday, index) => {
         const startDate = holiday.startDate || holiday.date;
         const endDate = holiday.endDate || holiday.date;
         const isRange = startDate !== endDate;
         const dayCount = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
         
         return `
-            <div class="holiday-item">
-                <div class="holiday-info">
+            <div class="list-item">
+                <div class="list-item-info">
                     <strong>${holiday.name}</strong>
-                    <span class="holiday-date">
-                        ${isRange ? `${startDate} to ${endDate} (${dayCount} days)` : startDate}
-                    </span>
+                    <span>${isRange ? `${startDate} to ${endDate} (${dayCount} days)` : startDate}</span>
                 </div>
-                <button onclick="deleteHoliday(${index})" class="btn btn-danger btn-sm">
+                <button onclick="deleteHoliday(${index})" class="btn btn-danger btn-small">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -303,9 +356,9 @@ function displayHolidays() {
 }
 
 function isHoliday(date) {
-    if (!holidays || holidays.length === 0) return false;
+    if (!window.holidays || window.holidays.length === 0) return false;
     
-    return holidays.some(h => {
+    return window.holidays.some(h => {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
         
@@ -325,9 +378,9 @@ function isHoliday(date) {
 }
 
 function getHolidayName(date) {
-    if (!holidays || holidays.length === 0) return '';
+    if (!window.holidays || window.holidays.length === 0) return '';
     
-    const holiday = holidays.find(h => {
+    const holiday = window.holidays.find(h => {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
         
@@ -448,13 +501,13 @@ function hideAddBookForm() {
 
 async function addBookProgress() {
     console.log('addBookProgress called');
-    console.log('books array:', books);
-    console.log('books length:', books.length);
+    console.log('books array:', window.books);
+    console.log('books length:', window.books ? window.books.length : 'undefined');
     
     const bookId = document.getElementById('bookName').value;
     console.log('selected bookId:', bookId);
     
-    const selectedBook = books.find(book => book.id == bookId);
+    const selectedBook = window.books ? window.books.find(book => book.id == bookId) : null;
     console.log('selectedBook:', selectedBook);
     
     if (!selectedBook) {
@@ -612,7 +665,7 @@ function closeEditBookModal() {
 async function updateBookDetails() {
     const progressId = document.getElementById('editBookId').value;
     const bookId = document.getElementById('editBookName').value;
-    const selectedBook = books.find(book => book.id == bookId);
+    const selectedBook = window.books ? window.books.find(book => book.id == bookId) : null;
     
     if (!selectedBook) {
         showModal('Error', 'Please select a book from the dropdown.');
@@ -719,7 +772,7 @@ async function deleteAllEducationData() {
 async function loadBooks() {
     try {
         console.log('Loading books...');
-        console.log('Current books array before loading:', books);
+        console.log('Current books array before loading:', window.books);
         const response = await fetch('/api/books');
         console.log('Response status:', response.status);
         
@@ -727,8 +780,12 @@ async function loadBooks() {
             const booksData = await response.json();
             console.log('Books data received:', booksData);
             books = booksData;
-            console.log('Books array after assignment:', books);
-            console.log('Books array length:', books.length);
+            // Also update the global window.books array
+            window.books = booksData;
+            console.log('Books array after assignment:', window.books);
+            console.log('Books array length:', window.books ? window.books.length : 'undefined');
+            console.log('window.books array after assignment:', window.books);
+            console.log('window.books length:', window.books ? window.books.length : 'undefined');
             displayBooks();
             updateBookDropdowns();
         } else {
@@ -742,19 +799,19 @@ async function loadBooks() {
 function displayBooks() {
     const settingsBooksList = document.getElementById('settingsBooksList');
     if (settingsBooksList) {
-        console.log('Displaying books in settings:', books);
-        console.log('Books count:', books.length);
+        console.log('Displaying books in settings:', window.books);
+        console.log('Books count:', window.books ? window.books.length : 'undefined');
         
-        if (books.length === 0) {
+        if (!window.books || window.books.length === 0) {
             settingsBooksList.innerHTML = '<p class="no-data">No books added yet. Add your first book above.</p>';
         } else {
-            settingsBooksList.innerHTML = books.map(book => `
-                <div class="book-item" data-book-id="${book.id}">
-                    <div class="book-info">
-                        <h4>${book.book_name}</h4>
-                        <p class="book-class">${book.class_id ? getClassNameById(book.class_id) : 'All Classes'}</p>
+            settingsBooksList.innerHTML = window.books.map(book => `
+                <div class="list-item" data-book-id="${book.id}">
+                    <div class="list-item-info">
+                        <strong>${book.book_name}</strong>
+                        <span>${book.class_id ? getClassNameById(book.class_id) : 'All Classes'}</span>
                     </div>
-                    <div class="book-actions">
+                    <div>
                         <button onclick="editBook(${book.id})" class="btn btn-secondary btn-small">
                             <i class="fas fa-edit"></i> Edit
                         </button>
@@ -831,7 +888,7 @@ async function addBook() {
 
 async function editBook(bookId) {
     console.log('Edit book called with ID:', bookId);
-    const book = books.find(b => b.id === bookId);
+    const book = window.books ? window.books.find(b => b.id === bookId) : null;
     if (!book) {
         console.error('Book not found with ID:', bookId);
         return;
@@ -934,14 +991,14 @@ async function deleteBook(bookId) {
 
 function updateBookDropdowns() {
     console.log('updateBookDropdowns called');
-    console.log('books array in updateBookDropdowns:', books);
-    console.log('books length in updateBookDropdowns:', books.length);
+    console.log('books array in updateBookDropdowns:', window.books);
+    console.log('books length in updateBookDropdowns:', window.books ? window.books.length : 'undefined');
     
     const bookDropdown = document.getElementById('bookName');
     if (bookDropdown) {
         console.log('bookName dropdown found');
         const options = '<option value="">Select Book</option>' + 
-            books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+            (window.books ? window.books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('') : '');
         console.log('Generated options:', options);
         bookDropdown.innerHTML = options;
         console.log('Dropdown updated with options');
@@ -953,7 +1010,7 @@ function updateBookDropdowns() {
     if (editBookDropdown) {
         console.log('editBookName dropdown found');
         editBookDropdown.innerHTML = '<option value="">Select Book</option>' + 
-            books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+            (window.books ? window.books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('') : '');
     } else {
         console.error('editBookName dropdown not found');
     }

@@ -551,138 +551,149 @@
 
             <!-- Settings Section -->
             <section id="settings" class="section">
-                <h2>Settings</h2>
-                <div class="settings-content">
-                    <h3>Academic Year Settings</h3>
-                    <div class="add-class academic-year-setting">
-                        <input type="date" id="academicYearStartInput" placeholder="Select academic year start date">
-                        <button onclick="saveAcademicYearStart()" class="btn btn-primary" id="saveAcademicYearStartBtn" data-translate="setAcademicYearStartBtn">
-                            <i class="fas fa-calendar"></i> Set Academic Year Start
-                        </button>
-                        <button onclick="clearAcademicYearStart()" class="btn btn-secondary" id="clearAcademicYearStartBtn" style="margin-left: 10px;" data-translate="clearAcademicYearStartBtn">
-                            <i class="fas fa-times"></i> Clear
-                        </button>
+                <h2><i class="fas fa-cog"></i> Settings</h2>
+                
+                <div class="settings-tabs">
+                    <button class="tab-button active" onclick="openSettingsTab(event, 'general')">
+                        <i class="fas fa-cogs"></i> General
+                    </button>
+                    <button class="tab-button" onclick="openSettingsTab(event, 'academic')">
+                        <i class="fas fa-school"></i> Academic
+                    </button>
+                    <button class="tab-button" onclick="openSettingsTab(event, 'books')">
+                        <i class="fas fa-book"></i> Book Management
+                    </button>
+                    <button class="tab-button" onclick="openSettingsTab(event, 'data')">
+                        <i class="fas fa-database"></i> Data Management
+                    </button>
+                </div>
+
+                <!-- General Tab -->
+                <div id="general" class="tab-content active">
+                    <h3>Application Settings</h3>
+                    <div class="setting-group">
+                        <label for="appNameInput">Application Name</label>
+                        <p class="help-text">Change the name displayed in the header and title.</p>
+                        <div class="input-group">
+                            <input type="text" id="appNameInput" value="Madani Maktab">
+                            <button class="btn btn-primary" onclick="saveAppName()">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
                     </div>
-                    <div class="help-text">
-                        <p>Select the starting date for your academic year. This will be used for "From Beginning" reports and will restrict all date selections to this period.</p>
+                    
+                    <h3>Hijri Date Settings</h3>
+                    <div class="setting-group">
+                        <label for="hijriAdjustment">Hijri Date Adjustment</label>
+                        <p class="help-text">Adjust the calculated Hijri date for local moon sightings.</p>
+                        <select id="hijriAdjustment" onchange="updateHijriAdjustment()">
+                            <option value="0">No Adjustment (Default)</option>
+                            <option value="1">+1 Day (Ahead)</option>
+                            <option value="-1">-1 Day (Behind)</option>
+                        </select>
+                        <div class="hijri-preview" style="margin-top: 15px;">
+                            <strong>Current Date Preview:</strong>
+                            <div id="hijriPreview" class="hijri-date-display"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Tab -->
+                <div id="academic" class="tab-content">
+                    <h3>Academic Management</h3>
+                    <div class="setting-group">
+                        <label for="academicYearStartInput">Academic Year Start Date</label>
+                        <p class="help-text">Used for reports and date restrictions.</p>
+                        <div class="input-group">
+                            <input type="date" id="academicYearStartInput">
+                            <button class="btn btn-primary" onclick="saveAcademicYearStart()">
+                                <i class="fas fa-calendar-check"></i> Set Start Date
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearAcademicYearStart()">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
                         <div id="currentAcademicYearDisplay" style="display: none; margin-top: 10px; padding: 8px; background: #e8f5e8; border-radius: 4px; color: #27ae60;">
                             <i class="fas fa-check-circle"></i>
                             <span>Current academic year starts from: <strong id="academicYearStartDisplay"></strong></span>
                         </div>
                     </div>
                     
-                    <h3>Application Settings</h3>
-                    <div class="add-class app-name-setting">
-                        <input type="text" id="appNameInput" placeholder="Enter application name">
-                        <button onclick="saveAppName()" class="btn btn-primary" id="saveAppNameBtn">
-                            <i class="fas fa-save"></i> Save
-                        </button>
-                    </div>
-                    <h3>Manage Classes</h3>
-                    <div class="class-management">
-                        <div class="add-class">
+                    <div class="setting-group">
+                        <label for="newClassName">Manage Classes</label>
+                        <p class="help-text">Add or remove classes from the system.</p>
+                        <div class="input-group">
                             <input type="text" id="newClassName" placeholder="Enter new class name">
-                            <button onclick="addClass()" class="btn btn-primary">
+                            <button class="btn btn-primary" onclick="addClass()">
                                 <i class="fas fa-plus"></i> Add Class
                             </button>
                         </div>
-                        <div id="classesList" class="classes-list">
+                        <div class="item-list" id="classesList">
                             <!-- Classes will be displayed here -->
                         </div>
                     </div>
-
-                    <h3>Manage Books</h3>
-                    <div class="book-management">
-                        <div class="add-book">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <input type="text" id="newBookName" placeholder="Enter book name">
-                                </div>
-                                <div class="form-group">
-                                    <select id="newBookClass">
-                                        <option value="">All Classes</option>
-                                        <option value="1">প্রথম শ্রেণি</option>
-                                        <option value="2">দ্বিতীয় শ্রেণি</option>
-                                        <option value="3">তৃতীয় শ্রেণি</option>
-                                        <option value="4">চতুর্থ শ্রেণি</option>
-                                        <option value="5">পঞ্চম শ্রেণি</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <button onclick="addBook()" class="btn btn-primary">
-                                        <i class="fas fa-plus"></i> Add Book
-                                    </button>
-                                </div>
-                            </div>
+                    
+                    <div class="setting-group">
+                        <label>Holiday Management</label>
+                        <p class="help-text">Add official holidays. Attendance cannot be taken on these days.</p>
+                        <div class="input-group" style="margin-bottom: 10px;">
+                            <input type="text" id="holidayName" placeholder="Holiday Name (e.g., Eid-ul-Fitr)">
                         </div>
-                        <div id="settingsBooksList" class="books-list">
-                            <!-- Books will be displayed here -->
-                        </div>
-                    </div>
-
-                    <h3 data-translate="hijriSettings">Hijri Date Settings</h3>
-                    <div class="hijri-settings">
-                        <div class="form-group">
-                            <label for="hijriAdjustment" data-translate="hijriAdjustment">Hijri Date Adjustment:</label>
-                            <p class="help-text" data-translate="hijriAdjustmentDesc">Adjust Hijri date for local observation</p>
-                            <select id="hijriAdjustment" onchange="updateHijriAdjustment()">
-                                <option value="0" data-translate="hijriNoAdjustment">No Adjustment (Default)</option>
-                                <option value="1" data-translate="hijriPlusOne">+1 Day (Ahead)</option>
-                                <option value="-1" data-translate="hijriMinusOne">-1 Day (Behind)</option>
-                            </select>
-                        </div>
-                        <div class="hijri-preview">
-                            <strong>Current Date Preview:</strong>
-                            <div id="hijriPreview" class="hijri-date-display"></div>
-                        </div>
-                    </div>
-
-                    <h3>Holiday Management</h3>
-                    <div class="holiday-management">
-                        <div class="add-holiday">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="holidayStartDate">From Date:</label>
-                                    <input type="date" id="holidayStartDate">
-                                </div>
-                                <div class="form-group">
-                                    <label for="holidayEndDate">To Date:</label>
-                                    <input type="date" id="holidayEndDate">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="holidayName">Holiday Name:</label>
-                                    <input type="text" id="holidayName" placeholder="e.g., Eid ul-Fitr, Winter Break, National Day">
-                                </div>
-                            </div>
-                            <button onclick="addHoliday()" class="btn btn-primary">
+                        <div class="input-group">
+                            <input type="date" id="holidayStartDate" title="Start Date">
+                            <input type="date" id="holidayEndDate" title="End Date (optional)">
+                            <button class="btn btn-primary" onclick="addHoliday()">
                                 <i class="fas fa-calendar-plus"></i> Add Holiday
                             </button>
                         </div>
-                        <div id="holidaysList" class="holidays-list">
+                        <div class="item-list" id="holidaysList">
                             <!-- Holidays will be displayed here -->
                         </div>
                     </div>
-
-                    <h3 data-translate="dataManagement">Data Management</h3>
-                    <div class="data-management">
-                        <div class="warning-section" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
-                            <h4 style="color: #856404; margin-top: 0;">⚠️ <span data-translate="dangerZone">Danger Zone</span></h4>
-                            <p style="color: #856404; margin-bottom: 0;" data-translate="dangerZoneWarning">These actions cannot be undone. Please be careful.</p>
-                        </div>
-                        <div class="reset-attendance-section" style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px;">
-                            <h4 style="color: #721c24; margin-top: 0;">🗑️ <span data-translate="resetAttendanceHistory">Reset Attendance History</span></h4>
-                            <p style="color: #721c24; margin-bottom: 15px;" data-translate="resetAttendanceDescription">
-                                This will permanently delete all attendance records for all students. 
-                                <strong>This action cannot be undone!</strong>
-                            </p>
-                            <button onclick="showResetAttendanceModal()" class="btn btn-danger">
-                                <i class="fas fa-trash-alt"></i> <span data-translate="resetAllAttendance">Reset All Attendance</span>
+                </div>
+                
+                <!-- Book Management Tab -->
+                <div id="books" class="tab-content">
+                    <h3>Book Management</h3>
+                    <div class="setting-group">
+                        <label for="newBookName">Add New Book</label>
+                        <p class="help-text">Add books that students will study.</p>
+                        <div class="input-group">
+                            <input type="text" id="newBookName" placeholder="Enter new book name">
+                            <select id="newBookClass">
+                                <option value="">All Classes</option>
+                                <!-- Class options will be populated dynamically -->
+                            </select>
+                            <button class="btn btn-primary" onclick="addBook()">
+                                <i class="fas fa-plus"></i> Add Book
                             </button>
                         </div>
+                        <div class="item-list" id="settingsBooksList">
+                            <!-- Books will be displayed here -->
+                        </div>
                     </div>
+                </div>
 
+                <!-- Data Management Tab -->
+                <div id="data" class="tab-content">
+                    <div class="danger-zone">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Danger Zone</h4>
+                        <p>The actions below are permanent and cannot be undone. Please proceed with caution.</p>
+                        <button class="btn btn-danger" onclick="showResetAttendanceModal()">
+                            <i class="fas fa-trash-alt"></i> Reset Attendance History
+                        </button>
+                    </div>
+                    
+                    <div class="setting-group" style="margin-top: 25px;">
+                        <label>Import / Export Data</label>
+                        <p class="help-text">Manage your student data in bulk.</p>
+                        <button class="btn btn-secondary" onclick="showBulkImport()">
+                            <i class="fas fa-file-import"></i> Bulk Import Students
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadAllStudentsCSV()">
+                            <i class="fas fa-file-export"></i> Export All Data
+                        </button>
+                    </div>
                 </div>
             </section>
         </div>
