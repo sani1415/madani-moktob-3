@@ -9,7 +9,7 @@ import * as Misc from './misc.js';
 import * as Calendar from './calendar.js';
 import * as Settings from './settings.js';
 import * as Hijri from './hijri.js';
-import { t } from '../translations.js';
+import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../translations.js';
 
 // Debug: Check if Settings module is loaded
 console.log('🔍 Settings module loaded:', Settings);
@@ -22,6 +22,9 @@ console.log('🔍 typeof Settings.updateBookDropdowns:', typeof Settings.updateB
 
 // Expose translation function globally
 window.t = t;
+window.changeLanguage = changeLanguage;
+window.initializeLanguage = initializeLanguage;
+window.updateAllTexts = updateAllTexts;
 
 // Expose all functions to global scope for HTML onclick handlers
 // This is necessary because the HTML uses onclick handlers that expect global functions
@@ -29,6 +32,7 @@ window.t = t;
 
 // Navigation functions
 window.showSection = Misc.showSection;
+window.openSettingsTab = Misc.openSettingsTab;
 
 // Registration functions
 window.hideBulkImport = Registration.hideBulkImport;
@@ -171,6 +175,11 @@ window.attendance = State.attendance;
 window.holidays = State.holidays;
 window.academicYearStartDate = State.academicYearStartDate;
 window.savedAttendanceDates = State.savedAttendanceDates;
+
+// Debug: Check state variables
+console.log('🔍 State.classes:', State.classes);
+console.log('🔍 window.classes:', window.classes);
+console.log('🔍 classes length:', window.classes ? window.classes.length : 'undefined');
 
 // Make calendar variables globally accessible
 window.currentCalendarMonth = Misc.currentCalendarMonth;

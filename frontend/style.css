@@ -1461,6 +1461,214 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
+/* Settings Tab System Styles */
+.settings-tabs {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0 25px;
+    margin-bottom: 20px;
+    border-radius: 10px 10px 0 0;
+}
+
+.tab-button {
+    padding: 15px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 1em;
+    font-weight: 500;
+    color: #6c757d;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+    color: #3498db;
+}
+
+.tab-button.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-content {
+    display: none;
+    padding: 25px;
+    animation: fadeIn 0.5s;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Settings Group Styles */
+.setting-group {
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.setting-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.setting-group h3 {
+    font-size: 1.5em;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+.setting-group .help-text {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: -5px;
+    margin-bottom: 10px;
+}
+
+.setting-group .input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.setting-group .input-group input,
+.setting-group .input-group select {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+/* Item List Styles */
+.item-list {
+    margin-top: 15px;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.list-item:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+
+.list-item-info strong {
+    display: block;
+    color: #2c3e50;
+}
+
+.list-item-info span {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+/* Danger Zone Styles */
+.danger-zone {
+    border: 2px solid #e74c3c;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #f8d7da;
+}
+
+.danger-zone h4 { 
+    color: #721c24; 
+    margin-top: 0; 
+    font-size: 1.2em; 
+}
+
+.danger-zone p { 
+    color: #721c24; 
+    margin-bottom: 15px; 
+}
+
+.danger-zone .btn { 
+    margin-right: 10px; 
+}
+
+/* Responsive Design for Settings Tabs */
+@media (max-width: 768px) {
+    .settings-tabs {
+        flex-direction: column;
+        padding: 0;
+    }
+    
+    .tab-button {
+        padding: 12px 15px;
+        border-bottom: none;
+        border-right: 3px solid transparent;
+        text-align: left;
+    }
+    
+    .tab-button.active {
+        border-right-color: #3498db;
+        border-bottom-color: transparent;
+    }
+    
+    .setting-group .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .setting-group .input-group input,
+    .setting-group .input-group select {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .list-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .list-item > div:last-child {
+        display: flex;
+        gap: 5px;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-tabs {
+        margin-bottom: 15px;
+    }
+    
+    .tab-content {
+        padding: 15px;
+    }
+    
+    .setting-group {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+    }
+    
+    .danger-zone {
+        padding: 15px;
+    }
+}
+
 .settings-content h3 {
     color: #2c3e50;
     margin-bottom: 20px;

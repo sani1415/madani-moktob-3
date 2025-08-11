@@ -139,16 +139,58 @@ async function showSection(sectionId, event) {
         }
         console.log('✅ Education tab data loading completed');
     } else if (sectionId === 'settings') {
+        console.log('🔄 Settings section selected, loading data...');
+        
         // Access settings functions through global scope
         if (typeof displayClasses === 'function') {
+            console.log('✅ displayClasses function found, calling...');
             displayClasses();
+            console.log('✅ displayClasses completed');
+        } else {
+            console.error('❌ displayClasses function not found');
+            // Try to access through window object
+            if (typeof window.displayClasses === 'function') {
+                console.log('✅ displayClasses found in window, calling...');
+                window.displayClasses();
+                console.log('✅ window.displayClasses completed');
+            } else {
+                console.error('❌ displayClasses not found in window either');
+            }
         }
+        
         if (typeof displayHolidays === 'function') {
+            console.log('✅ displayHolidays function found, calling...');
             displayHolidays();
+            console.log('✅ displayHolidays completed');
+        } else {
+            console.error('❌ displayHolidays function not found');
+            // Try to access through window object
+            if (typeof window.displayHolidays === 'function') {
+                console.log('✅ displayHolidays found in window, calling...');
+                window.displayHolidays();
+                console.log('✅ window.displayHolidays completed');
+            } else {
+                console.error('❌ displayHolidays not found in window either');
+            }
         }
+        
         if (typeof loadBooks === 'function') {
+            console.log('✅ loadBooks function found, calling...');
             await loadBooks();
+            console.log('✅ loadBooks completed');
+        } else {
+            console.error('❌ loadBooks function not found');
+            // Try to access through window object
+            if (typeof window.loadBooks === 'function') {
+                console.log('✅ loadBooks found in window, calling...');
+                window.loadBooks();
+                console.log('✅ window.loadBooks completed');
+            } else {
+                console.error('❌ loadBooks not found in window either');
+            }
         }
+        
+        console.log('✅ Settings section data loading completed');
     }
 }
 
@@ -470,4 +512,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-export { currentCalendarMonth, currentCalendarYear, toggleMobileMenu, showSection, testCalendarRefresh, debugSavedDates, showAttendanceCalendar, generateFromBeginningReport, generateReport, generateReportWithDates, saveData, showModal, closeModal, showEncodingErrorModal, debugClassNames, addHijriToReports }
+// Settings tab switching function
+function openSettingsTab(evt, tabName) {
+    // Get all elements with class="tab-content" and hide them
+    const tabcontent = document.querySelectorAll(".tab-content");
+    tabcontent.forEach(tc => tc.style.display = "none");
+
+    // Get all elements with class="tab-button" and remove the class "active"
+    const tablinks = document.querySelectorAll(".tab-button");
+    tablinks.forEach(tl => tl.classList.remove("active"));
+
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.classList.add("active");
+}
+
+export { currentCalendarMonth, currentCalendarYear, toggleMobileMenu, showSection, testCalendarRefresh, debugSavedDates, showAttendanceCalendar, generateFromBeginningReport, generateReport, generateReportWithDates, saveData, showModal, closeModal, showEncodingErrorModal, debugClassNames, addHijriToReports, openSettingsTab }
