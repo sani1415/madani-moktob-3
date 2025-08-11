@@ -80,10 +80,64 @@ async function showSection(sectionId, event) {
             studentRegistrationForm.style.display = 'none';
         }
     } else if (sectionId === 'education') {
+        console.log('🔄 Education tab selected, loading data...');
+        console.log('🔍 Checking available functions...');
+        console.log('🔍 typeof loadEducationProgress:', typeof loadEducationProgress);
+        console.log('🔍 typeof loadBooks:', typeof loadBooks);
+        console.log('🔍 typeof updateBookDropdowns:', typeof updateBookDropdowns);
+        console.log('🔍 window.loadEducationProgress:', window.loadEducationProgress);
+        console.log('🔍 window.loadBooks:', window.loadBooks);
+        console.log('🔍 window.updateBookDropdowns:', window.updateBookDropdowns);
+        
         // Access education functions through global scope
         if (typeof loadEducationProgress === 'function') {
+            console.log('✅ loadEducationProgress function found, calling...');
             await loadEducationProgress();
+            console.log('✅ loadEducationProgress completed');
+        } else {
+            console.error('❌ loadEducationProgress function not found');
+            // Try to access through window object
+            if (typeof window.loadEducationProgress === 'function') {
+                console.log('✅ loadEducationProgress found in window, calling...');
+                await window.loadEducationProgress();
+                console.log('✅ window.loadEducationProgress completed');
+            } else {
+                console.error('❌ loadEducationProgress not found in window either');
+            }
         }
+        // Also load books to populate the dropdown
+        if (typeof loadBooks === 'function') {
+            console.log('✅ loadBooks function found, calling...');
+            await loadBooks();
+            console.log('✅ loadBooks completed');
+        } else {
+            console.error('❌ loadBooks function not found');
+            // Try to access through window object
+            if (typeof window.loadBooks === 'function') {
+                console.log('✅ loadBooks found in window, calling...');
+                await window.loadBooks();
+                console.log('✅ window.loadBooks completed');
+            } else {
+                console.error('❌ loadBooks not found in window either');
+            }
+        }
+        // Update book dropdowns
+        if (typeof updateBookDropdowns === 'function') {
+            console.log('✅ updateBookDropdowns function found, calling...');
+            updateBookDropdowns();
+            console.log('✅ updateBookDropdowns completed');
+        } else {
+            console.error('❌ updateBookDropdowns function not found');
+            // Try to access through window object
+            if (typeof window.updateBookDropdowns === 'function') {
+                console.log('✅ updateBookDropdowns found in window, calling...');
+                window.updateBookDropdowns();
+                console.log('✅ window.updateBookDropdowns completed');
+            } else {
+                console.error('❌ updateBookDropdowns not found in window either');
+            }
+        }
+        console.log('✅ Education tab data loading completed');
     } else if (sectionId === 'settings') {
         // Access settings functions through global scope
         if (typeof displayClasses === 'function') {
@@ -301,15 +355,21 @@ function saveData() {
     console.log('Data saved to database via API calls');
 }
 
-function showModal(title, message) {
+function showModal(title, message, isHTML = false) {
     const modal = document.getElementById('modal');
     const modalBody = document.getElementById('modalBody');
     
-    modalBody.innerHTML = `
-        <h3>${title}</h3>
-        <p>${message}</p>
-        <button onclick="closeModal()" class="btn btn-primary">${t('ok')}</button>
-    `;
+    if (isHTML) {
+        // For HTML content, use the message directly
+        modalBody.innerHTML = message;
+    } else {
+        // For simple text messages
+        modalBody.innerHTML = `
+            <h3>${title}</h3>
+            <p>${message}</p>
+            <button onclick="closeModal()" class="btn btn-primary">${t('ok')}</button>
+        `;
+    }
     
     modal.style.display = 'block';
 }

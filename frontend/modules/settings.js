@@ -1,3 +1,11 @@
+// Global variables for education progress and books
+let educationProgress = [];
+let books = [];
+let classes = [];
+let students = [];
+let holidays = [];
+
+// Class management functions
 function updateClassDropdowns() {
     const dropdowns = ['studentClass', 'classFilter', 'reportClass'];
     
@@ -34,12 +42,12 @@ function addClass() {
     const newClassName = document.getElementById('newClassName').value.trim();
     
     if (!newClassName) {
-        showModal(t('error'), t('enterClassName'));
+        showModal('Error', 'Please enter a class name');
         return;
     }
     
     if (classes.includes(newClassName)) {
-        showModal(t('error'), t('classExists'));
+        showModal('Error', 'Class already exists');
         return;
     }
     
@@ -49,14 +57,11 @@ function addClass() {
     displayClasses();
     
     document.getElementById('newClassName').value = '';
-    showModal(t('success'), `${newClassName} ${t('classAdded')}`);
+    showModal('Success', `${newClassName} class added successfully`);
 }
 
 function deleteClass(className) {
-    // First confirmation
-    if (confirm(`${t('confirmDeleteClass')} "${className}"? ${t('cannotUndo')}`)) {
-        // Second confirmation with stronger warning
-        if (confirm(`${t('confirmDeleteClassFinal')} "${className}"?\n\n${t('finalDeleteClassWarning')}`)) {
+    if (confirm(`Are you sure you want to delete "${className}"? This action cannot be undone.`)) {
         classes = classes.filter(cls => cls !== className);
         
         // Remove students from this class
@@ -65,10 +70,8 @@ function deleteClass(className) {
         saveData();
         updateClassDropdowns();
         displayClasses();
-        updateDashboard();
         
-        showModal(t('success'), `${className} ${t('classDeleted')}`);
-        }
+        showModal('Success', `${className} class deleted successfully`);
     }
 }
 
@@ -76,7 +79,7 @@ function displayClasses() {
     const classesList = document.getElementById('classesList');
     
     if (classes.length === 0) {
-        classesList.innerHTML = `<p>${t('noClassesAdded')}</p>`;
+        classesList.innerHTML = '<p>No classes added yet</p>';
         return;
     }
     
@@ -89,13 +92,10 @@ function displayClasses() {
                 </button>
                 <button onclick="deleteClass('${className}')" class="btn btn-danger btn-small" title="Delete Class">
                     <i class="fas fa-trash"></i>
-            </button>
+                </button>
             </div>
         </div>
     `).join('');
-    
-    // Update class filter options in student registration table
-    updateClassFilterOptions();
 }
 
 function editClass(oldClassName) {
@@ -119,7 +119,7 @@ function editClass(oldClassName) {
         const newName = input.value.trim();
         if (newName && newName !== oldClassName) {
             if (classes.includes(newName)) {
-                showModal(t('error'), t('classExists'));
+                showModal('Error', 'Class already exists');
                 return;
             }
             
@@ -139,9 +139,8 @@ function editClass(oldClassName) {
             saveData();
             updateClassDropdowns();
             displayClasses();
-            updateDashboard();
             
-            showModal(t('success'), `Class renamed from "${oldClassName}" to "${newName}"`);
+            showModal('Success', `Class renamed from "${oldClassName}" to "${newName}"`);
         } else {
             // Cancel edit
             displayClasses();
@@ -158,6 +157,7 @@ function editClass(oldClassName) {
     });
 }
 
+// Holiday management functions
 async function addHoliday() {
     const startDateInput = document.getElementById('holidayStartDate');
     const endDateInput = document.getElementById('holidayEndDate');
@@ -168,7 +168,7 @@ async function addHoliday() {
     const name = nameInput.value.trim();
     
     if (!startDate || !name) {
-        showModal(t('error'), 'Please enter holiday start date and name');
+        showModal('Error', 'Please enter holiday start date and name');
         return;
     }
     
@@ -177,7 +177,7 @@ async function addHoliday() {
     
     // Validate date range
     if (new Date(startDate) > new Date(finalEndDate)) {
-        showModal(t('error'), 'Start date cannot be after end date');
+        showModal('Error', 'Start date cannot be after end date');
         return;
     }
     
@@ -192,7 +192,7 @@ async function addHoliday() {
     });
     
     if (conflictingHoliday) {
-        showModal(t('error'), 'Holiday dates conflict with existing holiday: ' + conflictingHoliday.name);
+        showModal('Error', 'Holiday dates conflict with existing holiday: ' + conflictingHoliday.name);
         return;
     }
     
@@ -217,7 +217,6 @@ async function addHoliday() {
                 startDate, 
                 endDate: finalEndDate, 
                 name,
-                // Keep legacy date field for compatibility
                 date: startDate
             });
             holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -230,29 +229,27 @@ async function addHoliday() {
             nameInput.value = '';
             
             const dayCount = Math.ceil((new Date(finalEndDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-            showModal(t('success'), `Holiday added successfully (${dayCount} day${dayCount > 1 ? 's' : ''})`);
+            showModal('Success', `Holiday added successfully (${dayCount} day${dayCount > 1 ? 's' : ''})`);
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add holiday');
         }
     } catch (error) {
         console.error('Error adding holiday:', error);
-        showModal(t('error'), 'Failed to add holiday: ' + error.message);
+        showModal('Error', 'Failed to add holiday: ' + error.message);
     }
 }
 
 async function deleteHoliday(index) {
     const holiday = holidays[index];
     if (!holiday) {
-        showModal(t('error'), 'Holiday not found');
+        showModal('Error', 'Holiday not found');
         return;
     }
     
     try {
-        // Get the date to delete (use startDate or date field)
         const dateToDelete = holiday.startDate || holiday.date;
         
-        // Call the API to delete from database
         const response = await fetch(`/api/holidays/delete/${dateToDelete}`, {
             method: 'DELETE',
             headers: {
@@ -261,17 +258,16 @@ async function deleteHoliday(index) {
         });
         
         if (response.ok) {
-            // Remove from local array
             holidays.splice(index, 1);
             displayHolidays();
-            showModal(t('success'), 'Holiday deleted successfully');
+            showModal('Success', 'Holiday deleted successfully');
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to delete holiday');
         }
     } catch (error) {
         console.error('Error deleting holiday:', error);
-        showModal(t('error'), 'Failed to delete holiday: ' + error.message);
+        showModal('Error', 'Failed to delete holiday: ' + error.message);
     }
 }
 
@@ -313,7 +309,6 @@ function isHoliday(date) {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
         
-        // Handle both date strings and date objects
         let checkDate;
         if (typeof date === 'string') {
             checkDate = new Date(date);
@@ -321,7 +316,6 @@ function isHoliday(date) {
             checkDate = date;
         }
         
-        // Convert to date strings for comparison (YYYY-MM-DD format)
         const checkDateStr = checkDate.toISOString().split('T')[0];
         const startDateStr = new Date(startDate).toISOString().split('T')[0];
         const endDateStr = new Date(endDate).toISOString().split('T')[0];
@@ -337,7 +331,6 @@ function getHolidayName(date) {
         const startDate = h.startDate || h.date;
         const endDate = h.endDate || h.date;
         
-        // Handle both date strings and date objects
         let checkDate;
         if (typeof date === 'string') {
             checkDate = new Date(date);
@@ -345,7 +338,6 @@ function getHolidayName(date) {
             checkDate = date;
         }
         
-        // Convert to date strings for comparison (YYYY-MM-DD format)
         const checkDateStr = checkDate.toISOString().split('T')[0];
         const startDateStr = new Date(startDate).toISOString().split('T')[0];
         const endDateStr = new Date(endDate).toISOString().split('T')[0];
@@ -355,19 +347,32 @@ function getHolidayName(date) {
     return holiday ? holiday.name : '';
 }
 
-let educationProgress = [];
-
+// Education progress functions
 async function loadEducationProgress() {
     try {
+        console.log('🔄 Loading education progress...');
         const response = await fetch('/api/education');
+        console.log('📡 Education API response status:', response.status);
+        
         if (response.ok) {
-            educationProgress = await response.json();
+            const data = await response.json();
+            console.log('📊 Education data received:', data);
+            console.log('📊 Education data length:', data.length);
+            
+            educationProgress = data;
+            console.log('💾 educationProgress array updated:', educationProgress);
+            console.log('💾 educationProgress length:', educationProgress.length);
+            
+            console.log('🔄 Calling displayBooksList...');
             displayBooksList();
+            console.log('✅ displayBooksList completed');
         } else {
-            console.error('Failed to load education progress');
+            console.error('❌ Failed to load education progress, status:', response.status);
+            const errorText = await response.text();
+            console.error('❌ Error response:', errorText);
         }
     } catch (error) {
-        console.error('Error loading education progress:', error);
+        console.error('❌ Error loading education progress:', error);
     }
 }
 
@@ -376,7 +381,7 @@ function displayBooksList() {
     if (!booksList) return;
     
     if (educationProgress.length === 0) {
-        booksList.innerHTML = `<p class="no-data">${t('noBooksAddedYet')}</p>`;
+        booksList.innerHTML = '<p class="no-data">No books added yet</p>';
         return;
     }
     
@@ -412,13 +417,13 @@ function displayBooksList() {
                 ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ''}
                 <div class="book-actions">
                     <button onclick="editBookDetails(${book.id})" class="btn btn-secondary btn-small">
-                        <i class="fas fa-edit"></i> ${t('editDetails')}
+                        <i class="fas fa-edit"></i> Edit Details
                     </button>
                     <button onclick="updateBookProgress(${book.id})" class="btn btn-primary btn-small">
-                        <i class="fas fa-chart-line"></i> ${t('updateProgress')}
+                        <i class="fas fa-chart-line"></i> Update Progress
                     </button>
                     <button onclick="deleteBookProgress(${book.id})" class="btn btn-danger btn-small">
-                        <i class="fas fa-trash"></i> ${t('deleteBook')}
+                        <i class="fas fa-trash"></i> Delete Book
                     </button>
                 </div>
             </div>
@@ -426,10 +431,14 @@ function displayBooksList() {
     }).join('');
 }
 
-function showAddBookForm() {
+async function showAddBookForm() {
+    await loadBooks();
+    
     document.getElementById('addBookForm').style.display = 'block';
     document.getElementById('bookProgressList').style.display = 'none';
     document.getElementById('bookForm').reset();
+    
+    updateBookDropdowns();
 }
 
 function hideAddBookForm() {
@@ -438,8 +447,15 @@ function hideAddBookForm() {
 }
 
 async function addBookProgress() {
+    console.log('addBookProgress called');
+    console.log('books array:', books);
+    console.log('books length:', books.length);
+    
     const bookId = document.getElementById('bookName').value;
+    console.log('selected bookId:', bookId);
+    
     const selectedBook = books.find(book => book.id == bookId);
+    console.log('selectedBook:', selectedBook);
     
     if (!selectedBook) {
         showModal('Error', 'Please select a book from the dropdown.');
@@ -456,7 +472,6 @@ async function addBookProgress() {
         notes: document.getElementById('bookNotes').value
     };
     
-    // Validation
     if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
         showModal('Error', 'Please fill in all required fields.');
         return;
@@ -496,7 +511,7 @@ async function updateBookProgress(bookId) {
     
     const newCompletedPages = prompt(`Enter completed pages for "${book.book_name}" (0-${book.total_pages}):`, book.completed_pages);
     
-    if (newCompletedPages === null) return; // User cancelled
+    if (newCompletedPages === null) return;
     
     const completedPages = parseInt(newCompletedPages);
     if (isNaN(completedPages) || completedPages < 0 || completedPages > book.total_pages) {
@@ -535,7 +550,7 @@ async function deleteBookProgress(bookId) {
     const book = educationProgress.find(b => b.id === bookId);
     if (!book) return;
     
-    if (!confirm(`${t('confirmDeleteBook')} "${book.book_name}"?`)) {
+    if (!confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
         return;
     }
     
@@ -545,11 +560,11 @@ async function deleteBookProgress(bookId) {
         });
         
         if (response.ok) {
-            showModal(t('success'), t('bookDeletedSuccessfully'));
+            showModal('Success', 'Book deleted successfully');
             await loadEducationProgress();
         } else {
             const error = await response.json();
-            showModal(t('error'), error.error || t('failedToDeleteBook'));
+            showModal('Error', error.error || 'Failed to delete book');
         }
     } catch (error) {
         console.error('Error deleting book progress:', error);
@@ -578,7 +593,6 @@ function editBookDetails(bookId) {
         return;
     }
     
-    // Populate the edit form
     document.getElementById('editBookId').value = book.id;
     document.getElementById('editBookClass').value = book.class_name;
     document.getElementById('editBookSubject').value = book.subject_name;
@@ -587,13 +601,12 @@ function editBookDetails(bookId) {
     document.getElementById('editCompletedPages').value = book.completed_pages;
     document.getElementById('editBookNotes').value = book.notes || '';
     
-    // Show the edit modal
     document.getElementById('editBookModal').style.display = 'block';
 }
 
 function closeEditBookModal() {
     document.getElementById('editBookModal').style.display = 'none';
-    document.getElementById('editBookForm').reset();
+    document.getElementById('bookForm').reset();
 }
 
 async function updateBookDetails() {
@@ -616,7 +629,6 @@ async function updateBookDetails() {
         notes: document.getElementById('editBookNotes').value
     };
     
-    // Validation
     if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
         showModal('Error', 'Please fill in all required fields.');
         return;
@@ -654,10 +666,10 @@ function showDeleteAllEducationModal() {
     const modalContent = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>⚠️ ${t('deleteAllEducationData')}</h3>
+                <h3>⚠️ Delete All Education Data</h3>
             </div>
             <div class="modal-body">
-                <p><strong>Warning:</strong> ${t('deleteAllEducationWarning')}</p>
+                <p><strong>Warning:</strong> This will permanently delete:</p>
                 <ul>
                     <li>All book progress records</li>
                     <li>All class and subject information</li>
@@ -669,7 +681,7 @@ function showDeleteAllEducationModal() {
             </div>
             <div class="modal-footer">
                 <button onclick="deleteAllEducationData()" class="btn btn-danger">
-                    <i class="fas fa-trash-alt"></i> ${t('yesDeleteAllData')}
+                    <i class="fas fa-trash-alt"></i> Yes, Delete All Data
                 </button>
                 <button onclick="closeModal()" class="btn btn-secondary">
                     Cancel
@@ -678,7 +690,7 @@ function showDeleteAllEducationModal() {
         </div>
     `;
     
-    showModal(t('deleteAllEducationData'), modalContent, true);
+    showModal('Delete All Education Data', modalContent, true);
 }
 
 async function deleteAllEducationData() {
@@ -703,17 +715,20 @@ async function deleteAllEducationData() {
     }
 }
 
-let books = []; // Global books array
-
+// Book management functions
 async function loadBooks() {
     try {
         console.log('Loading books...');
+        console.log('Current books array before loading:', books);
         const response = await fetch('/api/books');
         console.log('Response status:', response.status);
         
         if (response.ok) {
-            books = await response.json();
-            console.log('Books loaded:', books);
+            const booksData = await response.json();
+            console.log('Books data received:', booksData);
+            books = booksData;
+            console.log('Books array after assignment:', books);
+            console.log('Books array length:', books.length);
             displayBooks();
             updateBookDropdowns();
         } else {
@@ -725,7 +740,6 @@ async function loadBooks() {
 }
 
 function displayBooks() {
-    // Display books in settings section
     const settingsBooksList = document.getElementById('settingsBooksList');
     if (settingsBooksList) {
         console.log('Displaying books in settings:', books);
@@ -804,6 +818,7 @@ async function addBook() {
             document.getElementById('newBookName').value = '';
             document.getElementById('newBookClass').value = '';
             await loadBooks();
+            updateBookDropdowns();
         } else {
             const error = await response.json();
             showModal('Error', error.error || 'Failed to add book');
@@ -844,7 +859,6 @@ async function editBook(bookId) {
         class: editBookClass.value
     });
     
-    // Show the modal
     editBookModal.style.display = 'block';
     console.log('Modal should be visible now');
 }
@@ -884,6 +898,7 @@ async function updateBook() {
             showModal('Success', 'Book updated successfully');
             closeBookManagementEditModal();
             await loadBooks();
+            updateBookDropdowns();
         } else {
             const error = await response.json();
             showModal('Error', error.error || 'Failed to update book');
@@ -906,6 +921,7 @@ async function deleteBook(bookId) {
         if (response.ok) {
             showModal('Success', 'Book deleted successfully');
             await loadBooks();
+            updateBookDropdowns();
         } else {
             const error = await response.json();
             showModal('Error', error.error || 'Failed to delete book');
@@ -917,18 +933,29 @@ async function deleteBook(bookId) {
 }
 
 function updateBookDropdowns() {
-    // Update main book dropdown
+    console.log('updateBookDropdowns called');
+    console.log('books array in updateBookDropdowns:', books);
+    console.log('books length in updateBookDropdowns:', books.length);
+    
     const bookDropdown = document.getElementById('bookName');
     if (bookDropdown) {
-        bookDropdown.innerHTML = '<option value="">Select Book</option>' + 
+        console.log('bookName dropdown found');
+        const options = '<option value="">Select Book</option>' + 
             books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+        console.log('Generated options:', options);
+        bookDropdown.innerHTML = options;
+        console.log('Dropdown updated with options');
+    } else {
+        console.error('bookName dropdown not found');
     }
     
-    // Update edit book dropdown
     const editBookDropdown = document.getElementById('editBookName');
     if (editBookDropdown) {
+        console.log('editBookName dropdown found');
         editBookDropdown.innerHTML = '<option value="">Select Book</option>' + 
             books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+    } else {
+        console.error('editBookName dropdown not found');
     }
 }
 
@@ -956,57 +983,46 @@ async function updateBookDropdownForClass(classId) {
         classBooks.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
 }
 
+// Academic year functions
 function saveAcademicYearStart() {
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     const startDate = academicYearStartInput.value;
     
     if (!startDate) {
-        showModal(t('error'), t('selectAcademicYearStart'));
+        showModal('Error', 'Please select an academic year start date');
         return;
     }
     
-    // Update the global academic year start date
     window.academicYearStartDate = startDate;
     localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
     
-    // Update calendar restrictions
     updateDateRestrictions();
     
-    showModal(t('success'), t('academicYearStartUpdated'));
+    showModal('Success', 'Academic year start date updated successfully');
     
-    // Clear the input
     academicYearStartInput.value = '';
-    
-    // Update display
     displayAcademicYearStart();
 }
 
 function clearAcademicYearStart() {
-    if (confirm(t('confirmClearAcademicYearStart'))) {
+    if (confirm('Are you sure you want to clear the academic year start date?')) {
         window.academicYearStartDate = null;
         localStorage.removeItem('madaniMaktabAcademicYearStart');
         
-        // Clear date restrictions
         clearDateRestrictions();
-        
-        // Update display
         displayAcademicYearStart();
         
-        showModal(t('success'), t('academicYearStartCleared'));
+        showModal('Success', 'Academic year start date cleared successfully');
     }
 }
 
 function initializeAcademicYearStart() {
-    // Load academic year start date from localStorage
     const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
     if (savedStartDate) {
         window.academicYearStartDate = savedStartDate;
         console.log('Loaded academic year start date:', window.academicYearStartDate);
         
-        // Update date restrictions
         updateDateRestrictions();
-        
-        // Update display
         displayAcademicYearStart();
     }
 }
@@ -1017,32 +1033,26 @@ function displayAcademicYearStart() {
     const displayContainer = document.getElementById('currentAcademicYearDisplay');
     
     if (window.academicYearStartDate) {
-        // Set the input value
         if (academicYearStartInput) {
             academicYearStartInput.value = window.academicYearStartDate;
         }
         
-        // Update display span
         if (displaySpan) {
-            displaySpan.textContent = formatDate(window.academicYearStartDate);
+            displaySpan.textContent = window.academicYearStartDate;
         }
         
-        // Show the display container
         if (displayContainer) {
             displayContainer.style.display = 'block';
         }
     } else {
-        // Clear the input
         if (academicYearStartInput) {
             academicYearStartInput.value = '';
         }
         
-        // Clear display span
         if (displaySpan) {
             displaySpan.textContent = 'Not set';
         }
         
-        // Hide the display container
         if (displayContainer) {
             displayContainer.style.display = 'none';
         }
@@ -1051,14 +1061,12 @@ function displayAcademicYearStart() {
 
 function updateDateRestrictions() {
     if (!window.academicYearStartDate) {
-        // Clear restrictions if no academic year start date is set
         clearDateRestrictions();
         return;
     }
     
     console.log('Updating date restrictions from academic year start:', window.academicYearStartDate);
     
-    // List of date input IDs that should be restricted
     const dateInputIds = [
         'reportStartDate',
         'reportEndDate',
@@ -1070,10 +1078,8 @@ function updateDateRestrictions() {
     dateInputIds.forEach(inputId => {
         const dateInput = document.getElementById(inputId);
         if (dateInput) {
-            // Set minimum date to academic year start
             dateInput.min = window.academicYearStartDate;
             
-            // If current value is before academic year start, clear it
             if (dateInput.value && dateInput.value < window.academicYearStartDate) {
                 dateInput.value = '';
                 console.log(`Cleared ${inputId} as it was before academic year start`);
@@ -1083,7 +1089,6 @@ function updateDateRestrictions() {
         }
     });
     
-    // Update academic year start input
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     if (academicYearStartInput) {
         academicYearStartInput.value = window.academicYearStartDate;
@@ -1091,7 +1096,6 @@ function updateDateRestrictions() {
 }
 
 function clearDateRestrictions() {
-    // List of date input IDs that should have restrictions cleared
     const dateInputIds = [
         'reportStartDate',
         'reportEndDate',
@@ -1108,40 +1112,40 @@ function clearDateRestrictions() {
         }
     });
     
-    // Clear academic year start input
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     if (academicYearStartInput) {
         academicYearStartInput.value = '';
     }
 }
 
+// App name functions
 function saveAppName() {
     const appNameInput = document.getElementById('appNameInput');
     const newAppName = appNameInput.value.trim();
     
     if (!newAppName) {
-        showModal(t('error'), t('enterAppName'));
+        showModal('Error', 'Please enter an app name');
         return;
     }
     
     localStorage.setItem('madaniMaktabAppName', newAppName);
     document.title = newAppName;
     
-    // Update app name display
     const appNameDisplay = document.getElementById('appNameDisplay');
     if (appNameDisplay) {
         appNameDisplay.textContent = newAppName;
     }
     
-    showModal(t('success'), t('appNameUpdated'));
+    showModal('Success', 'App name updated successfully');
     appNameInput.value = '';
 }
 
+// Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Load books when page loads
-    loadBooks();
+    if (typeof loadBooks === 'function') {
+        loadBooks();
+    }
     
-    // Add event listener for book management form submission
     const bookManagementEditForm = document.getElementById('bookManagementEditForm');
     if (bookManagementEditForm) {
         console.log('Book management edit form found, adding event listener');
@@ -1154,7 +1158,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Book management edit form not found');
     }
     
-    // Add event listener for class selection change in education form
     const bookClassSelect = document.getElementById('bookClass');
     if (bookClassSelect) {
         bookClassSelect.addEventListener('change', function() {
@@ -1162,6 +1165,78 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBookDropdownForClass(classId);
         });
     }
+    
+    const bookForm = document.getElementById('bookForm');
+    if (bookForm) {
+        console.log('Book form found, adding event listener');
+        bookForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Book form submitted');
+            console.log('Form data:', {
+                bookClass: document.getElementById('bookClass').value,
+                bookSubject: document.getElementById('bookSubject').value,
+                bookName: document.getElementById('bookName').value,
+                totalPages: document.getElementById('totalPages').value,
+                completedPages: document.getElementById('completedPages').value,
+                bookNotes: document.getElementById('bookNotes').value
+            });
+            addBookProgress();
+        });
+    } else {
+        console.error('Book form not found');
+    }
+    
+    const showAddBookFormBtn = document.getElementById('showAddBookFormBtn');
+    if (showAddBookFormBtn) {
+        console.log('Show add book form button found, adding event listener');
+        showAddBookFormBtn.addEventListener('click', async function() {
+            await showAddBookForm();
+        });
+    } else {
+        console.error('Show add book form button not found');
+    }
 });
 
-export { educationProgress, books, updateClassDropdowns, addClass, deleteClass, displayClasses, editClass, addHoliday, deleteHoliday, displayHolidays, isHoliday, getHolidayName, displayBooksList, showAddBookForm, hideAddBookForm, filterBooksByClass, editBookDetails, closeEditBookModal, showDeleteAllEducationModal, closeBookManagementEditModal, displayBooks, getClassNameById, getClassIdByName, addBook, editBook, deleteBook, updateBookDropdowns, initializeAcademicYearStart, saveAcademicYearStart, clearAcademicYearStart, displayAcademicYearStart, updateDateRestrictions, clearDateRestrictions, saveAppName }
+// Export all functions
+export { 
+    educationProgress, 
+    books, 
+    updateClassDropdowns, 
+    addClass, 
+    deleteClass, 
+    displayClasses, 
+    editClass, 
+    addHoliday, 
+    deleteHoliday, 
+    displayHolidays, 
+    isHoliday, 
+    getHolidayName, 
+    displayBooksList, 
+    showAddBookForm, 
+    hideAddBookForm, 
+    filterBooksByClass, 
+    editBookDetails, 
+    closeEditBookModal, 
+    showDeleteAllEducationModal, 
+    deleteAllEducationData, 
+    closeBookManagementEditModal, 
+    displayBooks, 
+    getClassNameById, 
+    getClassIdByName, 
+    addBook, 
+    editBook, 
+    deleteBook, 
+    updateBookDropdowns, 
+    addBookProgress, 
+    updateBookProgress, 
+    deleteBookProgress, 
+    initializeAcademicYearStart, 
+    saveAcademicYearStart, 
+    clearAcademicYearStart, 
+    displayAcademicYearStart, 
+    updateDateRestrictions, 
+    clearDateRestrictions, 
+    saveAppName,
+    loadBooks,
+    loadEducationProgress
+}

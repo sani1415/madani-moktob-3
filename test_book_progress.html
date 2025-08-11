@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Book Progress</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { padding: 10px 20px; margin: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Book Progress</h1>
+    
+    <div id="testResults"></div>
+    
+    <form id="bookForm">
+        <div class="form-group">
+            <label for="bookClass">Class *</label>
+            <select id="bookClass" required>
+                <option value="">Select Class</option>
+                <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
+                <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
+                <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
+                <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
+                <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="bookSubject">Subject *</label>
+            <input type="text" id="bookSubject" placeholder="e.g., Mathematics, Science, English" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="bookName">Book Name *</label>
+            <select id="bookName" required>
+                <option value="">Select Book</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="totalPages">Total Pages *</label>
+            <input type="number" id="totalPages" placeholder="e.g., 120" min="1" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="completedPages">Completed Pages</label>
+            <input type="number" id="completedPages" placeholder="e.g., 45" min="0" value="0">
+        </div>
+        
+        <div class="form-group">
+            <label for="bookNotes">Notes</label>
+            <textarea id="bookNotes" placeholder="Any additional notes about the book progress"></textarea>
+        </div>
+        
+        <button type="submit">Save Book Progress</button>
+        <button type="button" onclick="testLoadBooks()">Test Load Books</button>
+        <button type="button" onclick="testUpdateDropdowns()">Test Update Dropdowns</button>
+    </form>
+
+    <script>
+        let books = [];
+        
+        async function loadBooks() {
+            try {
+                console.log('Loading books...');
+                console.log('Current books array before loading:', books);
+                const response = await fetch('/api/books');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const booksData = await response.json();
+                    console.log('Books data received:', booksData);
+                    books = booksData;
+                    console.log('Books array after assignment:', books);
+                    console.log('Books array length:', books.length);
+                    updateBookDropdowns();
+                    showResult('Books loaded successfully: ' + books.length + ' books', 'success');
+                } else {
+                    console.error('Failed to load books, status:', response.status);
+                    showResult('Failed to load books, status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading books:', error);
+                showResult('Error loading books: ' + error.message, 'error');
+            }
+        }
+        
+        function updateBookDropdowns() {
+            console.log('updateBookDropdowns called');
+            console.log('books array in updateBookDropdowns:', books);
+            console.log('books length in updateBookDropdowns:', books.length);
+            
+            const bookDropdown = document.getElementById('bookName');
+            if (bookDropdown) {
+                console.log('bookName dropdown found');
+                const options = '<option value="">Select Book</option>' + 
+                    books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('');
+                console.log('Generated options:', options);
+                bookDropdown.innerHTML = options;
+                console.log('Dropdown updated with options');
+                showResult('Dropdown updated with ' + books.length + ' books', 'success');
+            } else {
+                console.error('bookName dropdown not found');
+                showResult('bookName dropdown not found', 'error');
+            }
+        }
+        
+        async function addBookProgress() {
+            console.log('addBookProgress called');
+            console.log('books array:', books);
+            console.log('books length:', books.length);
+            
+            const bookId = document.getElementById('bookName').value;
+            console.log('selected bookId:', bookId);
+            
+            const selectedBook = books.find(book => book.id == bookId);
+            console.log('selectedBook:', selectedBook);
+            
+            if (!selectedBook) {
+                showResult('Please select a book from the dropdown.', 'error');
+                return;
+            }
+            
+            const formData = {
+                class_name: document.getElementById('bookClass').value,
+                subject_name: document.getElementById('bookSubject').value,
+                book_id: parseInt(bookId),
+                book_name: selectedBook.book_name,
+                total_pages: parseInt(document.getElementById('totalPages').value),
+                completed_pages: parseInt(document.getElementById('completedPages').value) || 0,
+                notes: document.getElementById('bookNotes').value
+            };
+            
+            console.log('Form data:', formData);
+            
+            // Validation
+            if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
+                showResult('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            if (formData.completed_pages > formData.total_pages) {
+                showResult('Completed pages cannot be more than total pages.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/education', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    showResult('Book progress added successfully!', 'success');
+                    document.getElementById('bookForm').reset();
+                } else {
+                    const error = await response.json();
+                    showResult('Failed to add book progress: ' + (error.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error adding book progress:', error);
+                showResult('Network error. Please try again.', 'error');
+            }
+        }
+        
+        function testLoadBooks() {
+            loadBooks();
+        }
+        
+        function testUpdateDropdowns() {
+            updateBookDropdowns();
+        }
+        
+        function showResult(message, type) {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        // Add event listener for form submission
+        document.getElementById('bookForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form submitted');
+            addBookProgress();
+        });
+        
+        // Load books when page loads
+        window.addEventListener('load', function() {
+            console.log('Page loaded, calling loadBooks...');
+            loadBooks();
+        });
+    </script>
+</body>
+</html>
