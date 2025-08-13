@@ -8,9 +8,7 @@ let books = [];
 
 // Helper function to save data to localStorage
 function saveData() {
-    if (window.classes) {
-        localStorage.setItem('madaniMaktabClasses', JSON.stringify(window.classes));
-    }
+    // Note: classes are now managed through the database API
     if (window.students) {
         localStorage.setItem('madaniMaktabStudents', JSON.stringify(window.students));
     }
@@ -22,192 +20,122 @@ function saveData() {
 
 // Class management functions
 function updateClassDropdowns() {
-    const dropdowns = ['studentClass', 'classFilter', 'reportClass'];
-    
-    dropdowns.forEach(dropdownId => {
-        const dropdown = document.getElementById(dropdownId);
+    const dropdownIds = [
+        'studentClass', 'classFilter', 'reportClass', 'bookClass', 'editBookClass', 'newBookClass', 'educationClassFilter'
+    ];
+
+    dropdownIds.forEach(id => {
+        const dropdown = document.getElementById(id);
         if (dropdown) {
-            // Save current value
             const currentValue = dropdown.value;
-            
-            // Clear existing options (except first option for some dropdowns)
-            if (dropdownId === 'studentClass') {
-                dropdown.innerHTML = '<option value="">Select Class</option>';
-            } else {
-                dropdown.innerHTML = '<option value="">All Classes</option>';
-            }
-            
-            // Add class options
-            if (window.classes) {
-                window.classes.forEach(className => {
-                    const option = document.createElement('option');
-                    option.value = className;
-                    option.textContent = className;
-                    dropdown.appendChild(option);
-                });
-                
-                // Restore previous value if it still exists
-                if (currentValue && window.classes.includes(currentValue)) {
-                    dropdown.value = currentValue;
-                }
-            }
+            // Preserve the first option (e.g., "All Classes" or "Select Class")
+            const firstOption = dropdown.options[0] ? dropdown.options[0].outerHTML : '';
+            dropdown.innerHTML = firstOption;
+
+            window.classes.forEach(cls => {
+                // Use cls.name for both value and text content for consistency
+                dropdown.options.add(new Option(cls.name, cls.name));
+            });
+
+            // Try to restore the previously selected value
+            dropdown.value = currentValue;
         }
     });
 }
 
-function addClass() {
+async function addClass() {
     const newClassName = document.getElementById('newClassName').value.trim();
-    
     if (!newClassName) {
         showModal('Error', 'Please enter a class name');
         return;
     }
-    
-    if (window.classes && window.classes.includes(newClassName)) {
-        showModal('Error', 'Class already exists');
-        return;
+
+    try {
+        const response = await fetch('/api/classes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newClassName })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            showModal('Success', `"${newClassName}" class added successfully`);
+            document.getElementById('newClassName').value = '';
+            await refreshClasses(); // Refresh global class list and UI
+        } else {
+            showModal('Error', result.error || 'Failed to add class');
+        }
+    } catch (error) {
+        showModal('Error', 'A network error occurred.');
     }
-    
-    // Update global classes array
-    window.classes.push(newClassName);
-    saveData();
-    updateClassDropdowns();
-    displayClasses();
-    
-    document.getElementById('newClassName').value = '';
-    showModal('Success', `${newClassName} class added successfully`);
 }
 
-function deleteClass(className) {
-    if (confirm(`Are you sure you want to delete "${className}"? This action cannot be undone.`)) {
-        // Update global classes array
-        window.classes = window.classes.filter(cls => cls !== className);
-        
-        // Remove students from this class
-        window.students = window.students.filter(student => student.class !== className);
-        
-        saveData();
-        updateClassDropdowns();
-        displayClasses();
-        
-        showModal('Success', `${className} class deleted successfully`);
+async function deleteClass(classId, className) {
+    if (confirm(`Are you sure you want to delete "${className}"? This will remove the class from all associated students.`)) {
+        try {
+            const response = await fetch(`/api/classes/${classId}`, { method: 'DELETE' });
+
+            if (response.ok) {
+                showModal('Success', `"${className}" class deleted successfully.`);
+                await refreshClasses(); // Refresh global class list and UI
+            } else {
+                const result = await response.json();
+                showModal('Error', result.error || 'Failed to delete class.');
+            }
+        } catch (error) {
+            showModal('Error', 'A network error occurred.');
+        }
     }
 }
 
 function displayClasses() {
-    console.log('🔍 displayClasses called');
-    console.log('🔍 classes array:', window.classes);
-    console.log('🔍 classes length:', window.classes ? window.classes.length : 'undefined');
-    
     const classesList = document.getElementById('classesList');
-    console.log('🔍 classesList element:', classesList);
-    
-    if (!classesList) {
-        console.error('❌ classesList element not found');
-        return;
-    }
-    
+    if (!classesList) return;
+
     if (!window.classes || window.classes.length === 0) {
-        console.log('📝 No classes to display, showing "No classes" message');
         classesList.innerHTML = '<p>No classes added yet</p>';
         return;
     }
-    
-    console.log('📝 Displaying classes:', window.classes);
-    classesList.innerHTML = window.classes.map(className => `
+
+    classesList.innerHTML = window.classes.map(cls => `
         <div class="list-item">
             <div class="list-item-info">
-                <strong>${className}</strong>
+                <strong>${cls.name}</strong>
             </div>
             <div>
-                <button onclick="editClass('${className}')" class="btn btn-secondary btn-small" title="Edit Class">
+                <button onclick="editClass(${cls.id}, '${cls.name}')" class="btn btn-secondary btn-small" title="Edit Class">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteClass('${className}')" class="btn btn-danger btn-small" title="Delete Class">
+                <button onclick="deleteClass(${cls.id}, '${cls.name}')" class="btn btn-danger btn-small" title="Delete Class">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
     `).join('');
-    
-    console.log('✅ Classes displayed successfully');
 }
 
-function editClass(oldClassName) {
-    // Find the list item containing this class name
-    const listItems = document.querySelectorAll('#classesList .list-item');
-    let targetListItem = null;
-    let targetStrong = null;
-    
-    for (const item of listItems) {
-        const strongElement = item.querySelector('.list-item-info strong');
-        if (strongElement && strongElement.textContent === oldClassName) {
-            targetListItem = item;
-            targetStrong = strongElement;
-            break;
-        }
-    }
-    
-    if (!targetListItem || !targetStrong) {
-        showModal('Error', 'Class element not found');
-        return;
-    }
-    
-    const currentName = targetStrong.textContent;
-    
-    // Create input field
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentName;
-    input.className = 'class-edit-input';
-    input.style.width = '150px';
-    
-    // Replace strong with input
-    targetStrong.parentNode.replaceChild(input, targetStrong);
-    input.focus();
-    input.select();
-    
-    // Handle save/cancel
-    const saveEdit = () => {
-        const newName = input.value.trim();
-        if (newName && newName !== oldClassName) {
-            if (window.classes && window.classes.includes(newName)) {
-                showModal('Error', 'Class already exists');
-                return;
-            }
-            
-            // Update class name
-            const classIndex = window.classes.indexOf(oldClassName);
-            if (classIndex !== -1) {
-                window.classes[classIndex] = newName;
-            }
-            
-            // Update students' class names
-            window.students.forEach(student => {
-                if (student.class === oldClassName) {
-                    student.class = newName;
-                }
+async function editClass(classId, oldClassName) {
+    const newClassName = prompt(`Enter the new name for "${oldClassName}":`, oldClassName);
+
+    if (newClassName && newClassName.trim() !== oldClassName) {
+        try {
+            const response = await fetch(`/api/classes/${classId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newClassName.trim() })
             });
-            
-            saveData();
-            updateClassDropdowns();
-            displayClasses();
-            
-            showModal('Success', `Class renamed from "${oldClassName}" to "${newName}"`);
-        } else {
-            // Cancel edit
-            displayClasses();
+
+            const result = await response.json();
+            if (response.ok) {
+                showModal('Success', 'Class updated successfully.');
+                await refreshClasses(); // Refresh global class list and UI
+            } else {
+                showModal('Error', result.error || 'Failed to update class.');
+            }
+        } catch (error) {
+            showModal('Error', 'A network error occurred.');
         }
-    };
-    
-    input.addEventListener('blur', saveEdit);
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            saveEdit();
-        } else if (e.key === 'Escape') {
-            displayClasses();
-        }
-    });
+    }
 }
 
 // Holiday management functions
@@ -1254,6 +1182,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Helper to refresh classes from the server and update the UI
+async function refreshClasses() {
+    try {
+        const response = await fetch('/api/classes');
+        if (response.ok) {
+            window.classes = await response.json();
+            displayClasses();
+            updateClassDropdowns();
+            // If dashboard is active, refresh it
+            if (document.getElementById('dashboard').classList.contains('active')) {
+                window.updateDashboard();
+            }
+        }
+    } catch (error) {
+        console.error("Failed to refresh classes:", error);
+    }
+}
+
 // Export all functions
 export { 
     educationProgress, 
@@ -1295,5 +1241,6 @@ export {
     clearDateRestrictions, 
     saveAppName,
     loadBooks,
-    loadEducationProgress
+    loadEducationProgress,
+    refreshClasses
 }

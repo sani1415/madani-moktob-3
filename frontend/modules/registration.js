@@ -174,9 +174,9 @@ function displayStudentsList() {
                             <th>
                                 <select id="classFilterReg" onchange="updateStudentFilter('class', this.value)" class="column-filter">
                                     <option value="">${t('allClasses')}</option>
-                                    ${classes.map(className => 
-                                        `<option value="${className}" ${studentFilters.class === className ? 'selected' : ''}>${className}</option>`
-                                    ).join('')}
+                                    ${window.classes && window.classes.map(cls => 
+                                        `<option value="${cls.name}" ${studentFilters.class === cls.name ? 'selected' : ''}>${cls.name}</option>`
+                                    ).join('') || ''}
                                 </select>
                             </th>
                             <th>
@@ -495,9 +495,9 @@ function updateClassFilterOptions() {
     
     classFilterSelect.innerHTML = `
         <option value="">${t('allClasses')}</option>
-        ${classes.map(className => 
-            `<option value="${className}" ${currentValue === className ? 'selected' : ''}>${className}</option>`
-        ).join('')}
+        ${window.classes && window.classes.map(cls => 
+            `<option value="${cls.name}" ${currentValue === cls.name ? 'selected' : ''}>${cls.name}</option>`
+        ).join('') || ''}
     `;
 }
 
@@ -720,161 +720,85 @@ async function readExcelFile(file) {
 
 async function importStudentsBatch(studentsData) {
     const total = studentsData.length;
-    let successful = 0;
-    let failed = 0;
-    let updated = 0;
-    let duplicateRolls = 0;
-    const errors = [];
+    updateProgress(60, `Uploading ${total} students for validation...`);
     
-    updateProgress(60, `Importing ${total} students...`);
-    
-    for (let i = 0; i < studentsData.length; i++) {
-        const studentData = studentsData[i];
-        const progress = 60 + Math.round((i / total) * 30);
-        
-        updateProgress(progress, `Processing student ${i + 1} of ${total}: ${studentData.name}`);
-        
-        try {
-            // Generate ID if not provided
-            const studentId = studentData.id || `ST${Date.now().toString().slice(-6)}_${i}`;
+    // We need to map the headers from the CSV (lowercase) to the database schema (camelCase)
+    const formattedStudentsData = studentsData.map(student => ({
+        id: student.id || generateStudentId(), // Assign new ID if missing
+        name: student.name,
+        fatherName: student.fathername,
+        rollNumber: student.rollnumber,
+        mobileNumber: student.mobilenumber,
+        district: student.district,
+        upazila: student.upazila,
+        class: student.class,
+        registrationDate: student.registrationdate || new Date().toISOString().split('T')[0]
+    }));
+
+    try {
+        const response = await fetch('/api/students/bulk-import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formattedStudentsData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            updateProgress(100, 'Import complete!');
+            showImportResults(total, total, 0, 0, 0, []); // Simplified results
             
-            // Check if student with this ID already exists
-            const existingStudent = students.find(s => s.id === studentId);
-            const isUpdate = !!existingStudent;
-            
-            // Check for duplicate roll number (only for new students or different students)
-            const rollNumberConflict = students.find(s => 
-                s.rollNumber === studentData.rollnumber && s.id !== studentId
-            );
-            
-            if (rollNumberConflict) {
-                duplicateRolls++;
-                errors.push(`Row ${i + 2}: Roll number ${studentData.rollnumber} already exists for another student (${rollNumberConflict.name})`);
-                continue;
+            // Refresh local student data
+            const studentsResponse = await fetch('/api/students');
+            if (studentsResponse.ok) {
+                window.students = await studentsResponse.json();
             }
-            
-            // Prepare student data
-            const formData = {
-                id: studentId,
-                name: studentData.name,
-                fatherName: studentData.fathername,
-                rollNumber: studentData.rollnumber,
-                mobileNumber: studentData.mobilenumber,
-                district: studentData.district,
-                upazila: studentData.upazila,
-                class: studentData.class,
-                registrationDate: studentData.registrationdate || new Date().toISOString().split('T')[0]
-            };
-            
-            let response;
-            if (isUpdate) {
-                // Update existing student
-                response = await fetch(`/api/students/${studentId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
+        } else {
+            // Handle the specific class validation error
+            if (response.status === 400 && result.invalid_classes) {
+                const errorMessage = `${result.error}: ${result.invalid_classes.join(', ')}. Please add them in Settings before uploading.`;
+                showModal('Upload Failed', errorMessage);
             } else {
-                // Add new student
-                response = await fetch('/api/students', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+                showModal('Import Error', result.error || 'An unknown error occurred.');
             }
             
-            if (response.ok) {
-                const result = await response.json();
-                
-                if (isUpdate) {
-                    // Update existing student in local array
-                    const index = students.findIndex(s => s.id === studentId);
-                    if (index !== -1) {
-                        students[index] = result.student;
-                    }
-                    updated++;
-                } else {
-                    // Add new student to local array
-                students.push(result.student);
-                successful++;
-                }
-            } else {
-                const error = await response.json();
-                failed++;
-                errors.push(`Row ${i + 2}: ${error.error || (isUpdate ? 'Update failed' : 'Registration failed')} (${studentData.name})`);
-            }
-            
-        } catch (error) {
-            failed++;
-            errors.push(`Row ${i + 2}: Network error - ${error.message} (${studentData.name})`);
+            // Reset progress on failure
+            document.getElementById('importResults').style.display = 'none';
         }
+    } catch (error) {
+        console.error('Bulk import error:', error);
+        showModal('Network Error', 'Could not connect to the server.');
+        document.getElementById('importResults').style.display = 'none';
+    } finally {
+        hideImportProgress();
         
-        // Small delay to prevent overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Refresh the student list and dashboard regardless of outcome
+        displayStudentsList();
+        updateDashboard();
     }
-    
-    updateProgress(100, 'Import completed!');
-    
-    // Show results
-    showImportResults(total, successful, failed, updated, duplicateRolls, errors);
-    
-    // Refresh the student list
-    displayStudentsList();
-    updateDashboard();
 }
 
 function showImportResults(total, successful, failed, updated, duplicateRolls, errors) {
     const resultsDiv = document.getElementById('importResults');
     
+    let summaryHTML;
+    if (errors && errors.length > 0) {
+        // This is now for client-side parsing errors only
+        summaryHTML = `<div class="error-list">
+            <h5>❌ CSV Parsing Errors (${errors.length}):</h5>
+            <ul>${errors.slice(0, 20).map(e => `<li>${e}</li>`).join('')}</ul>
+        </div>`;
+    } else {
+        summaryHTML = `<div style="text-align: center; padding: 20px; background: #d4edda; border-radius: 8px; color: #155724;">
+            <h5 style="margin:0;">✅ Success!</h5>
+            <p style="margin: 5px 0 0 0;">${successful} student records were processed successfully.</p>
+        </div>`;
+    }
+    
     resultsDiv.innerHTML = `
-        <div class="import-summary">
-            <div class="summary-card success">
-                <h4>${successful}</h4>
-                <p>New Students Added</p>
-            </div>
-            <div class="summary-card info">
-                <h4>${updated}</h4>
-                <p>Students Updated</p>
-            </div>
-            <div class="summary-card error">
-                <h4>${failed}</h4>
-                <p>Failed to Process</p>
-            </div>
-            <div class="summary-card warning">
-                <h4>${duplicateRolls}</h4>
-                <p>Duplicate Roll Numbers</p>
-            </div>
-            <div class="summary-card info">
-                <h4>${total}</h4>
-                <p>Total Records Processed</p>
-            </div>
-        </div>
-        
-        ${(successful > 0 || updated > 0) ? `
-            <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-                <h5 style="color: #155724; margin: 0 0 5px 0;">✅ Import Successful!</h5>
-                <p style="color: #155724; margin: 0;">
-                    ${successful > 0 ? `Added ${successful} new students. ` : ''}
-                    ${updated > 0 ? `Updated ${updated} existing students. ` : ''}
-                    All changes are now available in your student list.
-                </p>
-            </div>
-        ` : ''}
-        
-        ${errors.length > 0 ? `
-            <div class="error-list">
-                <h5>❌ Import Errors (${errors.length}):</h5>
-                <ul>
-                    ${errors.slice(0, 20).map(error => `<li>${error}</li>`).join('')}
-                    ${errors.length > 20 ? `<li><em>... and ${errors.length - 20} more errors</em></li>` : ''}
-                </ul>
-            </div>
-        ` : ''}
-        
+        ${summaryHTML}
         <div style="margin-top: 20px; text-align: center;">
             <button onclick="hideBulkImport()" class="btn btn-primary">
                 <i class="fas fa-list"></i> View Student List

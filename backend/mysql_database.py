@@ -106,6 +106,15 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create classes table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS classes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
             # Create books table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS books (
@@ -501,6 +510,81 @@ class MySQLDatabase:
             
         except Error as e:
             print(f"Error deleting holiday: {e}")
+            raise
+    
+    # Class Management Methods
+    def get_classes(self):
+        """Get all classes from the database"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('SELECT * FROM classes ORDER BY name')
+            classes = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return classes
+        except Error as e:
+            logger.error(f"Error getting classes: {e}")
+            return []
+
+    def add_class(self, name):
+        """Add a new class"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO classes (name) VALUES (%s)', (name,))
+            class_id = cursor.lastrowid
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return class_id
+        except Error as e:
+            logger.error(f"Error adding class: {e}")
+            raise
+
+    def update_class(self, class_id, new_name):
+        """Update an existing class's name"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # First, update the students table
+            cursor.execute('SELECT name FROM classes WHERE id = %s', (class_id,))
+            old_name_row = cursor.fetchone()
+            if old_name_row:
+                old_name = old_name_row[0]
+                cursor.execute('UPDATE students SET class = %s WHERE class = %s', (new_name, old_name))
+
+            # Then, update the classes table
+            cursor.execute('UPDATE classes SET name = %s WHERE id = %s', (new_name, class_id))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Error as e:
+            logger.error(f"Error updating class: {e}")
+            raise
+
+    def delete_class(self, class_id):
+        """Delete a class"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # Get the class name before deleting
+            cursor.execute('SELECT name FROM classes WHERE id = %s', (class_id,))
+            class_name_row = cursor.fetchone()
+            if class_name_row:
+                class_name = class_name_row[0]
+                # Optional: Handle students in the deleted class. Here we'll set their class to NULL.
+                # A better approach might be to prevent deletion if students exist.
+                cursor.execute('UPDATE students SET class = NULL WHERE class = %s', (class_name,))
+
+            cursor.execute('DELETE FROM classes WHERE id = %s', (class_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Error as e:
+            logger.error(f"Error deleting class: {e}")
             raise
     
     # Education Progress methods
