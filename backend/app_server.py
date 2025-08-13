@@ -107,6 +107,38 @@ def test_books():
     return send_from_directory('.', 'test_frontend.html')
 
 # API Routes
+@app.route('/api/students/bulk-import', methods=['POST'])
+def bulk_import_students():
+    try:
+        students_data = request.json
+        if not students_data:
+            return jsonify({'error': 'No student data provided'}), 400
+
+        # 1. Get all existing class names from the database
+        existing_classes_rows = db.get_classes()
+        existing_class_names = {cls['name'] for cls in existing_classes_rows}
+
+        # 2. Validate all classes in the CSV data before any import
+        csv_class_names = {student.get('class') for student in students_data if student.get('class')}
+        invalid_classes = csv_class_names - existing_class_names
+
+        if invalid_classes:
+            return jsonify({
+                'error': 'Upload failed. The following class names are not recognized',
+                'invalid_classes': sorted(list(invalid_classes))
+            }), 400
+
+        # 3. If all classes are valid, proceed with the import
+        # This part should be transactional in a real-world scenario
+        for student_data in students_data:
+            # Use existing add_student logic which handles updates (UPSERT)
+            db.add_student(student_data)
+
+        return jsonify({'success': True, 'message': f'Successfully imported/updated {len(students_data)} students.'})
+    except Exception as e:
+        logger.error(f"Bulk import error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/students', methods=['GET'])
 def get_students():
     try:
@@ -331,6 +363,62 @@ def delete_all_education_progress():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Class Management API Endpoints
+@app.route('/api/classes', methods=['GET'])
+def get_classes():
+    try:
+        classes = db.get_classes()
+        return jsonify(classes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/classes', methods=['POST'])
+def add_class():
+    try:
+        data = request.json
+        if not data or 'name' not in data:
+            return jsonify({'error': 'Class name is required'}), 400
+
+        class_name = data['name']
+        class_id = db.add_class(class_name)
+        return jsonify({'success': True, 'id': class_id, 'name': class_name}), 201
+    except Exception as e:
+        # Handle unique constraint violation for duplicate class names
+        if 'Duplicate entry' in str(e):
+            return jsonify({'error': f'Class "{class_name}" already exists.'}), 409
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/classes/<int:class_id>', methods=['PUT'])
+def update_class(class_id):
+    try:
+        data = request.json
+        if not data or 'name' not in data:
+            return jsonify({'error': 'New class name is required'}), 400
+
+        new_name = data['name']
+        success = db.update_class(class_id, new_name)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update class'}), 500
+    except Exception as e:
+        if 'Duplicate entry' in str(e):
+            return jsonify({'error': f'Class name "{new_name}" already exists.'}), 409
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/classes/<int:class_id>', methods=['DELETE'])
+def delete_class(class_id):
+    try:
+        # Add logic here to check if any students are in this class before deleting
+        # For now, we proceed with deletion as handled in mysql_database.py
+        success = db.delete_class(class_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to delete class'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Book Management API Endpoints
 @app.route('/api/books', methods=['GET'])
 def get_books():
@@ -469,9 +557,7 @@ def debug():
 # Static file serving (must be last to avoid catching API routes)
 @app.route('/<path:filename>')
 def serve_static(filename):
-    # Don't serve static files for API routes
-    if filename.startswith('api/'):
-        return jsonify({'error': 'API endpoint not found'}), 404
+    # Only serve static files, let API routes be handled by their specific handlers
     return send_from_directory(FRONTEND_PATH, filename)
 
 if __name__ == '__main__':

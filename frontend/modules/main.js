@@ -45,6 +45,8 @@ window.showBulkImport = Registration.showBulkImport;
 window.deleteAllStudents = Registration.deleteAllStudents;
 window.editStudent = Registration.editStudent;
 window.deleteStudent = Registration.deleteStudent;
+window.updateStudentFilter = Registration.updateStudentFilter;
+window.clearStudentFilters = Registration.clearStudentFilters;
 
 // Attendance functions
 window.markAllPresent = Attendance.markAllPresent;
@@ -61,6 +63,7 @@ window.updateDateInputMax = Attendance.updateDateInputMax;
 window.calculateStudentAttendanceStats = Attendance.calculateStudentAttendanceStats;
 window.getStudentAbsentDays = Attendance.getStudentAbsentDays;
 window.showAbsentDaysModal = Attendance.showAbsentDaysModal;
+window.changeSummaryPeriod = Attendance.changeSummaryPeriod;
 
 // Report functions
 window.generateReport = Misc.generateReport;
@@ -170,14 +173,14 @@ window.generateAttendanceTrackingCalendar = Dashboard.generateAttendanceTracking
 
 // Make state variables globally accessible
 window.students = State.students;
-window.classes = State.classes;
+// window.classes will be loaded from database in initializeApp()
 window.attendance = State.attendance;
 window.holidays = State.holidays;
 window.academicYearStartDate = State.academicYearStartDate;
 window.savedAttendanceDates = State.savedAttendanceDates;
 
 // Debug: Check state variables
-console.log('🔍 State.classes:', State.classes);
+// console.log('🔍 State.classes:', State.classes); // Removed - classes now loaded from database
 console.log('🔍 window.classes:', window.classes);
 console.log('🔍 classes length:', window.classes ? window.classes.length : 'undefined');
 
@@ -243,6 +246,15 @@ async function initializeApp() {
             // Update the global window variables directly
             window.holidays = holidaysData;
             console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
+        }
+        
+        // Load classes from database
+        const classesResponse = await fetch('/api/classes');
+        if (classesResponse.ok) {
+            const classesData = await classesResponse.json();
+            // Update the global window variables directly
+            window.classes = classesData; // This will be an array of objects like [{id: 1, name: '...'}, ...]
+            console.log(`✅ Loaded ${classesData.length} classes from database`);
         }
         
         // Load education progress and books from database

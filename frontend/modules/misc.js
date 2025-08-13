@@ -447,14 +447,18 @@ function showEncodingErrorModal(message) {
 function debugClassNames() {
     console.log("=== CLASS NAME DEBUG ===");
     console.log("Predefined classes:");
-    classes.forEach((className, index) => {
-        console.log(`${index + 1}. "${className}" (Length: ${className.length})`);
-    });
+    if (window.classes && Array.isArray(window.classes)) {
+        window.classes.forEach((cls, index) => {
+            console.log(`${index + 1}. "${cls.name}" (Length: ${cls.name.length})`);
+        });
+    } else {
+        console.log("No classes loaded yet");
+    }
     
     console.log("\nClasses found in student data:");
     const studentClasses = [...new Set(students.map(s => s.class))];
     studentClasses.forEach((className, index) => {
-        const isMatching = classes.includes(className);
+        const isMatching = window.classes && window.classes.some(cls => cls.name === className);
         console.log(`${index + 1}. "${className}" (Length: ${className.length}) - ${isMatching ? '✅ MATCHES' : '❌ NO MATCH'}`);
         
         if (!isMatching) {
@@ -463,9 +467,11 @@ function debugClassNames() {
     });
     
     console.log("\nPredefined class character codes:");
-    classes.forEach((className, index) => {
-        console.log(`${index + 1}. "${className}" - ${Array.from(className).map(c => c.charCodeAt(0)).join(', ')}`);
-    });
+    if (window.classes && Array.isArray(window.classes)) {
+        window.classes.forEach((cls, index) => {
+            console.log(`${index + 1}. "${cls.name}" - ${Array.from(cls.name).map(c => c.charCodeAt(0)).join(', ')}`);
+        });
+    }
 }
 
 function addHijriToReports(startDate, endDate) {

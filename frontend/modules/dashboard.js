@@ -174,16 +174,18 @@ function updateClassWiseStats() {
     });
     
     // Also add predefined classes (in case they have no students yet)
-    classes.forEach(className => {
-        if (!classSummary[className]) {
-        classSummary[className] = {
-            total: 0,
-            present: 0,
-            absent: 0,
-            rate: 0
-        };
-        }
-    });
+    if (window.classes && Array.isArray(window.classes)) {
+        window.classes.forEach(cls => {
+            if (!classSummary[cls.name]) {
+                classSummary[cls.name] = {
+                    total: 0,
+                    present: 0,
+                    absent: 0,
+                    rate: 0
+                };
+            }
+        });
+    }
     
     // Count students in each class
     students.forEach(student => {
