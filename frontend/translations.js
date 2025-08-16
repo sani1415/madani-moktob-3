@@ -11,6 +11,7 @@ const translations = {
         dailyAttendance: "Daily Attendance",
         reports: "Reports",
         settings: "Settings",
+        teachersCorner: "Teachers Corner",
         
         // Dashboard
         totalStudents: "Total Students",
@@ -315,7 +316,7 @@ const translations = {
         dailyAttendance: "দৈনিক উপস্থিতি",
         reports: "রিপোর্ট",
         settings: "সেটিংস",
-        education: "শিক্ষা",
+        teachersCorner: "শিক্ষক কর্নার",
         
         // Dashboard
         totalStudents: "মোট ছাত্র",
@@ -611,7 +612,7 @@ function updateAllTexts() {
     updateReportsTexts();
     updateSettingsTexts();
     updateStudentListTexts();
-    updateEducationTexts();
+    updateTeachersCornerTexts();
 }
 
 // Update header texts
@@ -629,7 +630,7 @@ function updateHeaderTexts() {
 // Update navigation texts
 function updateNavigationTexts() {
     const navLinks = document.querySelectorAll('.nav-link');
-    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'education', 'settings'];
+    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'teachersCorner', 'settings'];
     
     navLinks.forEach((link, index) => {
         const icon = link.querySelector('i').outerHTML;
@@ -843,24 +844,24 @@ function updateSettingsTexts() {
     });
 }
 
-// Update education texts
-function updateEducationTexts() {
-    const educationTitle = document.querySelector('#education h2');
-    if (educationTitle) {
-        educationTitle.textContent = t('EducationProgressTracking');
+// Update teachers corner texts
+function updateTeachersCornerTexts() {
+    const teachersTitle = document.querySelector('#teachers h2');
+    if (teachersTitle) {
+        teachersTitle.textContent = t('teachersCorner');
     }
     
-    const bookProgressTitle = document.querySelector('#education .education-header h3');
+    const bookProgressTitle = document.querySelector('#teachers .education-header h3');
     if (bookProgressTitle) {
         bookProgressTitle.textContent = t('bookProgressManagement');
     }
     
-    const addBookBtn = document.querySelector('#education .education-actions .btn-primary');
+    const addBookBtn = document.querySelector('#teachers .education-actions .btn-primary');
     if (addBookBtn) {
         addBookBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addNewBook')}`;
     }
     
-    const deleteAllBtn = document.querySelector('#education .education-actions .btn-danger');
+    const deleteAllBtn = document.querySelector('#teachers .education-actions .btn-danger');
     if (deleteAllBtn) {
         deleteAllBtn.innerHTML = `<i class="fas fa-trash-alt"></i> ${t('deleteAllData')}`;
     }
