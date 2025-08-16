@@ -146,6 +146,18 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create education progress history table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS education_progress_history (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    progress_id INT NOT NULL,
+                    completed_pages INT NOT NULL,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (progress_id) REFERENCES education_progress(id) ON DELETE CASCADE
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
             # Add status column to existing students table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'status'")
@@ -745,6 +757,12 @@ class MySQLDatabase:
                 WHERE id = %s
             ''', (completed_pages, datetime.now().strftime('%Y-%m-%d'), notes, progress_id))
             
+            # Record history entry for this update
+            cursor.execute('''
+                INSERT INTO education_progress_history (progress_id, completed_pages, note)
+                VALUES (%s, %s, %s)
+            ''', (progress_id, completed_pages, notes))
+            
             conn.commit()
             cursor.close()
             conn.close()
@@ -794,6 +812,12 @@ class MySQLDatabase:
                 progress_id
             ))
             
+            # Record history entry for this edit as well
+            cursor.execute('''
+                INSERT INTO education_progress_history (progress_id, completed_pages, note)
+                VALUES (%s, %s, %s)
+            ''', (progress_id, progress_data.get('completed_pages', 0), progress_data.get('notes', '')))
+            
             conn.commit()
             cursor.close()
             conn.close()
@@ -819,6 +843,42 @@ class MySQLDatabase:
         except Error as e:
             print(f"Error deleting all education progress: {e}")
             raise
+
+    def add_education_progress_history(self, progress_id, completed_pages, note=None):
+        """Add a history entry for an education progress update"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO education_progress_history (progress_id, completed_pages, note)
+                VALUES (%s, %s, %s)
+            ''', (progress_id, completed_pages, note))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Error as e:
+            print(f"Error adding education progress history: {e}")
+            raise
+
+    def get_education_progress_history(self, progress_id):
+        """Get progress history entries for a specific education progress record"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT id, progress_id, completed_pages, note, created_at
+                FROM education_progress_history
+                WHERE progress_id = %s
+                ORDER BY created_at ASC, id ASC
+            ''', (progress_id,))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Error as e:
+            print(f"Error getting education progress history: {e}")
+            return []
 
     # Book Management Methods
     def get_books(self, class_id=None):

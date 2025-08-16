@@ -377,6 +377,28 @@ def delete_all_education_progress():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Education Progress History API Routes
+@app.route('/api/education/<int:progress_id>/history', methods=['GET'])
+def get_education_progress_history(progress_id):
+    try:
+        history = db.get_education_progress_history(progress_id)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/<int:progress_id>/history', methods=['POST'])
+def add_education_progress_history(progress_id):
+    try:
+        data = request.json or {}
+        completed_pages = data.get('completed_pages')
+        note = data.get('note')
+        if completed_pages is None:
+            return jsonify({'error': 'completed_pages is required'}), 400
+        db.add_education_progress_history(progress_id, int(completed_pages), note)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Class Management API Endpoints
 @app.route('/api/classes', methods=['GET'])
 def get_classes():

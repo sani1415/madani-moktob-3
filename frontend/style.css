@@ -3509,3 +3509,18 @@ body {
         width: 100%;
     }
 }
+
+/* Teachers Corner helpers */
+.teachers-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+}
+.teachers-student-list .student-row {
+	background: #fff;
+	border-radius: 8px;
+	padding: 10px 14px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+	margin-bottom: 8px;
+}
+/* End Teachers Corner helpers */

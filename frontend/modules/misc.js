@@ -79,8 +79,8 @@ async function showSection(sectionId, event) {
             studentsListContainer.style.display = 'block';
             studentRegistrationForm.style.display = 'none';
         }
-    } else if (sectionId === 'education') {
-        console.log('🔄 Education tab selected, loading data...');
+    } else if (sectionId === 'teachers') {
+        console.log('🔄 Teachers Corner selected, loading data...');
         console.log('🔍 Checking available functions...');
         console.log('🔍 typeof loadEducationProgress:', typeof loadEducationProgress);
         console.log('🔍 typeof loadBooks:', typeof loadBooks);
@@ -137,7 +137,13 @@ async function showSection(sectionId, event) {
                 console.error('❌ updateBookDropdowns not found in window either');
             }
         }
-        console.log('✅ Education tab data loading completed');
+        // Finally, render Teachers Corner UI
+        if (typeof showTeachersCorner === 'function') {
+            await showTeachersCorner();
+        } else if (typeof window.showTeachersCorner === 'function') {
+            await window.showTeachersCorner();
+        }
+        console.log('✅ Teachers Corner data loading completed');
     } else if (sectionId === 'settings') {
         console.log('🔄 Settings section selected, loading data...');
         

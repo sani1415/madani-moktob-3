@@ -49,8 +49,8 @@
                     <li><a href="#" onclick="showSection('reports', event)" class="nav-link">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a></li>
-                    <li><a href="#" onclick="showSection('education', event)" class="nav-link">
-                        <i class="fas fa-book"></i> Education
+                    <li><a href="#" onclick="showSection('teachers', event)" class="nav-link">
+                        <i class="fas fa-chalkboard-teacher"></i> Teachers Corner
                     </a></li>
                     <li><a href="#" onclick="showSection('settings', event)" class="nav-link">
                         <i class="fas fa-cog"></i> Settings
@@ -397,162 +397,84 @@
                 </div>
             </section>
 
-            <!-- Education Section -->
-            <section id="education" class="section">
-                <h2>Education Progress Tracking</h2>
+            <!-- Teachers Corner Section (replaces Education) -->
+            <section id="teachers" class="section">
+                <h2>Teachers Corner</h2>
                 <div class="education-content">
                     <div class="education-header">
                         <h3>Book Progress Management</h3>
                         <div class="education-actions">
-                        <button id="showAddBookFormBtn" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add New Book
-                        </button>
+                            <button id="showAddBookFormBtn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add New Book
+                            </button>
                             <button onclick="showDeleteAllEducationModal()" class="btn btn-danger">
                                 <i class="fas fa-trash-alt"></i> Delete All Data
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Add Book Form (Hidden by default) -->
-                    <div id="addBookForm" class="book-form-container" style="display: none;">
-                        <div class="form-header">
-                            <h3>Add New Book Progress</h3>
-                            <button type="button" onclick="hideAddBookForm()" class="btn btn-secondary btn-small">
-                                <i class="fas fa-arrow-left"></i> Back to List
-                            </button>
-                        </div>
-                        
-                        <form id="bookForm" class="form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="bookClass">Class *</label>
-                                    <select id="bookClass" required>
-                                        <option value="">Select Class</option>
-                                        <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
-                                        <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
-                                        <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
-                                        <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
-                                        <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="bookSubject">Subject *</label>
-                                    <input type="text" id="bookSubject" placeholder="e.g., Mathematics, Science, English" required>
-                                </div>
+
+                    <div class="book-form-container" id="teachersControlPanel">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teachersClassSelect">Class</label>
+                                <select id="teachersClassSelect" onchange="selectTeachersClass()">
+                                    <option value="">All Classes</option>
+                                </select>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="bookName">Book Name *</label>
-                                    <select id="bookName" required>
-                                        <option value="">Select Book</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="totalPages">Total Pages *</label>
-                                    <input type="number" id="totalPages" placeholder="e.g., 120" min="1" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="completedPages">Completed Pages</label>
-                                    <input type="number" id="completedPages" placeholder="e.g., 45" min="0" value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label for="bookNotes">Notes</label>
-                                    <textarea id="bookNotes" placeholder="Any additional notes about the book progress"></textarea>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Book Progress
-                            </button>
-                            <button type="button" onclick="testAddBookProgress()" class="btn btn-secondary" style="margin-left: 10px;">
-                                Test Function
-                            </button>
-                        </form>
-                    </div>
-                    
-                    <!-- Edit Book Form Modal (Hidden by default) -->
-                    <div id="editBookModal" class="modal" style="display: none;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h3>Edit Book Details</h3>
-                                <button type="button" onclick="closeEditBookModal()" class="btn btn-secondary btn-small">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            
-                            <form id="editBookForm" class="form">
-                                <input type="hidden" id="editBookId">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="editBookClass">Class *</label>
-                                        <select id="editBookClass" required>
-                                            <option value="">Select Class</option>
-                                            <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
-                                            <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
-                                            <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
-                                            <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
-                                            <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="editBookSubject">Subject *</label>
-                                        <input type="text" id="editBookSubject" placeholder="e.g., Mathematics, Science, English" required>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="editBookName">Book Name *</label>
-                                        <select id="editBookName" required>
-                                            <option value="">Select Book</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="editTotalPages">Total Pages *</label>
-                                        <input type="number" id="editTotalPages" placeholder="e.g., 120" min="1" required>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="editCompletedPages">Completed Pages</label>
-                                        <input type="number" id="editCompletedPages" placeholder="e.g., 45" min="0" value="0">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="editBookNotes">Notes</label>
-                                        <textarea id="editBookNotes" placeholder="Any additional notes about the book progress"></textarea>
-                                    </div>
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i> Update Book
-                                    </button>
-                                    <button type="button" onclick="closeEditBookModal()" class="btn btn-secondary">
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
-                    
-                    <!-- Book Progress List -->
-                    <div id="bookProgressList" class="book-progress-list">
-                        <div class="filter-section">
-                            <select id="educationClassFilter" onchange="filterBooksByClass()">
-                                <option value="">All Classes</option>
-                                <option value="প্রথম শ্রেণি">প্রথম শ্রেণি</option>
-                                <option value="দ্বিতীয় শ্রেণি">দ্বিতীয় শ্রেণি</option>
-                                <option value="তৃতীয় শ্রেণি">তৃতীয় শ্রেণি</option>
-                                <option value="চতুর্থ শ্রেণি">চতুর্থ শ্রেণি</option>
-                                <option value="পঞ্চম শ্রেণি">পঞ্চম শ্রেণি</option>
-                            </select>
+
+                    <div class="book-progress-list">
+                        <div class="stats-grid" style="margin-bottom: 20px;">
+                            <div class="stat-card">
+                                <i class="fas fa-users"></i>
+                                <h3 id="teachersTotalStudents">0</h3>
+                                <p>Total Students</p>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-user-check"></i>
+                                <h3 id="teachersPresentToday">0</h3>
+                                <p>Present Today</p>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-user-times"></i>
+                                <h3 id="teachersAbsentToday">0</h3>
+                                <p>Absent Today</p>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fas fa-percentage"></i>
+                                <h3 id="teachersAttendanceRate">0%</h3>
+                                <p>Attendance Rate</p>
+                            </div>
                         </div>
-                        
-                        <div id="booksList" class="books-grid">
-                            <!-- Books will be displayed here -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex:2;">
+                                <label>Students</label>
+                                <div id="teachersStudentList"></div>
+                            </div>
+                            <div class="form-group" style="flex:3;">
+                                <label>Class Book Progress</label>
+                                <div id="teachersProgressList" class="books-grid"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <!-- Progress History Modal for Teachers Corner -->
+            <div id="teachersHistoryModal" class="modal" style="display:none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="teachersHistoryTitle">Progress History</h3>
+                        <button type="button" onclick="closeProgressHistoryModal()" class="btn btn-secondary btn-small">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="form">
+                        <div id="teachersHistoryBody" class="item-list"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Settings Section -->
             <section id="settings" class="section">
@@ -675,6 +597,50 @@
                         </div>
                         <div class="item-list" id="settingsBooksList">
                             <!-- Books will be displayed here -->
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4 style="margin-bottom:10px;">Book-Class Assignment</h4>
+                        <p class="help-text">Assign existing books to a specific class for tracking.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bookClass">Class</label>
+                                <select id="bookClass">
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="bookSubject">Subject</label>
+                                <input type="text" id="bookSubject" placeholder="e.g., Mathematics, Science, English">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bookName">Book</label>
+                                <select id="bookName">
+                                    <option value="">Select Book</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="totalPages">Total Pages</label>
+                                <input type="number" id="totalPages" placeholder="e.g., 120" min="1">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="completedPages">Completed Pages</label>
+                                <input type="number" id="completedPages" placeholder="e.g., 0" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="bookNotes">Notes</label>
+                                <textarea id="bookNotes" placeholder="Any additional notes about the book progress"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="addBookProgress()">
+                                <i class="fas fa-save"></i> Assign Book to Class
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -812,5 +778,14 @@
     <script type="module" src="translations.js"></script>
     <script src="modules/hijri.js" type="module"></script>
     <script type="module" src="modules/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // If Teachers Corner is visible at load, initialize it
+            const teachersSection = document.getElementById('teachers');
+            if (teachersSection && teachersSection.classList.contains('active') && typeof showTeachersCorner === 'function') {
+                showTeachersCorner();
+            }
+        });
+    </script>
 </body>
 </html>

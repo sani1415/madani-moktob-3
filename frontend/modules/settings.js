@@ -414,12 +414,24 @@ function displayBooksList() {
 
 async function showAddBookForm() {
     await loadBooks();
-    
-    document.getElementById('addBookForm').style.display = 'block';
-    document.getElementById('bookProgressList').style.display = 'none';
-    document.getElementById('bookForm').reset();
-    
-    updateBookDropdowns();
+    // Redirect to Settings -> Book Management
+    if (typeof showSection === 'function') {
+        showSection('settings');
+    } else if (typeof window.showSection === 'function') {
+        window.showSection('settings');
+    }
+    // Try to open the Books tab using the existing tab system
+    const booksButton = Array.from(document.querySelectorAll('.settings-tabs .tab-button')).find(btn => (btn.getAttribute('onclick') || '').includes("'books'"));
+    if (typeof openSettingsTab === 'function' && booksButton) {
+        openSettingsTab({ currentTarget: booksButton }, 'books');
+    } else if (booksButton) {
+        // Fallback: manually activate the Books tab
+        document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+        const booksTab = document.getElementById('books');
+        if (booksTab) booksTab.style.display = 'block';
+        document.querySelectorAll('.tab-button').forEach(tb => tb.classList.remove('active'));
+        booksButton.classList.add('active');
+    }
 }
 
 function hideAddBookForm() {

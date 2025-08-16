@@ -10,6 +10,7 @@ import * as Calendar from './calendar.js';
 import * as Settings from './settings.js';
 import * as Hijri from './hijri.js';
 import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../translations.js';
+import * as Teachers from './teachers.js';
 
 // Debug: Check if Settings module is loaded
 console.log('🔍 Settings module loaded:', Settings);
@@ -351,6 +352,12 @@ async function initializeApp() {
         console.error('❌ Error initializing application:', error);
     }
 }
+
+// Expose Teachers Corner functions
+window.showTeachersCorner = Teachers.showTeachersCorner;
+window.selectTeachersClass = Teachers.selectTeachersClass;
+window.viewProgressHistory = Teachers.viewProgressHistory;
+window.closeProgressHistoryModal = Teachers.closeProgressHistoryModal;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
