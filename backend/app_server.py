@@ -189,6 +189,20 @@ def update_student(student_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/students/<student_id>/status', methods=['PUT'])
+def set_student_status(student_id):
+    try:
+        data = request.json
+        new_status = data.get('status')
+        if new_status not in ['active', 'inactive']:
+            return jsonify({'error': 'Invalid status provided'}), 400
+
+        db.set_student_status(student_id, new_status)
+        return jsonify({'success': True, 'message': f'Student status updated to {new_status}'})
+    except Exception as e:
+        logger.error(f"Error in set_student_status endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/students/<student_id>', methods=['DELETE'])
 def delete_student(student_id):
     try:
@@ -507,8 +521,8 @@ def create_sample_data():
 @app.route('/api/health')
 def health():
     try:
-        # Test database connection
-        students = db.get_students()
+        # Use the new, more efficient method to get counts
+        student_counts = db.get_student_counts()
         
         # Determine database type based on the database instance
         if hasattr(db, '__class__') and 'MySQL' in db.__class__.__name__:
@@ -520,7 +534,9 @@ def health():
             'status': 'healthy',
             'message': f'Madani Maktab {database_type} Server is running',
             'database_type': database_type,
-            'students_count': len(students),
+            'students_count': student_counts.get('total', 0),
+            'active_students_count': student_counts.get('active', 0),
+            'inactive_students_count': student_counts.get('inactive', 0),
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:

@@ -193,16 +193,21 @@ function displayStudentsList() {
                     </thead>
                     <tbody>
                         ${filteredStudents.map(student => `
-                            <tr>
+                            <tr class="${student.status === 'inactive' ? 'inactive-student' : ''}">
                                 <td><strong>${student.rollNumber || 'N/A'}</strong></td>
                                 <td>
                                     <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'registration')" title="Click to view details">
                                         ${student.name} বিন ${student.fatherName}
                                     </span>
+                                    ${student.status === 'inactive' ? '<span class="status-badge inactive">Inactive</span>' : ''}
                                 </td>
                                 <td><span class="class-badge">${student.class}</span></td>
                                 <td>${student.mobileNumber}</td>
                                 <td class="actions">
+                                    ${student.status === 'inactive'
+                                        ? `<button onclick="updateStudentStatus('${student.id}', 'active')" class="btn btn-sm btn-success" title="${t('markAsActive')}"><i class="fas fa-user-check"></i></button>`
+                                        : `<button onclick="updateStudentStatus('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
+                                    }
                                     <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -397,11 +402,12 @@ let studentFilters = {
     roll: '',
     name: '',
     class: '',
-    mobile: ''
+    mobile: '',
+    status: '' // <-- ADD THIS
 };
 
 function applyStudentFilters(students) {
-    if (!studentFilters.roll && !studentFilters.name && !studentFilters.class && !studentFilters.mobile) {
+    if (!studentFilters.roll && !studentFilters.name && !studentFilters.class && !studentFilters.mobile && !studentFilters.status) { // <-- ADD !studentFilters.status
         return students;
     }
     
@@ -411,8 +417,9 @@ function applyStudentFilters(students) {
             (student.name + ' বিন ' + student.fatherName).toLowerCase().includes(studentFilters.name);
         const classMatch = !studentFilters.class || student.class === studentFilters.class;
         const mobileMatch = !studentFilters.mobile || student.mobileNumber.toLowerCase().includes(studentFilters.mobile);
+        const statusMatch = !studentFilters.status || student.status === studentFilters.status; // <-- ADD THIS
         
-        return rollMatch && nameMatch && classMatch && mobileMatch;
+        return rollMatch && nameMatch && classMatch && mobileMatch && statusMatch; // <-- ADD statusMatch
     });
 }
 
@@ -432,7 +439,8 @@ function clearStudentFilters() {
         roll: '',
         name: '',
         class: '',
-        mobile: ''
+        mobile: '',
+        status: '' // <-- ADD THIS
     };
     displayStudentsList();
 }
@@ -466,16 +474,21 @@ function updateStudentTableBody() {
     
     // Update table body
     tbody.innerHTML = filteredStudents.map(student => `
-        <tr>
+        <tr class="${student.status === 'inactive' ? 'inactive-student' : ''}">
             <td><strong>${student.rollNumber || 'N/A'}</strong></td>
             <td>
                 <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'registration')" title="Click to view details">
                     ${student.name} বিন ${student.fatherName}
                 </span>
+                ${student.status === 'inactive' ? '<span class="status-badge inactive">Inactive</span>' : ''}
             </td>
             <td><span class="class-badge">${student.class}</span></td>
             <td>${student.mobileNumber}</td>
             <td class="actions">
+                ${student.status === 'inactive'
+                    ? `<button onclick="updateStudentStatus('${student.id}', 'active')" class="btn btn-sm btn-success" title="${t('markAsActive')}"><i class="fas fa-user-check"></i></button>`
+                    : `<button onclick="updateStudentStatus('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
+                }
                 <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -919,5 +932,51 @@ function updateRegistrationTexts() {
     }
 }
 
+async function updateStudentStatus(studentId, newStatus) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
 
-export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, deleteAllStudents, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts }
+    const confirmAction = confirm(`Are you sure you want to mark "${student.name}" as ${newStatus}?`);
+    if (confirmAction) {
+        try {
+            const response = await fetch(`/api/students/${studentId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                // Refresh students data from server to ensure all modules have updated data
+                if (typeof refreshStudentsData === 'function') {
+                    await refreshStudentsData();
+                }
+                
+                showModal('Success', result.message);
+                displayStudentsList(); // Refresh the list view
+                updateDashboard(); // Refresh dashboard stats
+            } else {
+                showModal('Error', result.error || 'Failed to update status');
+            }
+        } catch (error) {
+            showModal('Error', 'A network error occurred.');
+        }
+    }
+}
+
+
+// ADD THIS ENTIRE NEW FUNCTION
+function showInactiveStudentsList() {
+    // Navigate to the student registration/management page
+    showSection('registration');
+
+    // Set the filter to show only inactive students and then display the list
+    studentFilters = { roll: '', name: '', class: '', mobile: '', status: 'inactive' };
+    displayStudentsList();
+    
+    // Update the filter dropdown to reflect the change, although there's no UI for status filter yet
+    // This is good practice for consistency
+    const classFilterReg = document.getElementById('classFilterReg');
+    if(classFilterReg) classFilterReg.value = '';
+}
+
+export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, deleteAllStudents, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts, updateStudentStatus, showInactiveStudentsList }

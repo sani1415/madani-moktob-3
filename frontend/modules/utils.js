@@ -53,4 +53,34 @@ function match(str, pattern) {
     return str.match(pattern);
 }
 
-export { bengaliClassMap, bengaliToEnglish, convertBengaliToEnglishNumbers, date, englishNumber, formatDate, getClassNumber, match, parseRollNumber }
+// Utility function to get today's date in YYYY-MM-DD format using local timezone
+function getTodayString() {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+// Helper function to parse inactivation date
+function parseInactivationDate(inactivationDate) {
+    if (!inactivationDate) return null;
+    
+    // If it's already in YYYY-MM-DD format, return as is
+    if (typeof inactivationDate === 'string' && inactivationDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return inactivationDate;
+    }
+    
+    // If it's a datetime string, extract the date part
+    if (typeof inactivationDate === 'string') {
+        try {
+            const date = new Date(inactivationDate);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0]; // Extract YYYY-MM-DD
+            }
+        } catch (e) {
+            console.warn('Failed to parse inactivation date:', inactivationDate);
+        }
+    }
+    
+    return null;
+}
+
+export { bengaliClassMap, bengaliToEnglish, convertBengaliToEnglishNumbers, date, englishNumber, formatDate, getClassNumber, match, parseRollNumber, getTodayString, parseInactivationDate }
