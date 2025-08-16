@@ -1,12 +1,27 @@
-function updateDashboard() {
-    const today = new Date().toISOString().split('T')[0];
+import { getTodayString, parseInactivationDate } from './utils.js';
+
+async function updateDashboard() {
+    // Use local date methods to avoid timezone issues (same as attendance module)
+    const today = getTodayString();
+    
+    // NEW: Fetch counts from the health endpoint for accuracy
+    try {
+        const response = await fetch('/api/health');
+        if (response.ok) {
+            const healthData = await response.json();
+            document.getElementById('inactiveStudents').textContent = healthData.inactive_students_count || 0;
+        } else {
+            // Fallback for safety
+            document.getElementById('inactiveStudents').textContent = 'N/A';
+        }
+    } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+        document.getElementById('inactiveStudents').textContent = 'N/A';
+    }
     
     console.log('Updating dashboard for date:', today);
-    console.log('Total students:', students.length);
+    console.log('Total students in database:', students.length);
     console.log('Today attendance data:', attendance[today]);
-    
-    // Update total students
-    document.getElementById('totalStudents').textContent = students.length;
     
     // Check if today is a holiday and display holiday notice
     const holidayNotice = document.getElementById('holidayNotice');
@@ -24,8 +39,19 @@ function updateDashboard() {
             holidayNotice.style.display = 'block';
         }
         
-        // On holidays, show all students as present
-        document.getElementById('presentToday').textContent = students.length;
+        // On holidays, show all active students as present (using date-aware filtering)
+        const activeStudentsForToday = students.filter(student => {
+            if (student.status === 'active') {
+                return true;
+            }
+            if (student.status === 'inactive' && student.inactivationDate) {
+                const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+                return parsedInactivationDate ? today < parsedInactivationDate : false;
+            }
+            return false;
+        });
+        
+        document.getElementById('presentToday').textContent = activeStudentsForToday.length;
         document.getElementById('absentToday').textContent = 0;
         document.getElementById('attendanceRate').textContent = '100%';
     } else {
@@ -36,21 +62,54 @@ function updateDashboard() {
         const todayAttendance = attendance[today] || {};
         console.log('Processing attendance for non-holiday:', todayAttendance);
         
+        // Use date-aware filtering to get students who were active on today's date
+        const activeStudentsForToday = students.filter(student => {
+            // If student is currently active, always include them
+            if (student.status === 'active') {
+                return true;
+            }
+            
+            // If student is inactive, check if they were active on today's date
+            if (student.status === 'inactive' && student.inactivationDate) {
+                const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+                // Include if today is before the inactivation date
+                // This means the student was still active today
+                return parsedInactivationDate ? today < parsedInactivationDate : false;
+            }
+            
+            // If student is inactive but has no inactivation date, exclude them
+            return false;
+        });
+        
         let presentCount = 0;
         let absentCount = 0;
         
-        // Count attendance properly
+        // Count attendance properly for active students only
         for (const studentId in todayAttendance) {
-            const att = todayAttendance[studentId];
-            if (att && att.status === 'present') {
-                presentCount++;
-            } else if (att && att.status === 'absent') {
-                absentCount++;
+            // Only count if this student was active for today
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                const isActiveForToday = student.status === 'active' || 
+                    (student.status === 'inactive' && student.inactivationDate && 
+                     (() => {
+                         const parsedDate = parseInactivationDate(student.inactivationDate);
+                         return parsedDate ? today < parsedDate : false;
+                     })());
+                
+                if (isActiveForToday) {
+                    const att = todayAttendance[studentId];
+                    if (att && att.status === 'present') {
+                        presentCount++;
+                    } else if (att && att.status === 'absent') {
+                        absentCount++;
+                    }
+                }
             }
         }
         
-        const unmarkedCount = students.length - presentCount - absentCount;
+        const unmarkedCount = activeStudentsForToday.length - presentCount - absentCount;
         
+        console.log('Active students for today:', activeStudentsForToday.length);
         console.log('Attendance counts - Present:', presentCount, 'Absent:', absentCount, 'Unmarked:', unmarkedCount);
         
         // Force update DOM elements with immediate value changes
@@ -60,7 +119,7 @@ function updateDashboard() {
         const totalElement = document.getElementById('totalStudents');
         
         if (totalElement) {
-            totalElement.textContent = students.length;
+            totalElement.textContent = activeStudentsForToday.length;
             totalElement.style.color = '#2c3e50';
         }
         
@@ -82,7 +141,7 @@ function updateDashboard() {
             attendanceRate = Math.round((presentCount / (presentCount + absentCount)) * 100);
         }
         
-        console.log('Final dashboard values - Total:', students.length, 'Present:', presentCount, 'Absent:', absentCount, 'Rate:', attendanceRate + '%');
+        console.log('Final dashboard values - Total:', activeStudentsForToday.length, 'Present:', presentCount, 'Absent:', absentCount, 'Rate:', attendanceRate + '%');
         
         if (rateElement) {
             rateElement.textContent = `${attendanceRate}%`;
@@ -103,11 +162,31 @@ function updateDashboard() {
 }
 
 function updateTodayOverview() {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date methods to avoid timezone issues (same as attendance module)
+    const today = getTodayString();
     const todayAttendance = attendance[today] || {};
     const overviewDiv = document.getElementById('todayOverview');
     
-    if (students.length === 0) {
+    // Use date-aware filtering to get students who were active on today's date
+    const activeStudentsForToday = students.filter(student => {
+        // If student is currently active, always include them
+        if (student.status === 'active') {
+            return true;
+        }
+        
+        // If student is inactive, check if they were active on today's date
+        if (student.status === 'inactive' && student.inactivationDate) {
+            const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+            // Include if today is before the inactivation date
+            // This means the student was still active today
+            return parsedInactivationDate ? today < parsedInactivationDate : false;
+        }
+        
+        // If student is inactive but has no inactivation date, exclude them
+        return false;
+    });
+    
+    if (activeStudentsForToday.length === 0) {
         overviewDiv.innerHTML = `<p>${t('noStudentsRegistered')}</p>`;
         return;
     }
@@ -117,11 +196,11 @@ function updateTodayOverview() {
         return;
     }
     
-    const presentStudents = students.filter(student => 
+    const presentStudents = activeStudentsForToday.filter(student => 
         todayAttendance[student.id] && todayAttendance[student.id].status === 'present'
     );
     
-    const absentStudents = students.filter(student => 
+    const absentStudents = activeStudentsForToday.filter(student => 
         todayAttendance[student.id] && todayAttendance[student.id].status === 'absent'
     );
     
@@ -155,19 +234,39 @@ function updateTodayOverview() {
 }
 
 function updateClassWiseStats() {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date methods to avoid timezone issues (same as attendance module)
+    const today = getTodayString();
     const todayAttendance = attendance[today] || {};
     
-    // Group students by class
+    // Use date-aware filtering to get students who were active on today's date
+    const activeStudentsForToday = students.filter(student => {
+        // If student is currently active, always include them
+        if (student.status === 'active') {
+            return true;
+        }
+        
+        // If student is inactive, check if they were active on today's date
+        if (student.status === 'inactive' && student.inactivationDate) {
+            const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+            // Include if today is before the inactivation date
+            // This means the student was still active today
+            return parsedInactivationDate ? today < parsedInactivationDate : false;
+        }
+        
+        // If student is inactive but has no inactivation date, exclude them
+        return false;
+    });
+
     const classSummary = {};
-    
-    // First, create entries for all classes that actually have students
+
+    // Use ALL students to initialize the summary object, including inactive counts
     students.forEach(student => {
         if (student.class && !classSummary[student.class]) {
             classSummary[student.class] = {
                 total: 0,
                 present: 0,
                 absent: 0,
+                inactive: 0, // <-- Add inactive counter
                 rate: 0
             };
         }
@@ -187,8 +286,8 @@ function updateClassWiseStats() {
         });
     }
     
-    // Count students in each class
-    students.forEach(student => {
+    // Count ACTIVE students for total, present, and absent (using date-aware filtering)
+    activeStudentsForToday.forEach(student => {
         if (student.class && classSummary[student.class]) {
             classSummary[student.class].total++;
             
@@ -202,11 +301,19 @@ function updateClassWiseStats() {
             }
         }
     });
+
+    // NEW: Count INACTIVE students
+    const inactiveStudents = students.filter(student => student.status === 'inactive');
+    inactiveStudents.forEach(student => {
+        if (student.class && classSummary[student.class]) {
+            classSummary[student.class].inactive++;
+        }
+    });
     
-    // Calculate rates
+    // Calculate rates based on ACTIVE students
     Object.keys(classSummary).forEach(className => {
         const classData = classSummary[className];
-        if (classData.total > 0) {
+        if (classData.total > 0) { // total here refers to active students
             classData.rate = Math.round((classData.present / classData.total) * 100);
         }
     });
@@ -222,15 +329,16 @@ function updateClassWiseStats() {
     // Render class-wise stats
     const classWiseGrid = document.getElementById('classWiseGrid');
     if (classWiseGrid) {
+        // Only show classes that have at least one ACTIVE student
         classWiseGrid.innerHTML = sortedClasses
-            .filter(className => classSummary[className].total > 0) // Only show classes with students
+            .filter(className => classSummary[className].total > 0) 
             .map(className => {
                 const data = classSummary[className];
                 return `
                     <div class="class-stat-card">
                         <h4>${className}</h4>
                         <div class="class-stats">
-                            <span>${t('totalStudentsLabel')}:</span>
+                            <span>${t('totalStudentsLabel')} (Active):</span>
                             <span class="stat-number">${data.total}</span>
                         </div>
                         <div class="class-stats">
@@ -240,6 +348,10 @@ function updateClassWiseStats() {
                         <div class="class-stats">
                             <span>${t('absentLabel')}:</span>
                             <span class="stat-number" style="color: #e74c3c;">${data.absent}</span>
+                        </div>
+                        <div class="class-stats">
+                            <span>${t('inactiveStudents')}:</span>
+                            <span class="stat-number" style="color: #6c757d;">${data.inactive}</span>
                         </div>
                         <div class="class-attendance-rate">${data.rate}% ${t('attendanceLabel')}</div>
                     </div>
@@ -345,4 +457,22 @@ function generateAttendanceTrackingCalendar(month = null, year = null) {
 }
 
 
-export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview }
+// Function to refresh attendance data from server
+async function refreshAttendanceData() {
+    try {
+        console.log('🔄 Refreshing attendance data from server...');
+        const response = await fetch('/api/attendance');
+        if (response.ok) {
+            const newAttendanceData = await response.json();
+            // Update the global attendance object
+            Object.assign(attendance, newAttendanceData);
+            console.log('✅ Attendance data refreshed successfully');
+        } else {
+            console.error('❌ Failed to refresh attendance data');
+        }
+    } catch (error) {
+        console.error('❌ Error refreshing attendance data:', error);
+    }
+}
+
+export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData }

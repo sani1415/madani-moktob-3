@@ -45,6 +45,8 @@ window.showBulkImport = Registration.showBulkImport;
 window.deleteAllStudents = Registration.deleteAllStudents;
 window.editStudent = Registration.editStudent;
 window.deleteStudent = Registration.deleteStudent;
+window.updateStudentStatus = Registration.updateStudentStatus;
+window.showInactiveStudentsList = Registration.showInactiveStudentsList; // <-- ADD THIS LINE
 window.updateStudentFilter = Registration.updateStudentFilter;
 window.clearStudentFilters = Registration.clearStudentFilters;
 
@@ -96,6 +98,10 @@ window.loadBooks = Settings.loadBooks;
 window.loadEducationProgress = Settings.loadEducationProgress;
 window.updateClassFilterOptions = Registration.updateClassFilterOptions;
 window.updateClassDropdowns = Settings.updateClassDropdowns;
+
+// Dashboard functions
+window.refreshAttendanceData = Dashboard.refreshAttendanceData;
+window.refreshStudentsData = refreshStudentsData;
 window.updateBookDropdowns = Settings.updateBookDropdowns;
 
 // Debug: Check if functions are properly exposed
@@ -201,6 +207,27 @@ window.bengaliClassMap = Utils.bengaliClassMap;
 
 // Make translation function globally accessible
 window.t = t;
+
+// Add a function to refresh students data from server
+async function refreshStudentsData() {
+    try {
+        console.log('🔄 Refreshing students data from server...');
+        const studentsResponse = await fetch('/api/students');
+        if (studentsResponse.ok) {
+            const studentsData = await studentsResponse.json();
+            // Update the global window variables directly
+            window.students = studentsData;
+            console.log(`✅ Students data refreshed successfully - ${studentsData.length} students`);
+            return true;
+        } else {
+            console.error('❌ Failed to refresh students data');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error refreshing students data:', error);
+        return false;
+    }
+}
 
 // Initialize application data from database
 async function initializeApp() {

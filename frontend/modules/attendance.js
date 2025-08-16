@@ -1,6 +1,7 @@
+import { getTodayString } from './utils.js';
+
 function initializeTodayAttendance() {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = getTodayString();
     if (!attendance[todayStr]) {
         attendance[todayStr] = {};
     }
@@ -19,8 +20,7 @@ function initializeTodayAttendance() {
 }
 
 async function loadTodayAttendance() {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = getTodayString();
     const attendanceDateInput = document.getElementById('attendanceDate');
     attendanceDateInput.value = todayStr;
     attendanceDateInput.max = todayStr; // Set max date to today
@@ -29,8 +29,7 @@ async function loadTodayAttendance() {
 
 function updateDateInputMax() {
     // Use local date methods to avoid timezone issues
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = getTodayString();
     const attendanceDateInput = document.getElementById('attendanceDate');
     if (attendanceDateInput) {
         attendanceDateInput.max = todayStr;
@@ -47,14 +46,12 @@ async function loadAttendanceForDate() {
     
     // If no date is selected, automatically set today's date
     if (!selectedDate) {
-        const today = new Date();
-        selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        selectedDate = getTodayString();
         document.getElementById('attendanceDate').value = selectedDate;
     }
     
     // Check if selected date is in the future
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = getTodayString();
     
     // Debug: Log date comparison
     console.log('Selected date:', selectedDate);
@@ -229,6 +226,11 @@ async function toggleAttendance(studentId, date, status) {
     
     // Also try force refresh as backup (for debugging)
     setTimeout(() => forceRefreshAttendanceCalendar(), 100);
+    
+    // Update dashboard to reflect the changes
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
 }
 
 function updateAbsenceReason(studentId, date, reason) {
@@ -349,6 +351,10 @@ async function saveAttendance() {
         if (typeof forceUpdateDashboard === 'function') {
             forceUpdateDashboard();
         } else {
+            // Force refresh attendance data from server before updating dashboard
+            if (typeof refreshAttendanceData === 'function') {
+                await refreshAttendanceData();
+            }
             updateDashboard();
         }
         
@@ -455,8 +461,7 @@ async function applyStickyAttendanceToFuture(savedDate) {
 async function cleanupStickyAttendanceData() {
     console.log('Cleaning up sticky attendance data...');
     
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = getTodayString();
     
     // Get all dates that have attendance data
     const attendanceDates = Object.keys(attendance);
@@ -535,12 +540,60 @@ function updateFilteredStudentCount(count) {
 }
 
 function getFilteredStudents() {
+    const selectedDate = document.getElementById('attendanceDate').value;
     const selectedClass = document.getElementById('classFilter').value;
-    let filteredStudents = students;
-    if (selectedClass) {
-        filteredStudents = students.filter(student => student.class === selectedClass);
+
+    // Helper function to parse inactivation date
+    function parseInactivationDate(inactivationDate) {
+        if (!inactivationDate) return null;
+        
+        // If it's already in YYYY-MM-DD format, return as is
+        if (typeof inactivationDate === 'string' && inactivationDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return inactivationDate;
+        }
+        
+        // If it's a datetime string, extract the date part
+        if (typeof inactivationDate === 'string') {
+            try {
+                const date = new Date(inactivationDate);
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0]; // Extract YYYY-MM-DD
+                }
+            } catch (e) {
+                console.warn('Failed to parse inactivation date:', inactivationDate);
+            }
+        }
+        
+        return null;
     }
-    return filteredStudents;
+
+    // Use date-aware filtering to show students who were active on the selected date
+    let dateFilteredStudents = students.filter(student => {
+        // If student is currently active, always include them
+        if (student.status === 'active') {
+            return true;
+        }
+        
+        // If student is inactive, check if they were active on the selected date
+        if (student.status === 'inactive' && student.inactivationDate) {
+            const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+            if (parsedInactivationDate) {
+                // Include if the selected date is before the inactivation date
+                // This means the student was still active on that date
+                // Note: On the day of inactivation, the student becomes inactive, so exclude them
+                return selectedDate < parsedInactivationDate;
+            }
+        }
+        
+        // If student is inactive but has no inactivation date, exclude them
+        return false;
+    });
+
+    let finalFilteredStudents = dateFilteredStudents;
+    if (selectedClass) {
+        finalFilteredStudents = dateFilteredStudents.filter(student => student.class === selectedClass);
+    }
+    return finalFilteredStudents;
 }
 
 async function markAllPresent() {
@@ -590,6 +643,11 @@ async function markAllPresent() {
     
     // Also try force refresh as backup (for debugging)
     setTimeout(() => forceRefreshAttendanceCalendar(), 100);
+    
+    // Update dashboard to reflect the changes
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
     
     showModal(t('success'), `${filteredStudents.length} ${t('studentsConfirmedPresent')}`);
 }
@@ -663,6 +721,11 @@ async function confirmMarkAllAbsent() {
     // Refresh attendance calendar if it's visible to show updated status
     refreshAttendanceCalendarIfVisible();
     
+    // Update dashboard to reflect the changes
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
+    
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedAbsent')}`);
 }
 
@@ -709,6 +772,11 @@ async function markAllNeutral() {
     
     // Refresh attendance calendar if it's visible to show updated status
     refreshAttendanceCalendarIfVisible();
+    
+    // Update dashboard to reflect the cleared attendance
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
     
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedNeutral')}`);
 }

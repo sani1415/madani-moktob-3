@@ -314,9 +314,12 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
     setTimeout(() => {
         try {
             console.log("Filtering students...");
-            let filteredStudents = students;
+            // MODIFICATION: Start with only active students
+            let filteredStudents = students.filter(student => student.status !== 'inactive');
+            
             if (selectedClass) {
-                filteredStudents = students.filter(student => student.class === selectedClass);
+                // This now filters the already-active list
+                filteredStudents = filteredStudents.filter(student => student.class === selectedClass);
             }
             console.log(`${filteredStudents.length} students to process.`);
             

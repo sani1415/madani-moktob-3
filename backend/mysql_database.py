@@ -78,6 +78,8 @@ class MySQLDatabase:
                     class VARCHAR(50),
                     rollNumber VARCHAR(20) UNIQUE,
                     registrationDate VARCHAR(20),
+                    status VARCHAR(20) NOT NULL DEFAULT 'active',
+                    inactivationDate DATE DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
@@ -143,6 +145,26 @@ class MySQLDatabase:
                     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
+            
+            # Add status column to existing students table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM students LIKE 'status'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding status column to students table...")
+                    cursor.execute('ALTER TABLE students ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT "active"')
+                    logger.info("✅ MySQLDatabase: Status column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add status column: {e}")
+            
+            # Add inactivationDate column to existing students table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM students LIKE 'inactivationDate'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding inactivationDate column to students table...")
+                    cursor.execute('ALTER TABLE students ADD COLUMN inactivationDate DATE DEFAULT NULL')
+                    logger.info("✅ MySQLDatabase: InactivationDate column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add inactivationDate column: {e}")
             
             conn.commit()
             cursor.close()
@@ -274,8 +296,8 @@ class MySQLDatabase:
         """Helper method to insert a single student"""
         cursor.execute('''
             INSERT INTO students 
-            (id, name, fatherName, mobileNumber, district, upazila, class, rollNumber, registrationDate)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (id, name, fatherName, mobileNumber, district, upazila, class, rollNumber, registrationDate, status, inactivationDate)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             fatherName = VALUES(fatherName),
@@ -284,7 +306,9 @@ class MySQLDatabase:
             upazila = VALUES(upazila),
             class = VALUES(class),
             rollNumber = VALUES(rollNumber),
-            registrationDate = VALUES(registrationDate)
+            registrationDate = VALUES(registrationDate),
+            status = VALUES(status),
+            inactivationDate = VALUES(inactivationDate)
         ''', (
             student_data.get('id'),
             student_data.get('name'),
@@ -294,7 +318,9 @@ class MySQLDatabase:
             student_data.get('upazila'),
             student_data.get('class'),
             student_data.get('rollNumber'),
-            student_data.get('registrationDate')
+            student_data.get('registrationDate'),
+            student_data.get('status', 'active'),  # Default to 'active' if not provided
+            student_data.get('inactivationDate')  # Can be None for active students
         ))
     
     def add_student(self, student_data):
@@ -313,6 +339,55 @@ class MySQLDatabase:
         except Error as e:
             print(f"Error adding student: {e}")
             raise
+
+    def set_student_status(self, student_id, status):
+        """Set the status for a specific student and record the inactivation date."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # If student is being made inactive, set today's date (so they become inactive today).
+            # If being made active, clear the date by setting it to NULL.
+            if status == 'inactive':
+                from datetime import datetime
+                inactivation_date = datetime.now().strftime('%Y-%m-%d')
+            else:
+                inactivation_date = None
+
+            cursor.execute(
+                'UPDATE students SET status = %s, inactivationDate = %s WHERE id = %s',
+                (status, inactivation_date, student_id)
+            )
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+
+        except Error as e:
+            logger.error(f"Error setting student status: {e}")
+            raise
+
+    def get_student_counts(self):
+        """Get counts of students by status"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT status, COUNT(*) as count FROM students GROUP BY status")
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+
+            counts = {'total': 0, 'active': 0, 'inactive': 0}
+            for row in rows:
+                if row['status'] in counts:
+                    counts[row['status']] = row['count']
+            
+            counts['total'] = counts.get('active', 0) + counts.get('inactive', 0)
+            return counts
+        except Error as e:
+            logger.error(f"Error getting student counts: {e}")
+            return {'total': 0, 'active': 0, 'inactive': 0}
     
     # Attendance methods
     def get_attendance(self, date=None):
