@@ -16,6 +16,10 @@ function toggleMobileMenu() {
 }
 
 async function showSection(sectionId, event) {
+    // Prevent default anchor navigation
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
     // Hide all sections
     const sections = document.querySelectorAll('.section');
     sections.forEach(section => section.classList.remove('active'));

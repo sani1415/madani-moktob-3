@@ -851,14 +851,6 @@
     <script type="module" src="translations.js"></script>
     <script src="modules/hijri.js" type="module"></script>
     <script type="module" src="modules/main.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // If Teachers Corner is visible at load, initialize it
-            const teachersSection = document.getElementById('teachers');
-            if (teachersSection && teachersSection.classList.contains('active') && typeof showTeachersCorner === 'function') {
-                showTeachersCorner();
-            }
-        });
-    </script>
+
 </body>
 </html>
