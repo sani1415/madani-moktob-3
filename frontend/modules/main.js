@@ -354,3 +354,59 @@ async function initializeApp() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Teachers Corner Dropdown Functions
+function toggleTeachersCornerDropdown() {
+    const dropdown = document.getElementById('teachersCornerDropdown');
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'block';
+        populateTeachersCornerDropdown();
+    } else {
+        dropdown.style.display = 'none';
+    }
+}
+
+function populateTeachersCornerDropdown() {
+    const dropdown = document.getElementById('teachersCornerDropdown');
+    
+    // Get classes from your existing class data
+    const classes = window.classes || [];
+    
+    if (classes.length === 0) {
+        dropdown.innerHTML = '<a href="#" style="color: #6c757d; font-style: italic;">No classes available</a>';
+        return;
+    }
+    
+    // Create class options
+    const classOptions = classes.map(cls => `
+        <a href="#" onclick="openTeachersCornerForClass('${cls.name}')">
+            <i class="fas fa-graduation-cap"></i> ${cls.name}
+        </a>
+    `).join('');
+    
+    dropdown.innerHTML = classOptions;
+}
+
+function openTeachersCornerForClass(className) {
+    // Open Teachers Corner with the selected class
+    const url = `teachers-corner.html?class=${encodeURIComponent(className)}`;
+    window.open(url, '_blank');
+    
+    // Close the dropdown
+    document.getElementById('teachersCornerDropdown').style.display = 'none';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('teachersCornerDropdown');
+    const dropdownToggle = document.querySelector('.dropdown-toggle');
+    
+    if (dropdown && !dropdown.contains(event.target) && !dropdownToggle.contains(event.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+// Expose Teachers Corner functions globally
+window.toggleTeachersCornerDropdown = toggleTeachersCornerDropdown;
+window.populateTeachersCornerDropdown = populateTeachersCornerDropdown;
+window.openTeachersCornerForClass = openTeachersCornerForClass;

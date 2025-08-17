@@ -328,7 +328,18 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             initTeachersCorner();
-            showSection('main-dashboard');
+            
+            // Check if a class was passed as a URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedClass = urlParams.get('class');
+            
+            if (selectedClass && allClasses.includes(selectedClass)) {
+                // Automatically open the selected class dashboard
+                showClassDashboard(selectedClass);
+            } else {
+                // Show main dashboard if no class selected
+                showSection('main-dashboard');
+            }
         });
 
         function initTeachersCorner() {
