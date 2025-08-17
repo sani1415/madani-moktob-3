@@ -341,6 +341,8 @@ function renderTeachersLogbook() {
 function switchLogTab(tab) { currentLogTab = tab; document.querySelectorAll('.logbook-tabs button').forEach(b => b.classList.remove('active')); const btn = document.querySelector(`.logbook-tabs button[onclick="switchLogTab('${tab}')"]`); if (btn) btn.classList.add('active'); renderTeachersLogbook(); }
 
 function showAddLogModal(studentId = '') {
+	const teachersSection = document.getElementById('teachers');
+	if (!teachersSection || !teachersSection.classList.contains('active')) return;
 	document.getElementById('log-id').value = '';
 	document.getElementById('log-modal-title').innerText = currentClass ? `New note for "${currentClass}"` : 'New note';
 	document.getElementById('log-details').value = '';
@@ -431,6 +433,8 @@ function deleteLog(logId) {
 }
 
 function showStudentProfile(studentId) {
+	const teachersSection = document.getElementById('teachers');
+	if (!teachersSection || !teachersSection.classList.contains('active')) return;
 	currentStudentIdForProfile = studentId;
 	const student = (window.students || []).find(s => s.id === studentId);
 	if (!student) return;
@@ -505,6 +509,8 @@ function switchProfileTab(tabName) {
 function showAddStudentLogModal(studentId) { const s = (window.students || []).find(x => x.id === studentId); if (!s) return; closeStudentProfileModal(); showAddLogModal(studentId); }
 
 async function showBookModal(bookId = null) {
+	const teachersSection = document.getElementById('teachers');
+	if (!teachersSection || !teachersSection.classList.contains('active')) return;
 	const modal = document.getElementById('book-modal');
 	const title = document.getElementById('book-modal-title');
 	const deleteBtn = document.getElementById('delete-book-btn');

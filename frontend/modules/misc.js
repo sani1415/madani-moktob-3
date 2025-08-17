@@ -29,7 +29,12 @@ async function showSection(sectionId, event) {
     
     // Add active class to clicked nav link
     if (event && event.target) {
-        event.target.classList.add('active');
+        const linkEl = event.target.closest ? event.target.closest('.nav-link') : null;
+        if (linkEl) {
+            linkEl.classList.add('active');
+        } else {
+            event.target.classList.add('active');
+        }
     }
     
     // Close mobile menu on mobile devices
