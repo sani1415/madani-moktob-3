@@ -177,13 +177,77 @@ function closeProgressHistoryModal() {
 	if (modal) modal.style.display = 'none';
 }
 
+function renderAlerts(selectedClass) {
+	const container = document.getElementById('alerts-content');
+	if (!container) return;
+	const studentsInClass = (window.students || []).filter(s => !selectedClass || s.class === selectedClass);
+	const alerts = [];
+	// Placeholder/derived alerts (since prototype used local randoms/logbook)
+	const today = getTodayString();
+	const todayAttendance = window.attendance && window.attendance[today] ? window.attendance[today] : {};
+	const missingAttendance = studentsInClass.filter(s => !todayAttendance[s.id] || !todayAttendance[s.id].status || todayAttendance[s.id].status === 'neutral');
+	if (missingAttendance.length > 0) {
+		alerts.push({ type: 'info', icon: 'fas fa-clipboard-list', title: 'Unmarked Attendance', message: `${missingAttendance.length} students not marked today.` });
+	}
+	if (alerts.length === 0) {
+		container.innerHTML = '<p class="text-sm" style="color:#666; padding:8px 0;">No alerts.</p>';
+		return;
+	}
+	container.innerHTML = alerts.map(a => `
+		<div class="list-item">
+			<div class="list-item-info">
+				<strong>${a.title}</strong>
+				<span>${a.message}</span>
+			</div>
+		</div>
+	`).join('');
+}
+
+function renderPerformance(students) {
+	const perfEl = document.getElementById('performance-chart');
+	if (!perfEl) return;
+	if (!students || students.length === 0) {
+		perfEl.innerHTML = '<p class="no-data">No student data</p>';
+		return;
+	}
+	// Simple categorization based on roll for placeholder (until a score system is added)
+	let mustaid = 0, mutawassit = 0, mujtahid = 0;
+	students.forEach(s => {
+		const roll = parseInt(s.rollNumber || '0', 10);
+		if (roll % 3 === 0) mustaid++; else if (roll % 3 === 1) mutawassit++; else mujtahid++;
+	});
+	perfEl.innerHTML = `
+		<div class="form-row">
+			<div class="form-group" style="flex:1; display:flex; justify-content:space-between;"><span>মুস্তাইদ</span><strong>${mustaid}</strong></div>
+			<div class="form-group" style="flex:1; display:flex; justify-content:space-between;"><span>মুতাওয়াসসিত</span><strong>${mutawassit}</strong></div>
+			<div class="form-group" style="flex:1; display:flex; justify-content:space-between;"><span>মুজতাহিদ</span><strong>${mujtahid}</strong></div>
+		</div>
+	`;
+}
+
+function renderRecentClassLogs(selectedClass) {
+	const logsEl = document.getElementById('recent-class-logs');
+	if (!logsEl) return;
+	logsEl.innerHTML = '<p class="no-data">No logs yet</p>';
+}
+
+function renderTeachersLogbookPlaceholder() {
+	const logEl = document.getElementById('logbook-display');
+	if (!logEl) return;
+	logEl.innerHTML = '<p class="no-data">No teacher notes yet</p>';
+}
+
 async function selectTeachersClass() {
 	const selectedClass = getSelectedTeachersClass();
+	const allStudents = (window.students || []).filter(s => !selectedClass || s.class === selectedClass);
 	renderClassSummary(selectedClass);
 	renderStudentsList(selectedClass);
-	// Reload progress list after ensuring latest data
 	await ensureDataLoaded();
 	renderClassEducationProgress(selectedClass);
+	renderAlerts(selectedClass);
+	renderPerformance(allStudents);
+	renderRecentClassLogs(selectedClass);
+	renderTeachersLogbookPlaceholder();
 }
 
 async function showTeachersCorner() {
@@ -193,6 +257,11 @@ async function showTeachersCorner() {
 	renderClassSummary(selectedClass);
 	renderStudentsList(selectedClass);
 	renderClassEducationProgress(selectedClass);
+	renderAlerts(selectedClass);
+	const allStudents = (window.students || []).filter(s => !selectedClass || s.class === selectedClass);
+	renderPerformance(allStudents);
+	renderRecentClassLogs(selectedClass);
+	renderTeachersLogbookPlaceholder();
 }
 
 // Exports
