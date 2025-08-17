@@ -29,7 +29,12 @@ async function showSection(sectionId, event) {
     navLinks.forEach(link => link.classList.remove('active'));
     
     // Show selected section
-    document.getElementById(sectionId).classList.add('active');
+    const targetSection = document.getElementById(sectionId);
+    if (!targetSection) {
+        console.error('Section not found:', sectionId);
+        return;
+    }
+    targetSection.classList.add('active');
     
     // Add active class to clicked nav link
     if (event && event.target) {

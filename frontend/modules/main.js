@@ -358,6 +358,23 @@ window.showTeachersCorner = Teachers.showTeachersCorner;
 window.selectTeachersClass = Teachers.selectTeachersClass;
 window.viewProgressHistory = Teachers.viewProgressHistory;
 window.closeProgressHistoryModal = Teachers.closeProgressHistoryModal;
+// Expose prototype UI handlers used in Teachers Corner
+window.showAddLogModal = Teachers.showAddLogModal;
+window.closeLogModal = Teachers.closeLogModal;
+window.saveLogEntry = Teachers.saveLogEntry;
+window.editLog = Teachers.editLog;
+window.deleteLog = Teachers.deleteLog;
+window.showStudentProfile = Teachers.showStudentProfile;
+window.closeStudentProfileModal = Teachers.closeStudentProfileModal;
+window.switchProfileTab = Teachers.switchProfileTab;
+window.showAddStudentLogModal = Teachers.showAddStudentLogModal;
+window.editHusnulKhuluk = Teachers.editHusnulKhuluk;
+window.closeScoreModal = Teachers.closeScoreModal;
+window.saveNewScore = Teachers.saveNewScore;
+window.showBookModal = Teachers.showBookModal;
+window.closeBookModal = Teachers.closeBookModal;
+window.saveBook = Teachers.saveBook;
+window.deleteBook = Teachers.deleteBook;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
