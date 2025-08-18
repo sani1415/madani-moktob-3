@@ -657,7 +657,11 @@
                     <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-orange-500">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">${student.name} বিন ${student.fatherName}</h4>
+                                <h4 class="font-semibold text-gray-800">
+                                    <span class="clickable-name" onclick="showStudentProfile('${student.id}').catch(console.error)" style="cursor: pointer; color: #3498db;">
+                                        ${student.name} বিন ${student.fatherName}
+                                    </span>
+                                </h4>
                                 <div class="text-sm text-gray-600 mt-1">
                                     <span class="mr-4">রোল: ${student.rollNumber}</span>
                                     <span class="mr-4">মোবাইল: ${student.mobileNumber}</span>
@@ -665,6 +669,7 @@
                                 </div>
                                 <div class="text-xs text-orange-600 mt-2 font-medium">
                                     <i class="fas fa-exclamation-triangle"></i> নিষ্ক্রিয় অবস্থায়
+                                    ${student.inactivationDate ? ` (${student.inactivationDate} থেকে)` : ''}
                                 </div>
                             </div>
                         </div>
@@ -922,7 +927,7 @@
                 let scoreClass = 'score-attention';
                 if (score >= 80) scoreClass = 'score-good';
                 else if (score >= 60) scoreClass = 'score-average';
-                return `<tr class="border-b hover:bg-gray-50"><td class="px-4 py-2 text-center"><span onclick="editHusnulKhuluk('${s.id}', ${score})" class="score-badge ${scoreClass}" title="স্কোর পরিবর্তন করুন">${score}</span></td><td class="px-4 py-2 font-medium">${s.rollNumber}</td><td onclick="showStudentProfile('${s.id}')" class="px-4 py-2 text-blue-600 hover:underline cursor-pointer">${s.name}</td></tr>`;
+                return `<tr class="border-b hover:bg-gray-50"><td class="px-4 py-2 text-center"><span onclick="editHusnulKhuluk('${s.id}', ${score})" class="score-badge ${scoreClass}" title="স্কোর পরিবর্তন করুন">${score}</span></td><td class="px-4 py-2 font-medium">${s.rollNumber}</td><td onclick="showStudentProfile('${s.id}').catch(console.error)" class="px-4 py-2 text-blue-600 hover:underline cursor-pointer">${s.name}</td></tr>`;
             }).join('');
         }
         
@@ -1213,7 +1218,7 @@
         }
         
         // --- STUDENT PROFILE LOGIC (UNIFIED VIEW) ---
-        function showStudentProfile(studentId) {
+        async function showStudentProfile(studentId) {
             currentStudentIdForProfile = studentId;
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
@@ -1222,11 +1227,16 @@
             const studentLogs = (teachersLogbook[student.class]?.student_logs[studentId] || []).sort((a, b) => new Date(b.date) - new Date(a.date));
             const scoreHistory = scoreChangeHistory[studentId] || [];
             
+            // Calculate attendance statistics (real data)
+            const attendanceStats = await calculateAttendanceStats(student);
+            
             const profileContent = `<div class="space-y-6">
                 <!-- Profile Tabs -->
                 <div class="border-b border-gray-200">
                     <nav class="flex space-x-8">
                         <button onclick="switchProfileTab('overview')" class="profile-tab active py-2 px-1 border-b-2 border-blue-500 text-sm font-medium text-blue-600">এক নজরে</button>
+                        <button onclick="switchProfileTab('personal')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">ব্যক্তিগত তথ্য</button>
+                        <button onclick="switchProfileTab('attendance')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">উপস্থিতি</button>
                         <button onclick="switchProfileTab('logs')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">শিক্ষকের নোট</button>
                         <button onclick="switchProfileTab('score-history')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">স্কোর ইতিহাস</button>
                         <button onclick="switchProfileTab('tarbiyah-goals')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">তরবিয়াহ লক্ষ্য</button>
@@ -1238,19 +1248,101 @@
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-700 mb-3">এক নজরে</h4>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div><div class="text-lg font-bold text-green-600">95%</div><div class="text-xs text-gray-500">উপস্থিতি</div></div>
+                            <div><div class="text-lg font-bold text-green-600">${attendanceStats.attendanceRate}%</div><div class="text-xs text-gray-500">উপস্থিতি</div></div>
                             <div><div class="text-lg font-bold text-blue-600">${score}</div><div class="text-xs text-gray-500">হুসনুল খুলুক</div></div>
                             <div><div class="text-lg font-bold text-purple-600">${studentLogs.length}</div><div class="text-xs text-gray-500">নোট সংখ্যা</div></div>
                             <div><div class="text-sm font-bold text-gray-700">${student.class}</div><div class="text-xs text-gray-500">শ্রেণী</div></div>
                         </div>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <h4 class="font-semibold text-gray-700 mb-2">মৌলিক তথ্য</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                            <p><strong>রোল:</strong> ${student.rollNumber}</p>
-                            <p><strong>পিতার নাম:</strong> ${student.fatherName}</p>
-                            <p><strong>মোবাইল:</strong> ${student.mobile}</p>
+                            <div class="space-y-2 text-sm text-gray-600">
+                                <p><strong>নাম:</strong> ${student.name} বিন ${student.fatherName}</p>
+                                <p><strong>রোল:</strong> ${student.rollNumber || 'N/A'}</p>
+                                <p><strong>শ্রেণী:</strong> ${student.class}</p>
+                                <p><strong>মোবাইল:</strong> ${student.mobileNumber || student.mobile || 'N/A'}</p>
                             <p><strong>ঠিকানা:</strong> ${student.upazila}, ${student.district}</p>
+                                <p><strong>নিবন্ধনের তারিখ:</strong> ${student.registrationDate || 'N/A'}</p>
+                                <p><strong>অবস্থা:</strong> 
+                                    <span class="${student.status === 'inactive' ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}">
+                                        ${student.status === 'inactive' ? 'নিষ্ক্রিয়' : 'সক্রিয়'}
+                                        ${student.status === 'inactive' && student.inactivationDate ? ` (${student.inactivationDate} থেকে)` : ''}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">উপস্থিতি সারসংক্ষেপ</h4>
+                            <div class="space-y-2 text-sm text-gray-600">
+                                <p><strong>মোট উপস্থিত:</strong> ${attendanceStats.present} দিন</p>
+                                <p><strong>মোট অনুপস্থিত:</strong> ${attendanceStats.absent} দিন</p>
+                                <p><strong>ছুটির দিন:</strong> ${attendanceStats.leave} দিন</p>
+                                <p><strong>উপস্থিতির হার:</strong> ${attendanceStats.attendanceRate}%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Information Tab -->
+                <div id="profile-personal" class="profile-tab-content hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">ব্যক্তিগত তথ্য</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p><strong>পূর্ণ নাম:</strong> ${student.name} বিন ${student.fatherName}</p>
+                                        <p><strong>রোল নম্বর:</strong> ${student.rollNumber || 'N/A'}</p>
+                                        <p><strong>শ্রেণী:</strong> ${student.class}</p>
+                                        <p><strong>নিবন্ধনের তারিখ:</strong> ${student.registrationDate || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p><strong>মোবাইল নম্বর:</strong> ${student.mobileNumber || student.mobile || 'N/A'}</p>
+                                        <p><strong>জেলা:</strong> ${student.district}</p>
+                                        <p><strong>উপজেলা:</strong> ${student.upazila}</p>
+                                        <p><strong>অবস্থা:</strong> 
+                                            <span class="${student.status === 'inactive' ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}">
+                                                ${student.status === 'inactive' ? 'নিষ্ক্রিয়' : 'সক্রিয়'}
+                                                ${student.status === 'inactive' && student.inactivationDate ? ` (${student.inactivationDate} থেকে)` : ''}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attendance Tab -->
+                <div id="profile-attendance" class="profile-tab-content hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">উপস্থিতি তথ্য</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
+                                    <div class="bg-green-100 p-3 rounded-lg">
+                                        <div class="text-2xl font-bold text-green-600">${attendanceStats.present}</div>
+                                        <div class="text-sm text-gray-600">উপস্থিত</div>
+                                    </div>
+                                    <div class="bg-red-100 p-3 rounded-lg">
+                                        <div class="text-2xl font-bold text-red-600">${attendanceStats.absent}</div>
+                                        <div class="text-sm text-gray-600">অনুপস্থিত</div>
+                                    </div>
+                                    <div class="bg-yellow-100 p-3 rounded-lg">
+                                        <div class="text-2xl font-bold text-yellow-600">${attendanceStats.leave}</div>
+                                        <div class="text-sm text-gray-600">ছুটি</div>
+                                    </div>
+                                    <div class="bg-blue-100 p-3 rounded-lg">
+                                        <div class="text-2xl font-bold text-blue-600">${attendanceStats.attendanceRate}%</div>
+                                        <div class="text-sm text-gray-600">উপস্থিতির হার</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <p><strong>মোট স্কুল দিন:</strong> ${attendanceStats.totalSchoolDays}</p>
+                                    <p><strong>শেষ আপডেট:</strong> আজকের তারিখ</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1346,12 +1438,17 @@
             });
             
             // Show selected tab content
-            document.getElementById(`profile-${tabName}`).classList.remove('hidden');
+            const targetContent = document.getElementById(`profile-${tabName}`);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+            }
             
             // Add active class to selected tab
             const activeTab = document.querySelector(`[onclick="switchProfileTab('${tabName}')"]`);
+            if (activeTab) {
             activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
             activeTab.classList.remove('border-transparent', 'text-gray-500');
+            }
         }
         function showAddStudentLogModal(studentId) {
             const student = allStudents.find(s => s.id === studentId);
@@ -1492,7 +1589,7 @@
             const totalPages = parseInt(document.getElementById('book-total-pages').value);
             const completedPages = parseInt(document.getElementById('book-completed-pages').value);
             const progressNote = document.getElementById('book-progress-note').value;
-            
+
             console.log('🚀 saveBook called with:', { bookId, bookName, totalPages, completedPages, progressNote });
             console.log('📚 Current allEducationProgress length:', allEducationProgress.length);
             console.log('📚 allEducationProgress:', allEducationProgress);
@@ -1704,6 +1801,62 @@
             // Goals are already saved automatically when checkboxes change
             // This function can be used for additional validation or feedback
             alert('তরবিয়াহ লক্ষ্যগুলি সংরক্ষিত হয়েছে।');
+        }
+        
+        // Calculate attendance statistics for student profile
+        async function calculateAttendanceStats(student) {
+            try {
+                // Fetch real attendance data for this student
+                const response = await fetch('/api/attendance');
+                if (response.ok) {
+                    const allAttendance = await response.json();
+                    
+                    // The API returns data grouped by date: { "2025-08-18": { "ST001": { "status": "present" } } }
+                    let present = 0;
+                    let absent = 0;
+                    let leave = 0;
+                    
+                    // Iterate through all dates and find this student's attendance
+                    Object.values(allAttendance).forEach(dateAttendance => {
+                        if (dateAttendance[student.id]) {
+                            const status = dateAttendance[student.id].status;
+                            if (status === 'present') present++;
+                            else if (status === 'absent') absent++;
+                            else if (status === 'leave') leave++;
+                        }
+                    });
+                    
+                    const totalSchoolDays = present + absent + leave;
+                    const attendanceRate = totalSchoolDays > 0 ? Math.round((present / totalSchoolDays) * 100) : 0;
+                    
+                    console.log(`📊 Attendance stats for ${student.name}:`, { present, absent, leave, totalSchoolDays, attendanceRate });
+                    
+                    return {
+                        present,
+                        absent,
+                        leave,
+                        totalSchoolDays,
+                        attendanceRate
+                    };
+                }
+            } catch (error) {
+                console.error('Error fetching attendance data:', error);
+            }
+            
+            // Fallback to basic calculation if API fails
+            return {
+                present: 0,
+                absent: 0,
+                leave: 0,
+                totalSchoolDays: 0,
+                attendanceRate: 0
+            };
+        }
+        
+        // --- UNIFIED STUDENT DETAIL FUNCTION ---
+        async function showStudentDetail(studentId, source = 'teachers-corner') {
+            // Use the enhanced Teachers Corner student profile instead of redirecting
+            await showStudentProfile(studentId);
         }
         
 

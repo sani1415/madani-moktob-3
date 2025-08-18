@@ -206,7 +206,7 @@ function displayStudentsList() {
                                 <td class="actions">
                                     ${student.status === 'inactive'
                                         ? `<button onclick="updateStudentStatus('${student.id}', 'active')" class="btn btn-sm btn-success" title="${t('markAsActive')}"><i class="fas fa-user-check"></i></button>`
-                                        : `<button onclick="updateStudentStatus('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
+                                        : `<button onclick="updateStudentStatusWithBackdating('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
                                     }
                                     <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
                                         <i class="fas fa-edit"></i>
@@ -487,7 +487,7 @@ function updateStudentTableBody() {
             <td class="actions">
                 ${student.status === 'inactive'
                     ? `<button onclick="updateStudentStatus('${student.id}', 'active')" class="btn btn-sm btn-success" title="${t('markAsActive')}"><i class="fas fa-user-check"></i></button>`
-                    : `<button onclick="updateStudentStatus('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
+                    : `<button onclick="updateStudentStatusWithBackdating('${student.id}', 'inactive')" class="btn btn-sm btn-warning" title="${t('markAsInactive')}"><i class="fas fa-user-slash"></i></button>`
                 }
                 <button onclick="editStudent('${student.id}')" class="btn btn-sm btn-secondary" title="${t('editStudent')}">
                     <i class="fas fa-edit"></i>
@@ -932,17 +932,32 @@ function updateRegistrationTexts() {
     }
 }
 
-async function updateStudentStatus(studentId, newStatus) {
+async function updateStudentStatus(studentId, newStatus, inactivationDate = null, handleAttendance = 'keep') {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
 
-    const confirmAction = confirm(`Are you sure you want to mark "${student.name}" as ${newStatus}?`);
+    let confirmMessage = `Are you sure you want to mark "${student.name}" as ${newStatus}?`;
+    
+    // If backdating inactivation, show additional options
+    if (newStatus === 'inactive' && inactivationDate) {
+        confirmMessage = `Are you sure you want to mark "${student.name}" as inactive from ${inactivationDate}?\n\nThis will affect attendance records after that date.`;
+    }
+
+    const confirmAction = confirm(confirmMessage);
     if (confirmAction) {
         try {
+            const requestBody = { status: newStatus };
+            
+            // Add backdating parameters if provided
+            if (inactivationDate && newStatus === 'inactive') {
+                requestBody.inactivation_date = inactivationDate;
+                requestBody.handle_attendance = handleAttendance;
+            }
+            
             const response = await fetch(`/api/students/${studentId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify(requestBody)
             });
             const result = await response.json();
             if (response.ok) {
@@ -963,6 +978,82 @@ async function updateStudentStatus(studentId, newStatus) {
     }
 }
 
+async function updateStudentStatusWithBackdating(studentId, newStatus) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    if (newStatus === 'inactive') {
+        // Show modal for backdating options
+        showBackdatingModal(studentId, student.name);
+    } else {
+        // For making active, use the simple function
+        await updateStudentStatus(studentId, newStatus);
+    }
+}
+
+function showBackdatingModal(studentId, studentName) {
+    // Create modal HTML using your application's design
+    const modalHTML = `
+        <div id="backdating-modal" class="modal-backdrop" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+            <div class="modal-content" style="background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #333;"><i class="fas fa-user-slash"></i> Mark "${studentName}" as Inactive</h3>
+                    <button onclick="closeBackdatingModal()" class="modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="inactivation-date" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Inactivation Date *</label>
+                        <input type="date" id="inactivation-date" class="form-control" 
+                               value="${new Date().toISOString().split('T')[0]}"
+                               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <small class="form-text" style="display: block; margin-top: 5px; color: #666; font-size: 12px;">Choose the date when the student became inactive</small>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="attendance-handling" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Handle Attendance After Inactivation</label>
+                        <select id="attendance-handling" class="form-control" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <option value="keep">Keep existing attendance records</option>
+                            <option value="mark_absent">Mark as absent with reason</option>
+                            <option value="remove">Remove attendance records</option>
+                        </select>
+                        <small class="form-text" style="display: block; margin-top: 5px; color: #666; font-size: 12px;">What to do with attendance records after the inactivation date</small>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button onclick="closeBackdatingModal()" class="btn btn-secondary" style="padding: 10px 20px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button onclick="confirmBackdating('${studentId}')" class="btn btn-primary" style="padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-check"></i> Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeBackdatingModal() {
+    const modal = document.getElementById('backdating-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function confirmBackdating(studentId) {
+    const inactivationDate = document.getElementById('inactivation-date').value;
+    const handleAttendance = document.getElementById('attendance-handling').value;
+    
+    if (!inactivationDate) {
+        showModal('Error', 'Please select an inactivation date');
+        return;
+    }
+    
+    closeBackdatingModal();
+    await updateStudentStatus(studentId, 'inactive', inactivationDate, handleAttendance);
+}
+
 
 // ADD THIS ENTIRE NEW FUNCTION
 function showInactiveStudentsList() {
@@ -979,4 +1070,4 @@ function showInactiveStudentsList() {
     if(classFilterReg) classFilterReg.value = '';
 }
 
-export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, deleteAllStudents, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts, updateStudentStatus, showInactiveStudentsList }
+export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, deleteAllStudents, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts, updateStudentStatus, updateStudentStatusWithBackdating, showBackdatingModal, closeBackdatingModal, confirmBackdating, showInactiveStudentsList }

@@ -194,13 +194,45 @@ def set_student_status(student_id):
     try:
         data = request.json
         new_status = data.get('status')
+        inactivation_date = data.get('inactivation_date')  # Optional: for backdating
+        handle_attendance = data.get('handle_attendance', 'keep')  # Optional: attendance handling
+        
         if new_status not in ['active', 'inactive']:
             return jsonify({'error': 'Invalid status provided'}), 400
+            
+        if handle_attendance not in ['keep', 'remove', 'mark_absent']:
+            return jsonify({'error': 'Invalid attendance handling option'}), 400
 
-        db.set_student_status(student_id, new_status)
-        return jsonify({'success': True, 'message': f'Student status updated to {new_status}'})
+        # Use the enhanced method if backdating is requested
+        if inactivation_date and new_status == 'inactive':
+            db.set_student_status_with_attendance_handling(
+                student_id, new_status, inactivation_date, handle_attendance
+            )
+            message = f'Student status updated to {new_status} from {inactivation_date}'
+        else:
+            db.set_student_status(student_id, new_status, inactivation_date)
+            message = f'Student status updated to {new_status}'
+
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         logger.error(f"Error in set_student_status endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students/<student_id>/status/<date>', methods=['GET'])
+def get_student_status_for_date(student_id, date):
+    """Get student status for a specific date (useful for historical queries)"""
+    try:
+        status = db.get_student_status_for_date(student_id, date)
+        if status is None:
+            return jsonify({'error': 'Student not found'}), 404
+            
+        return jsonify({
+            'student_id': student_id,
+            'date': date,
+            'status': status
+        })
+    except Exception as e:
+        logger.error(f"Error in get_student_status_for_date endpoint: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/students/<student_id>', methods=['DELETE'])

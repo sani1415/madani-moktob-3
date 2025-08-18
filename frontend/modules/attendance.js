@@ -909,6 +909,8 @@ function showStudentDetail(studentId, source = 'attendance') {
     if (backButton) {
         if (source === 'registration') {
             backButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToRegistration')}`;
+        } else if (source === 'teachers-corner') {
+            backButton.innerHTML = `<i class="fas fa-arrow-left"></i> Back to Teachers Corner`;
         } else {
             backButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${t('backToReports')}`;
         }
@@ -928,9 +930,13 @@ function backToReports() {
     if (studentDetailSource === 'registration') {
         document.getElementById('registration').classList.add('active');
         window.location.hash = 'registration';
+    } else if (studentDetailSource === 'teachers-corner') {
+        // For teachers corner, we need to go back to the main page and then to teachers corner
+        window.location.href = '/';
+        // The teachers corner will be opened via the navigation
     } else {
-    document.getElementById('attendance').classList.add('active');
-    window.location.hash = 'attendance';
+        document.getElementById('attendance').classList.add('active');
+        window.location.hash = 'attendance';
     }
 }
 
@@ -1021,6 +1027,13 @@ function generateStudentDetailContent(student) {
                     <div class="info-item">
                         <span class="info-label">${t('rollNumber')}:</span>
                         <span class="info-value">${student.rollNumber || 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">${t('status')}:</span>
+                        <span class="info-value ${student.status === 'inactive' ? 'status-inactive' : 'status-active'}">
+                            ${student.status === 'inactive' ? 'Inactive' : 'Active'}
+                            ${student.status === 'inactive' && student.inactivationDate ? ` (from ${student.inactivationDate})` : ''}
+                        </span>
                     </div>
                 </div>
             </div>

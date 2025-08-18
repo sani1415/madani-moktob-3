@@ -351,17 +351,27 @@ class MySQLDatabase:
             print(f"Error adding student: {e}")
             raise
 
-    def set_student_status(self, student_id, status):
+    def set_student_status(self, student_id, status, inactivation_date=None):
         """Set the status for a specific student and record the inactivation date."""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
 
-            # If student is being made inactive, set today's date (so they become inactive today).
+            # If student is being made inactive, use provided date or today's date
             # If being made active, clear the date by setting it to NULL.
             if status == 'inactive':
-                from datetime import datetime
-                inactivation_date = datetime.now().strftime('%Y-%m-%d')
+                if inactivation_date:
+                    # Use the provided backdated inactivation date
+                    from datetime import datetime
+                    # Validate the date format
+                    try:
+                        datetime.strptime(inactivation_date, '%Y-%m-%d')
+                    except ValueError:
+                        raise ValueError("Invalid date format. Use YYYY-MM-DD")
+                else:
+                    # Use today's date if no specific date provided
+                    from datetime import datetime
+                    inactivation_date = datetime.now().strftime('%Y-%m-%d')
             else:
                 inactivation_date = None
 
@@ -378,6 +388,102 @@ class MySQLDatabase:
         except Error as e:
             logger.error(f"Error setting student status: {e}")
             raise
+
+    def set_student_status_with_attendance_handling(self, student_id, status, inactivation_date=None, handle_attendance='keep'):
+        """
+        Set student status with options for handling attendance data.
+        
+        Args:
+            student_id: Student ID
+            status: 'active' or 'inactive'
+            inactivation_date: Date when student became inactive (for backdating)
+            handle_attendance: 'keep', 'remove', or 'mark_absent'
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Set the student status first
+            self.set_student_status(student_id, status, inactivation_date)
+
+            # If making inactive with a backdated date, handle attendance
+            if status == 'inactive' and inactivation_date:
+                from datetime import datetime
+                inactivation_datetime = datetime.strptime(inactivation_date, '%Y-%m-%d')
+                
+                if handle_attendance == 'remove':
+                    # Remove all attendance records after the inactivation date
+                    cursor.execute('''
+                        DELETE FROM attendance 
+                        WHERE student_id = %s AND date > %s
+                    ''', (student_id, inactivation_date))
+                    
+                elif handle_attendance == 'mark_absent':
+                    # Mark all attendance records after inactivation date as 'absent' with reason
+                    cursor.execute('''
+                        UPDATE attendance 
+                        SET status = 'absent', reason = 'Student was inactive from this date'
+                        WHERE student_id = %s AND date > %s
+                    ''', (student_id, inactivation_date))
+                    
+                # If 'keep', do nothing - attendance records remain unchanged
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+
+        except Error as e:
+            logger.error(f"Error setting student status with attendance handling: {e}")
+            raise
+
+    def get_student_status_for_date(self, student_id, date):
+        """
+        Get student status for a specific date (useful for historical queries).
+        Returns 'active' or 'inactive' based on the student's status and inactivation date.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT status, inactivationDate 
+                FROM students 
+                WHERE id = %s
+            ''', (student_id,))
+            
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if not result:
+                return None
+                
+            if result['status'] == 'active':
+                return 'active'
+            elif result['status'] == 'inactive' and result['inactivationDate']:
+                # Check if the query date is before or after inactivation
+                from datetime import datetime
+                
+                # Handle both string and date objects
+                if isinstance(result['inactivationDate'], str):
+                    inactivation_date = datetime.strptime(result['inactivationDate'], '%Y-%m-%d')
+                else:
+                    # If it's already a date object, convert to datetime
+                    inactivation_date = datetime.combine(result['inactivationDate'], datetime.min.time())
+                
+                query_date = datetime.strptime(date, '%Y-%m-%d')
+                
+                if query_date < inactivation_date:
+                    return 'active'  # Student was active on this date
+                else:
+                    return 'inactive'  # Student was inactive on this date
+            
+            return result['status']
+
+        except Error as e:
+            logger.error(f"Error getting student status for date: {e}")
+            return None
 
     def get_student_counts(self):
         """Get counts of students by status"""
