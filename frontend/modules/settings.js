@@ -1,5 +1,4 @@
-// Global variables for education progress and books
-let educationProgress = [];
+// Global variables for books
 let books = [];
 // Note: classes, students, and holidays are now global variables from State module
 // let classes = []; // Removed - using global classes from State
@@ -24,6 +23,12 @@ function updateClassDropdowns() {
         'studentClass', 'classFilter', 'reportClass', 'bookClass', 'editBookClass', 'newBookClass', 'educationClassFilter'
     ];
 
+    // Check if classes are loaded
+    if (!window.classes || window.classes.length === 0) {
+        console.log('⚠️ Classes not loaded yet, skipping dropdown update');
+        return;
+    }
+
     dropdownIds.forEach(id => {
         const dropdown = document.getElementById(id);
         if (dropdown) {
@@ -33,14 +38,16 @@ function updateClassDropdowns() {
             dropdown.innerHTML = firstOption;
 
             window.classes.forEach(cls => {
-                // Use cls.name for both value and text content for consistency
-                dropdown.options.add(new Option(cls.name, cls.name));
+                // Use cls.id for value and cls.name for display text
+                dropdown.options.add(new Option(cls.name, cls.id));
             });
 
             // Try to restore the previously selected value
             dropdown.value = currentValue;
         }
     });
+    
+    console.log('✅ Class dropdowns updated successfully');
 }
 
 async function addClass() {
@@ -328,373 +335,21 @@ function getHolidayName(date) {
     return holiday ? holiday.name : '';
 }
 
-// Education progress functions
-async function loadEducationProgress() {
-    try {
-        console.log('🔄 Loading education progress...');
-        const response = await fetch('/api/education');
-        console.log('📡 Education API response status:', response.status);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('📊 Education data received:', data);
-            console.log('📊 Education data length:', data.length);
-            
-            educationProgress = data;
-            console.log('💾 educationProgress array updated:', educationProgress);
-            console.log('💾 educationProgress length:', educationProgress.length);
-            
-            console.log('🔄 Calling displayBooksList...');
-            displayBooksList();
-            console.log('✅ displayBooksList completed');
-        } else {
-            console.error('❌ Failed to load education progress, status:', response.status);
-            const errorText = await response.text();
-            console.error('❌ Error response:', errorText);
-        }
-    } catch (error) {
-        console.error('❌ Error loading education progress:', error);
-    }
-}
+// Note: loadEducationProgress function removed - Education Progress is now handled in Teachers Corner
 
-function displayBooksList() {
-    const booksList = document.getElementById('booksList');
-    if (!booksList) return;
-    
-    if (educationProgress.length === 0) {
-        booksList.innerHTML = '<p class="no-data">No books added yet</p>';
-        return;
-    }
-    
-    booksList.innerHTML = educationProgress.map(book => {
-        const progressPercentage = Math.round((book.completed_pages / book.total_pages) * 100);
-        const remainingPages = book.total_pages - book.completed_pages;
-        
-        return `
-            <div class="book-card" data-id="${book.id}">
-                <div class="book-header">
-                    <h4>${book.book_name}</h4>
-                    <span class="book-class">${book.class_name}</span>
-                </div>
-                <div class="book-subject">${book.subject_name}</div>
-                <div class="book-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
-                    </div>
-                    <div class="progress-text">
-                        ${book.completed_pages} / ${book.total_pages} pages (${progressPercentage}%)
-                    </div>
-                </div>
-                <div class="book-stats">
-                    <div class="stat">
-                        <span class="label">Completed:</span>
-                        <span class="value">${book.completed_pages} pages</span>
-                    </div>
-                    <div class="stat">
-                        <span class="label">Remaining:</span>
-                        <span class="value">${remainingPages} pages</span>
-                    </div>
-                </div>
-                ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ''}
-                <div class="book-actions">
-                    <button onclick="editBookDetails(${book.id})" class="btn btn-secondary btn-small">
-                        <i class="fas fa-edit"></i> Edit Details
-                    </button>
-                    <button onclick="updateBookProgress(${book.id})" class="btn btn-primary btn-small">
-                        <i class="fas fa-chart-line"></i> Update Progress
-                    </button>
-                    <button onclick="deleteBookProgress(${book.id})" class="btn btn-danger btn-small">
-                        <i class="fas fa-trash"></i> Delete Book
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
+// Note: displayBooksList function removed - Education Progress is now handled in Teachers Corner
 
-async function showAddBookForm() {
-    await loadBooks();
-    
-    document.getElementById('addBookForm').style.display = 'block';
-    document.getElementById('bookProgressList').style.display = 'none';
-    document.getElementById('bookForm').reset();
-    
-    updateBookDropdowns();
-}
+// Note: showAddBookForm and hideAddBookForm removed - Education Progress is now handled in Teachers Corner
 
-function hideAddBookForm() {
-    document.getElementById('addBookForm').style.display = 'none';
-    document.getElementById('bookProgressList').style.display = 'block';
-}
+// Note: addBookProgress function removed - Progress tracking is now handled in Teachers Corner
 
-async function addBookProgress() {
-    console.log('addBookProgress called');
-    console.log('books array:', window.books);
-    console.log('books length:', window.books ? window.books.length : 'undefined');
-    
-    const bookId = document.getElementById('bookName').value;
-    console.log('selected bookId:', bookId);
-    
-    const selectedBook = window.books ? window.books.find(book => book.id == bookId) : null;
-    console.log('selectedBook:', selectedBook);
-    
-    if (!selectedBook) {
-        showModal('Error', 'Please select a book from the dropdown.');
-        return;
-    }
-    
-    const formData = {
-        class_name: document.getElementById('bookClass').value,
-        subject_name: document.getElementById('bookSubject').value,
-        book_id: parseInt(bookId),
-        book_name: selectedBook.book_name,
-        total_pages: parseInt(document.getElementById('totalPages').value),
-        completed_pages: parseInt(document.getElementById('completedPages').value) || 0,
-        notes: document.getElementById('bookNotes').value
-    };
-    
-    if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
-        showModal('Error', 'Please fill in all required fields.');
-        return;
-    }
-    
-    if (formData.completed_pages > formData.total_pages) {
-        showModal('Error', 'Completed pages cannot be more than total pages.');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/education', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        if (response.ok) {
-            showModal('Success', 'Book progress added successfully!');
-            hideAddBookForm();
-            await loadEducationProgress();
-        } else {
-            const error = await response.json();
-            showModal('Error', error.error || 'Failed to add book progress');
-        }
-    } catch (error) {
-        console.error('Error adding book progress:', error);
-        showModal('Error', 'Network error. Please try again.');
-    }
-}
+// Note: updateBookProgress and deleteBookProgress functions removed - Progress tracking is now handled in Teachers Corner
 
-async function updateBookProgress(bookId) {
-    const book = educationProgress.find(b => b.id === bookId);
-    if (!book) return;
-    
-    const newCompletedPages = prompt(`Enter completed pages for "${book.book_name}" (0-${book.total_pages}):`, book.completed_pages);
-    
-    if (newCompletedPages === null) return;
-    
-    const completedPages = parseInt(newCompletedPages);
-    if (isNaN(completedPages) || completedPages < 0 || completedPages > book.total_pages) {
-        showModal('Error', 'Please enter a valid number between 0 and ' + book.total_pages);
-        return;
-    }
-    
-    const notes = prompt('Add any notes about this progress update (optional):', book.notes || '');
-    
-    try {
-        const response = await fetch(`/api/education/${bookId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                completed_pages: completedPages,
-                notes: notes
-            })
-        });
-        
-        if (response.ok) {
-            showModal('Success', 'Book progress updated successfully!');
-            await loadEducationProgress();
-        } else {
-            const error = await response.json();
-            showModal('Error', error.error || 'Failed to update book progress');
-        }
-    } catch (error) {
-        console.error('Error updating book progress:', error);
-        showModal('Error', 'Network error. Please try again.');
-    }
-}
+// Note: filterBooksByClass function removed - Education Progress is now handled in Teachers Corner
 
-async function deleteBookProgress(bookId) {
-    const book = educationProgress.find(b => b.id === bookId);
-    if (!book) return;
-    
-    if (!confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/education/${bookId}`, {
-            method: 'DELETE'
-        });
-        
-        if (response.ok) {
-            showModal('Success', 'Book deleted successfully');
-            await loadEducationProgress();
-        } else {
-            const error = await response.json();
-            showModal('Error', error.error || 'Failed to delete book');
-        }
-    } catch (error) {
-        console.error('Error deleting book progress:', error);
-        showModal('Error', 'Network error. Please try again.');
-    }
-}
+// Note: editBookDetails, closeEditBookModal, and updateBookDetails functions removed - Education Progress is now handled in Teachers Corner
 
-function filterBooksByClass() {
-    const selectedClass = document.getElementById('classFilter').value;
-    const bookCards = document.querySelectorAll('.book-card');
-    
-    bookCards.forEach(card => {
-        const bookClass = card.querySelector('.book-class').textContent;
-        if (!selectedClass || bookClass === selectedClass) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-function editBookDetails(bookId) {
-    const book = educationProgress.find(b => b.id === bookId);
-    if (!book) {
-        showModal('Error', 'Book not found');
-        return;
-    }
-    
-    document.getElementById('editBookId').value = book.id;
-    document.getElementById('editBookClass').value = book.class_name;
-    document.getElementById('editBookSubject').value = book.subject_name;
-    document.getElementById('editBookName').value = book.book_id || '';
-    document.getElementById('editTotalPages').value = book.total_pages;
-    document.getElementById('editCompletedPages').value = book.completed_pages;
-    document.getElementById('editBookNotes').value = book.notes || '';
-    
-    document.getElementById('editBookModal').style.display = 'block';
-}
-
-function closeEditBookModal() {
-    document.getElementById('editBookModal').style.display = 'none';
-    document.getElementById('bookForm').reset();
-}
-
-async function updateBookDetails() {
-    const progressId = document.getElementById('editBookId').value;
-    const bookId = document.getElementById('editBookName').value;
-    const selectedBook = window.books ? window.books.find(book => book.id == bookId) : null;
-    
-    if (!selectedBook) {
-        showModal('Error', 'Please select a book from the dropdown.');
-        return;
-    }
-    
-    const formData = {
-        class_name: document.getElementById('editBookClass').value,
-        subject_name: document.getElementById('editBookSubject').value,
-        book_id: parseInt(bookId),
-        book_name: selectedBook.book_name,
-        total_pages: parseInt(document.getElementById('editTotalPages').value),
-        completed_pages: parseInt(document.getElementById('editCompletedPages').value) || 0,
-        notes: document.getElementById('editBookNotes').value
-    };
-    
-    if (!formData.class_name || !formData.subject_name || !formData.book_id || !formData.total_pages) {
-        showModal('Error', 'Please fill in all required fields.');
-        return;
-    }
-    
-    if (formData.completed_pages > formData.total_pages) {
-        showModal('Error', 'Completed pages cannot be more than total pages.');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/education/${progressId}/edit`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        if (response.ok) {
-            showModal('Success', 'Book details updated successfully!');
-            closeEditBookModal();
-            await loadEducationProgress();
-        } else {
-            const error = await response.json();
-            showModal('Error', error.error || 'Failed to update book details');
-        }
-    } catch (error) {
-        console.error('Error updating book details:', error);
-        showModal('Error', 'Network error. Please try again.');
-    }
-}
-
-function showDeleteAllEducationModal() {
-    const modalContent = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>⚠️ Delete All Education Data</h3>
-            </div>
-            <div class="modal-body">
-                <p><strong>Warning:</strong> This will permanently delete:</p>
-                <ul>
-                    <li>All book progress records</li>
-                    <li>All class and subject information</li>
-                    <li>All completion statistics</li>
-                    <li>All notes and comments</li>
-                </ul>
-                <p><strong>This action cannot be undone!</strong></p>
-                <p>Are you sure you want to proceed?</p>
-            </div>
-            <div class="modal-footer">
-                <button onclick="deleteAllEducationData()" class="btn btn-danger">
-                    <i class="fas fa-trash-alt"></i> Yes, Delete All Data
-                </button>
-                <button onclick="closeModal()" class="btn btn-secondary">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal('Delete All Education Data', modalContent, true);
-}
-
-async function deleteAllEducationData() {
-    try {
-        const confirmed = confirm('Are you sure you want to delete all education progress data? This action cannot be undone.');
-        if (!confirmed) return;
-        
-        const response = await fetch('/api/education/all', {
-            method: 'DELETE'
-        });
-        
-        if (response.ok) {
-            showModal('Success', 'All education progress data deleted successfully');
-            await loadEducationProgress();
-        } else {
-            const error = await response.json();
-            showModal('Error', error.error || 'Failed to delete education data');
-        }
-    } catch (error) {
-        console.error('Error deleting education data:', error);
-        showModal('Error', 'Failed to delete education data');
-    }
-}
+// Note: showDeleteAllEducationModal and deleteAllEducationData functions removed - Education Progress is now handled in Teachers Corner
 
 // Book management functions
 async function loadBooks() {
@@ -706,18 +361,34 @@ async function loadBooks() {
         
         if (response.ok) {
             const booksData = await response.json();
-            console.log('Books data received:', booksData);
+            console.log('📚 Books data received from API:', booksData);
+            console.log('📊 Number of books received:', booksData.length);
+            
             books = booksData;
             // Also update the global window.books array
             window.books = booksData;
-            console.log('Books array after assignment:', window.books);
-            console.log('Books array length:', window.books ? window.books.length : 'undefined');
-            console.log('window.books array after assignment:', window.books);
-            console.log('window.books length:', window.books ? window.books.length : 'undefined');
+            
+            console.log('💾 Books array after assignment:', window.books);
+            console.log('📈 Books array length:', window.books ? window.books.length : 'undefined');
+            
+            // Log each book with its details
+            if (window.books && window.books.length > 0) {
+                console.log('📖 Individual book details:');
+                window.books.forEach((book, index) => {
+                    console.log(`  Book ${index + 1}:`, {
+                        id: book.id,
+                        name: book.book_name,
+                        class_id: book.class_id,
+                        class_name: getClassNameById(book.class_id)
+                    });
+                });
+            }
+            
             displayBooks();
             updateBookDropdowns();
+            console.log('✅ Books display and dropdowns updated');
         } else {
-            console.error('Failed to load books, status:', response.status);
+            console.error('❌ Failed to load books, status:', response.status);
         }
     } catch (error) {
         console.error('Error loading books:', error);
@@ -756,33 +427,45 @@ function displayBooks() {
 }
 
 function getClassNameById(classId) {
-    const classMap = {
-        1: 'প্রথম শ্রেণি',
-        2: 'দ্বিতীয় শ্রেণি',
-        3: 'তৃতীয় শ্রেণি',
-        4: 'চতুর্থ শ্রেণি',
-        5: 'পঞ্চম শ্রেণি'
-    };
-    return classMap[classId] || 'Unknown Class';
+    console.log('getClassNameById called with classId:', classId);
+    console.log('window.classes:', window.classes);
+    
+    if (!window.classes || !classId) {
+        console.log('No classes or classId, returning "All Classes"');
+        return 'All Classes';
+    }
+    
+    const classObj = window.classes.find(cls => cls.id == classId);
+    console.log('Found class object:', classObj);
+    
+    if (classObj) {
+        console.log('Returning class name:', classObj.name);
+        return classObj.name;
+    } else {
+        console.log('Class not found, returning "Unknown Class"');
+        return 'Unknown Class';
+    }
 }
 
 function getClassIdByName(className) {
-    const classMap = {
-        'প্রথম শ্রেণি': 1,
-        'দ্বিতীয় শ্রেণি': 2,
-        'তৃতীয় শ্রেণি': 3,
-        'চতুর্থ শ্রেণি': 4,
-        'পঞ্চম শ্রেণি': 5
-    };
-    return classMap[className] || null;
+    if (!window.classes || !className) return null;
+    
+    const classObj = window.classes.find(cls => cls.name === className);
+    return classObj ? classObj.id : null;
 }
 
 async function addBook() {
     const bookName = document.getElementById('newBookName').value.trim();
     const classId = document.getElementById('newBookClass').value || null;
+    const totalPages = parseInt(document.getElementById('newBookPages').value) || null;
     
     if (!bookName) {
         showModal('Error', 'Please enter a book name');
+        return;
+    }
+    
+    if (!totalPages || totalPages <= 0) {
+        showModal('Error', 'Please enter a valid number of total pages');
         return;
     }
     
@@ -794,18 +477,26 @@ async function addBook() {
             },
             body: JSON.stringify({
                 book_name: bookName,
-                class_id: classId
+                class_id: classId,
+                total_pages: totalPages
             })
         });
         
         if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Book added successfully! API Response:', result);
             showModal('Success', 'Book added successfully');
             document.getElementById('newBookName').value = '';
             document.getElementById('newBookClass').value = '';
+            document.getElementById('newBookPages').value = '';
+            
+            console.log('🔄 Reloading books to refresh display...');
             await loadBooks();
             updateBookDropdowns();
+            console.log('✅ Book list refreshed after adding new book');
         } else {
             const error = await response.json();
+            console.error('❌ Failed to add book. API Error:', error);
             showModal('Error', error.error || 'Failed to add book');
         }
     } catch (error) {
@@ -826,7 +517,7 @@ async function editBook(bookId) {
     
     const editBookId = document.getElementById('bookManagementEditId');
     const editBookName = document.getElementById('bookManagementEditName');
-    const editBookClass = document.getElementById('bookManagementEditClass');
+    const editBookClass = document.getElementById('editBookClass');
     const editBookModal = document.getElementById('bookManagementEditModal');
     
     if (!editBookId || !editBookName || !editBookClass || !editBookModal) {
@@ -837,6 +528,12 @@ async function editBook(bookId) {
     editBookId.value = book.id;
     editBookName.value = book.book_name;
     editBookClass.value = book.class_id || '';
+    
+    // Set total pages if available
+    const editBookTotalPages = document.getElementById('editBookTotalPages');
+    if (editBookTotalPages) {
+        editBookTotalPages.value = book.total_pages || '';
+    }
     
     console.log('Populated form with:', {
         id: editBookId.value,
@@ -858,9 +555,10 @@ async function updateBook() {
     
     const bookId = document.getElementById('bookManagementEditId').value;
     const bookName = document.getElementById('bookManagementEditName').value.trim();
-    const classId = document.getElementById('bookManagementEditClass').value || null;
+    const classId = document.getElementById('editBookClass').value || null;
+    const totalPages = parseInt(document.getElementById('editBookTotalPages').value) || null;
     
-    console.log('Form values:', { bookId, bookName, classId });
+    console.log('Form values:', { bookId, bookName, classId, totalPages });
     
     if (!bookName) {
         showModal('Error', 'Please enter a book name');
@@ -875,7 +573,8 @@ async function updateBook() {
             },
             body: JSON.stringify({
                 book_name: bookName,
-                class_id: classId
+                class_id: classId,
+                total_pages: totalPages
             })
         });
         
@@ -922,26 +621,13 @@ function updateBookDropdowns() {
     console.log('books array in updateBookDropdowns:', window.books);
     console.log('books length in updateBookDropdowns:', window.books ? window.books.length : 'undefined');
     
-    const bookDropdown = document.getElementById('bookName');
-    if (bookDropdown) {
-        console.log('bookName dropdown found');
-        const options = '<option value="">Select Book</option>' + 
-            (window.books ? window.books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('') : '');
-        console.log('Generated options:', options);
-        bookDropdown.innerHTML = options;
-        console.log('Dropdown updated with options');
-    } else {
-        console.error('bookName dropdown not found');
-    }
+    // Only update dropdowns that actually exist in the current UI
+    // These dropdowns were for the old Education Progress system that was removed
     
-    const editBookDropdown = document.getElementById('editBookName');
-    if (editBookDropdown) {
-        console.log('editBookName dropdown found');
-        editBookDropdown.innerHTML = '<option value="">Select Book</option>' + 
-            (window.books ? window.books.map(book => `<option value="${book.id}">${book.book_name}</option>`).join('') : '');
-    } else {
-        console.error('editBookName dropdown not found');
-    }
+    // Update class dropdowns in the Book Management forms
+    updateClassDropdowns();
+    
+    console.log('✅ Book dropdowns updated (only existing ones)');
 }
 
 async function loadBooksForClass(classId) {
@@ -1151,35 +837,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    const bookForm = document.getElementById('bookForm');
-    if (bookForm) {
-        console.log('Book form found, adding event listener');
-        bookForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            console.log('Book form submitted');
-            console.log('Form data:', {
-                bookClass: document.getElementById('bookClass').value,
-                bookSubject: document.getElementById('bookSubject').value,
-                bookName: document.getElementById('bookName').value,
-                totalPages: document.getElementById('totalPages').value,
-                completedPages: document.getElementById('completedPages').value,
-                bookNotes: document.getElementById('bookNotes').value
-            });
-            addBookProgress();
-        });
-    } else {
-        console.error('Book form not found');
-    }
-    
-    const showAddBookFormBtn = document.getElementById('showAddBookFormBtn');
-    if (showAddBookFormBtn) {
-        console.log('Show add book form button found, adding event listener');
-        showAddBookFormBtn.addEventListener('click', async function() {
-            await showAddBookForm();
-        });
-    } else {
-        console.error('Show add book form button not found');
-    }
+    // Note: Old Education Progress form elements were removed
+    // Book management is now handled through the Settings Book Management tab
 });
 
 // Helper to refresh classes from the server and update the UI
@@ -1202,7 +861,6 @@ async function refreshClasses() {
 
 // Export all functions
 export { 
-    educationProgress, 
     books, 
     updateClassDropdowns, 
     addClass, 
@@ -1214,14 +872,6 @@ export {
     displayHolidays, 
     isHoliday, 
     getHolidayName, 
-    displayBooksList, 
-    showAddBookForm, 
-    hideAddBookForm, 
-    filterBooksByClass, 
-    editBookDetails, 
-    closeEditBookModal, 
-    showDeleteAllEducationModal, 
-    deleteAllEducationData, 
     closeBookManagementEditModal, 
     displayBooks, 
     getClassNameById, 
@@ -1230,9 +880,6 @@ export {
     editBook, 
     deleteBook, 
     updateBookDropdowns, 
-    addBookProgress, 
-    updateBookProgress, 
-    deleteBookProgress, 
     initializeAcademicYearStart, 
     saveAcademicYearStart, 
     clearAcademicYearStart, 
@@ -1241,6 +888,5 @@ export {
     clearDateRestrictions, 
     saveAppName,
     loadBooks,
-    loadEducationProgress,
     refreshClasses
 }

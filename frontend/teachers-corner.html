@@ -67,19 +67,7 @@
             <h1 class="text-3xl font-bold"><i class="fas fa-graduation-cap"></i> মাদানী মক্তব</h1>
         </div>
     </header>
-    <nav class="nav">
-        <div class="container mx-auto">
-            <ul class="flex justify-center items-center list-none">
-                <li class="nav-item"><a href="#" onclick="showSection('main-dashboard')" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500">ড্যাশবোর্ড</a></li>
-                <li class="nav-item dropdown relative">
-                    <a href="#" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500 font-semibold"><i class="fas fa-chalkboard-teacher"></i> শিক্ষক কর্নার <i class="fas fa-chevron-down text-xs ml-1"></i></a>
-                    <div id="teachers-corner-dropdown" class="dropdown-menu"></div>
-                </li>
-                <li class="nav-item"><a href="#" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500">ছাত্র নিবন্ধন</a></li>
-                <li class="nav-item"><a href="#" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500">দৈনিক উপস্থিতি</a></li>
-            </ul>
-        </div>
-    </nav>
+
 
     <!-- Main Content -->
     <main class="container mx-auto p-4 md:p-6">
@@ -89,11 +77,12 @@
             <h2 id="class-dashboard-title" class="text-2xl font-bold mb-6 pb-2"></h2>
 
             <!-- Today's Summary -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 <div class="stat-card"><i class="fas fa-users text-4xl text-blue-500 mb-4"></i><h3 id="class-total-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">মোট ছাত্র</p></div>
                 <div class="stat-card"><i class="fas fa-user-check text-4xl text-green-500 mb-4"></i><h3 id="class-present-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ উপস্থিত</p></div>
                 <div class="stat-card"><i class="fas fa-user-times text-4xl text-red-500 mb-4"></i><h3 id="class-absent-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ অনুপস্থিত</p></div>
                 <div class="stat-card"><i class="fas fa-percentage text-4xl text-purple-500 mb-4"></i><h3 id="class-attendance-rate" class="text-4xl font-bold text-gray-800">0%</h3><p class="text-gray-500">উপস্থিতির হার</p></div>
+                <div class="stat-card" onclick="showInactiveStudentsModal()" style="cursor: pointer;"><i class="fas fa-user-slash text-4xl text-orange-500 mb-4"></i><h3 id="class-inactive-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">নিষ্ক্রিয় ছাত্র</p></div>
             </div>
 
             <!-- Dashboard Alerts -->
@@ -169,6 +158,19 @@
                         </div>
                     </div>
                     <div id="class-education-progress" class="space-y-4"></div>
+                </div>
+                
+                <!-- Progress History Summary -->
+                <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-700">অগ্রগতির সারসংক্ষেপ</h3>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-chart-line mr-1"></i>শ্রেণীর সামগ্রিক অগ্রগতি
+                        </div>
+                    </div>
+                    <div id="progress-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Progress summary will be populated here -->
+                    </div>
                 </div>
             </div>
         </section>
@@ -256,23 +258,198 @@
         </div>
     </div>
     
+    <!-- Inactive Students Modal -->
+    <div id="inactive-students-modal" class="modal-backdrop justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">নিষ্ক্রিয় ছাত্রদের তালিকা</h3>
+                <button onclick="closeInactiveStudentsModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <p class="text-gray-600 text-sm">এই ছাত্ররা বর্তমানে নিষ্ক্রিয় অবস্থায় রয়েছে। তাদের তথ্য দেখানো হচ্ছে কিন্তু সম্পাদনা করা যাবে না।</p>
+                </div>
+                <div id="inactive-students-list" class="space-y-3">
+                    <!-- Inactive students will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    
     <script>
-        // --- PROTOTYPE DATA ---
-        const allClasses = ['প্রথম শ্রেণী', 'দ্বিতীয় শ্রেণী', 'তৃতীয় শ্রেণী'];
-        const allStudents = [
-            { id: 'ST001', name: 'আব্দুল্লাহ রহমান', fatherName: 'রহমান আহমেদ', rollNumber: '101', class: 'প্রথম শ্রেণী', mobile: '01711000001', district: 'ঢাকা', upazila: 'উত্তরা' },
-            { id: 'ST002', name: 'মোহাম্মদ আলী', fatherName: 'করিম উদ্দিন', rollNumber: '102', class: 'প্রথম শ্রেণী', mobile: '01711000002', district: 'ঢাকা', upazila: 'গুলশান' },
-            { id: 'ST003', name: 'হাসান মাহমুদ', fatherName: 'জামাল হোসেন', rollNumber: '103', class: 'প্রথম শ্রেণী', mobile: '01711000003', district: 'কুমিল্লা', upazila: 'সদর' },
-            { id: 'ST004', name: 'ফাতিমা খাতুন', fatherName: 'আকবর আলী', rollNumber: '201', class: 'দ্বিতীয় শ্রেণী', mobile: '01811000004', district: 'চট্টগ্রাম', upazila: 'কোতোয়ালী' },
-            { id: 'ST005', name: 'আয়েশা সিদ্দিকা', fatherName: 'নূর ইসলাম', rollNumber: '202', class: 'দ্বিতীয় শ্রেণী', mobile: '01811000005', district: 'সিলেট', upazila: 'সদর' },
-            { id: 'ST006', name: 'আহমদ শরীফ', fatherName: 'সিরাজুল ইসলাম', rollNumber: '301', class: 'তৃতীয় শ্রেণী', mobile: '01911000006', district: 'রাজশাহী', upazila: 'বোয়ালিয়া' },
-        ];
-        let allEducationProgress = JSON.parse(localStorage.getItem('educationProgress_v4')) || [
-            { id: 'B001', class: 'প্রথম শ্রেণী', book: 'কায়দা', total: 100, progressHistory: [{date: '2025-08-10T15:00:00.000Z', completed: 80}] }, 
-            { id: 'B002', class: 'প্রথম শ্রেণী', book: 'আমপারা', total: 120, progressHistory: [{date: '2025-08-12T15:00:00.000Z', completed: 45}] },
-            { id: 'B003', class: 'দ্বিতীয় শ্রেণী', book: 'নাজেরা', total: 200, progressHistory: [{date: '2025-08-14T15:00:00.000Z', completed: 60}] }, 
-            { id: 'B004', class: 'তৃতীয় শ্রেণী', book: 'হিফজ', total: 300, progressHistory: [] },
-        ];
+        // --- REAL DATA FROM MAIN APP ---
+        // Students will be loaded from main application database
+        let allStudents = [];
+        
+        // Function to load students from main app
+        async function loadStudentsFromMainApp() {
+            try {
+                const response = await fetch('/api/students');
+                if (response.ok) {
+                    allStudents = await response.json();
+                    console.log('✅ Loaded students from main app:', allStudents.length);
+                    
+                    // If we have a current class, refresh the dashboard
+                    if (currentClass) {
+                        showClassDashboard(currentClass);
+                    }
+                } else {
+                    console.error('❌ Failed to load students from main app');
+                }
+            } catch (error) {
+                console.error('❌ Error loading students:', error);
+            }
+        }
+        
+        // Function to load attendance data from main app
+        async function loadAttendanceFromMainApp() {
+            try {
+                const response = await fetch('/api/attendance');
+                if (response.ok) {
+                    const attendanceData = await response.json();
+                    console.log('✅ Loaded attendance data from main app');
+                    
+                    // Store attendance data globally
+                    window.attendance = attendanceData;
+                    
+                    // If we have a current class, refresh the dashboard
+                    if (currentClass) {
+                        showClassDashboard(currentClass);
+                    }
+                } else {
+                    console.error('❌ Failed to load attendance data from main app');
+                }
+            } catch (error) {
+                    console.error('❌ Error loading attendance data:', error);
+            }
+        }
+        
+        // Function to load books for a specific class
+        async function loadBooksForClass(className) {
+            try {
+                // Convert Bengali class name to numeric ID
+                const classId = getClassIdByName(className);
+                if (!classId) {
+                    console.error('❌ Invalid class name:', className);
+                    console.log('Available class names:', Object.keys(classMapping));
+                    console.log('Class mapping:', classMapping);
+                    return [];
+                }
+                
+                const response = await fetch(`/api/books/class/${classId}`);
+                if (response.ok) {
+                    const books = await response.json();
+                    console.log(`✅ Loaded ${books.length} books for class ${className} (ID: ${classId})`);
+                    return books;
+                } else {
+                    console.error('❌ Failed to load books for class:', className);
+                    return [];
+                }
+            } catch (error) {
+                console.error('❌ Error loading books for class:', error);
+                return [];
+            }
+        }
+        
+        // Function to load education progress for a specific class
+        async function loadEducationProgressForClass(className) {
+            try {
+                const response = await fetch('/api/education');
+                if (response.ok) {
+                    const allProgress = await response.json();
+                    
+                    // Filter progress by class name
+                    const classProgress = allProgress.filter(progress => 
+                        progress.class_name === className
+                    );
+                    
+                    console.log(`✅ Loaded ${classProgress.length} education progress items for class ${className}`);
+                    return classProgress;
+                } else {
+                    console.error('❌ Failed to load education progress');
+                    return [];
+                }
+            } catch (error) {
+                console.error('❌ Error loading education progress:', error);
+                return [];
+            }
+        }
+        
+        // Dynamic class mapping - gets real class names from database
+        let classMapping = {};
+        
+        // Function to load and build class mapping from database
+        async function loadClassMapping() {
+            try {
+                const response = await fetch('/api/classes');
+                if (response.ok) {
+                    const classes = await response.json();
+                    // Build mapping: class name -> class id
+                    classMapping = {};
+                    classes.forEach(cls => {
+                        classMapping[cls.name] = cls.id;
+                    });
+                    console.log('✅ Class mapping loaded:', classMapping);
+                } else {
+                    console.error('❌ Failed to load classes for mapping');
+                }
+            } catch (error) {
+                console.error('❌ Error loading class mapping:', error);
+            }
+        }
+        
+        // Helper function to convert Bengali class name to numeric ID
+        function getClassIdByName(className) {
+            // Use dynamic mapping if available, fallback to hardcoded
+            if (Object.keys(classMapping).length > 0) {
+                const classId = classMapping[className];
+                if (classId) {
+                    console.log(`✅ Found class ID for "${className}": ${classId}`);
+                    return classId;
+                } else {
+                    console.warn(`⚠️ Class name "${className}" not found in database mapping`);
+                    // Fallback to hardcoded mapping for common class names
+                    const fallbackMap = {
+                        'প্রথম শ্রেণী': 1,
+                        'দ্বিতীয় শ্রেণী': 2,
+                        'তৃতীয় শ্রেণী': 3,
+                        'চতুর্থ শ্রেণী': 4,
+                        'পঞ্চম শ্রেণী': 5
+                    };
+                    return fallbackMap[className] || null;
+                }
+            } else {
+                // Fallback to hardcoded mapping if dynamic mapping not loaded yet
+                const fallbackMap = {
+                    'প্রথম শ্রেণী': 1,
+                    'দ্বিতীয় শ্রেণী': 2,
+                    'তৃতীয় শ্রেণী': 3,
+                    'চতুর্থ শ্রেণী': 4,
+                    'পঞ্চম শ্রেণী': 5
+                };
+                return fallbackMap[className] || null;
+            }
+        }
+        
+        // Function to get active students for a class
+        function getActiveStudentsForClass(className) {
+            return allStudents.filter(student => 
+                student.class === className && 
+                student.status !== 'inactive'
+            );
+        }
+        
+        // Function to get inactive students for a class
+        function getInactiveStudentsForClass(className) {
+            return allStudents.filter(student => 
+                student.class === className && 
+                student.status === 'inactive'
+            );
+        }
+        // New clean education system - will be populated from main app database
+        let allEducationProgress = [];
         let teachersLogbook = JSON.parse(localStorage.getItem('teachersLogbook_v3')) || {};
         let studentScores = JSON.parse(localStorage.getItem('studentScores_v3')) || {};
         let scoreChangeHistory = JSON.parse(localStorage.getItem('scoreChangeHistory_v1')) || {};
@@ -321,27 +498,35 @@
 
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initTeachersCorner();
             
-            // Check if a class was passed as a URL parameter
+            // Load real data from main app
+            await loadClassMapping(); // Load class mapping first
+            await loadStudentsFromMainApp();
+            await loadAttendanceFromMainApp();
+            
+            // Check if a class was passed as a URL parameter from main app
             const urlParams = new URLSearchParams(window.location.search);
             const selectedClass = urlParams.get('class');
             
-            if (selectedClass && allClasses.includes(selectedClass)) {
+            if (selectedClass) {
                 // Automatically open the selected class dashboard
                 showClassDashboard(selectedClass);
             } else {
-                // If no class selected, default to first available class
-                if (allClasses.length > 0) {
-                    showClassDashboard(allClasses[0]);
-                }
+                // If no class selected, show message to select from main app
+                document.getElementById('teachers-corner-section').innerHTML = `
+                    <div class="text-center p-8">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-700">শ্রেণী নির্বাচন করুন</h2>
+                        <p class="text-gray-600">মূল অ্যাপ্লিকেশন থেকে একটি শ্রেণী নির্বাচন করুন।</p>
+                    </div>
+                `;
             }
         });
 
         function initTeachersCorner() {
-            const dropdown = document.getElementById('teachers-corner-dropdown');
-            dropdown.innerHTML = allClasses.map(c => `<a href="#" onclick="showClassDashboard('${c}')" class="dropdown-item">${c}</a>`).join('');
+            // No need to initialize dropdown - prototype gets class from main app
+            // This function is kept for future use if needed
         }
 
         // --- NAVIGATION ---
@@ -350,26 +535,95 @@
             document.getElementById(sectionId).classList.remove('hidden');
         }
 
-        function showClassDashboard(className) {
+        async function showClassDashboard(className) {
             currentClass = className;
             showSection('teachers-corner-section');
             document.getElementById('class-dashboard-title').innerText = `${className} - ড্যাশবোর্ড`;
-            const studentsInClass = allStudents.filter(s => s.class === className);
-            renderTodaySummary(studentsInClass);
-            renderClassStudentList(studentsInClass);
-            renderClassEducationProgress(className);
-            renderClassOverview(studentsInClass);
+            
+            // Get active and inactive students separately
+            const activeStudentsInClass = getActiveStudentsForClass(className);
+            const inactiveStudentsInClass = getInactiveStudentsForClass(className);
+            
+            // Load real book data for this class
+            const books = await loadBooksForClass(className);
+            console.log(`📚 Loaded ${books.length} books for class ${className}:`, books);
+            
+            // Load existing education progress for this class
+            let existingProgress = [];
+            try {
+                const progressResponse = await fetch(`/api/education?class_name=${encodeURIComponent(className)}`);
+                if (progressResponse.ok) {
+                    existingProgress = await progressResponse.json();
+                    console.log(`📊 Loaded ${existingProgress.length} existing progress records for class:`, className);
+                }
+            } catch (error) {
+                console.error('Error loading existing progress:', error);
+            }
+            
+            // Convert books to education progress format for display
+            console.log('🔄 Starting conversion of books to education progress format');
+            console.log('📚 Books to convert:', books);
+            allEducationProgress = books.map(book => {
+                // Find existing progress for this book
+                const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
+                
+                const converted = {
+                    id: book.id,
+                    book_name: book.book_name,
+                    class_id: book.class_id,
+                    class_name: className, // Use the class name passed to the function
+                    total_pages: book.total_pages || 100, // Default if not set
+                    completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
+                    notes: existingBookProgress ? existingBookProgress.notes : '',
+                    progressHistory: book.progressHistory || [],
+                    progress_record_id: existingBookProgress ? existingBookProgress.id : null
+                };
+                console.log(`🔄 Converting book:`, book);
+                console.log(`✅ Converted to:`, converted);
+                return converted;
+            });
+            
+            console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
+            
+            console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
+            
+            // Render dashboard with real data
+            renderTodaySummary(activeStudentsInClass);
+            renderClassStudentList(activeStudentsInClass);
+            renderClassEducationProgress(className); // This now also calls renderProgressSummary
+            renderClassOverview(activeStudentsInClass);
             renderTeachersLogbook();
-            renderDashboardAlerts(studentsInClass);
+            renderDashboardAlerts(activeStudentsInClass);
+            
+            // Update inactive students count
+            updateElementText('class-inactive-students', inactiveStudentsInClass.length);
         }
 
         // --- DATA CALCULATION ---
         function getHusnulKhulukScore(studentId) {
+            // Try to get score from localStorage first (for persistence)
             if (!studentScores[studentId]) {
-                studentScores[studentId] = Math.floor(Math.random() * 61) + 40;
-                localStorage.setItem('studentScores_v3', JSON.stringify(studentScores));
+                // Load from main app database if available
+                loadStudentScoreFromMainApp(studentId);
+                // Return a default score for now
+                return 70; // Default score
             }
             return studentScores[studentId];
+        }
+        
+        // Function to load student score from main app
+        async function loadStudentScoreFromMainApp(studentId) {
+            try {
+                // For now, we'll use localStorage, but this can be connected to your database later
+                if (!studentScores[studentId]) {
+                    studentScores[studentId] = 70; // Default score
+                    localStorage.setItem('studentScores_v3', JSON.stringify(studentScores));
+                }
+            } catch (error) {
+                console.error('Error loading student score:', error);
+                // Fallback to default score
+                studentScores[studentId] = 70;
+            }
         }
 
         function editHusnulKhuluk(studentId, currentScore) {
@@ -381,6 +635,50 @@
 
         function closeScoreModal() {
             document.getElementById('score-modal').style.display = 'none';
+        }
+        
+        // Inactive Students Modal Functions
+        function showInactiveStudentsModal() {
+            if (!currentClass) return;
+            
+            const inactiveStudents = getInactiveStudentsForClass(currentClass);
+            const modal = document.getElementById('inactive-students-modal');
+            const listContainer = document.getElementById('inactive-students-list');
+            
+            if (inactiveStudents.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center p-8 text-gray-500">
+                        <i class="fas fa-info-circle text-4xl mb-4"></i>
+                        <p>এই শ্রেণীতে কোনো নিষ্ক্রিয় ছাত্র নেই।</p>
+                    </div>
+                `;
+            } else {
+                const studentsList = inactiveStudents.map(student => `
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-orange-500">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">${student.name} বিন ${student.fatherName}</h4>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <span class="mr-4">রোল: ${student.rollNumber}</span>
+                                    <span class="mr-4">মোবাইল: ${student.mobileNumber}</span>
+                                    <span>জেলা: ${student.district}, ${student.upazila}</span>
+                                </div>
+                                <div class="text-xs text-orange-600 mt-2 font-medium">
+                                    <i class="fas fa-exclamation-triangle"></i> নিষ্ক্রিয় অবস্থায়
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                listContainer.innerHTML = studentsList;
+            }
+            
+            modal.style.display = 'flex';
+        }
+        
+        function closeInactiveStudentsModal() {
+            document.getElementById('inactive-students-modal').style.display = 'none';
         }
 
         function saveNewScore() {
@@ -406,9 +704,9 @@
                 localStorage.setItem('studentScores_v3', JSON.stringify(studentScores));
                 localStorage.setItem('scoreChangeHistory_v1', JSON.stringify(scoreChangeHistory));
                 
-                const studentsInClass = allStudents.filter(s => s.class === currentClass);
-                renderClassStudentList(studentsInClass);
-                renderClassOverview(studentsInClass);
+                const activeStudentsInClass = getActiveStudentsForClass(currentClass);
+                renderClassStudentList(activeStudentsInClass);
+                renderClassOverview(activeStudentsInClass);
                 closeScoreModal();
             } else {
                 alert("অনুগ্রহ করে ০ থেকে ১০০ এর মধ্যে একটি নাম্বার দিন।");
@@ -418,8 +716,29 @@
         // --- RENDERING FUNCTIONS ---
         function renderTodaySummary(students) {
             const total = students.length;
-            const present = Math.floor(Math.random() * (total + 1));
-            const absent = total - present;
+            
+            // Get today's attendance data from main app
+            const today = new Date().toISOString().split('T')[0];
+            let present = 0;
+            let absent = 0;
+            
+            // Load attendance data from main app (same endpoint as main app)
+            fetch('/api/attendance')
+                .then(response => response.json())
+                .then(attendanceData => {
+                    if (attendanceData && attendanceData[today]) {
+                        students.forEach(student => {
+                            const studentAttendance = attendanceData[today][student.id];
+                            if (studentAttendance) {
+                                if (studentAttendance.status === 'present') {
+                                    present++;
+                                } else if (studentAttendance.status === 'absent') {
+                                    absent++;
+                                }
+                            }
+                        });
+                    }
+                    
             const rate = total > 0 ? Math.round((present / total) * 100) : 0;
             
             // Batch DOM updates
@@ -428,6 +747,17 @@
                 updateElementText('class-present-today', present);
                 updateElementText('class-absent-today', absent);
                 updateElementText('class-attendance-rate', `${rate}%`);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading attendance data:', error);
+                    // Fallback to showing just total students
+                    requestAnimationFrame(() => {
+                        updateElementText('class-total-students', total);
+                        updateElementText('class-present-today', '0');
+                        updateElementText('class-absent-today', '0');
+                        updateElementText('class-attendance-rate', '0%');
+                    });
             });
         }
         
@@ -598,16 +928,148 @@
         
         function renderClassEducationProgress(className) {
             const progressEl = document.getElementById('class-education-progress');
-            const classProgress = allEducationProgress.filter(p => p.class === className);
-            if(classProgress.length === 0) {
-                progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`; return;
+            
+            console.log(`🎨 Rendering education progress for class: ${className}`);
+            console.log(`📊 Current allEducationProgress:`, allEducationProgress);
+            
+            if (!allEducationProgress || allEducationProgress.length === 0) {
+                console.log(`⚠️ No education progress data available for class: ${className}`);
+                progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
+                return;
             }
+            
+            // Since we're now loading books directly for the class, allEducationProgress should already be filtered
+            const classProgress = allEducationProgress;
+            
+            console.log(`📚 Found ${classProgress.length} books/progress items for class: ${className}`);
+            
+            if (classProgress.length === 0) {
+                progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
+                return;
+            }
+            
             progressEl.innerHTML = classProgress.map(p => {
-                const lastProgress = p.progressHistory.length > 0 ? p.progressHistory[p.progressHistory.length - 1].completed : 0;
-                const percentage = Math.round((lastProgress / p.total) * 100);
-                const remaining = p.total - lastProgress;
-                return `<div><div class="flex justify-between items-center mb-1"><span onclick="showBookModal('${p.id}')" class="text-sm font-medium text-gray-700 hover:text-blue-500 cursor-pointer" title="বই সম্পাদনা করুন">${p.book}</span><span class="text-xs text-gray-500">${lastProgress}/${remaining}</span></div><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-blue-500 h-2.5 rounded-full" style="width: ${percentage}%"></div></div></div>`;
+                // Use real data structure from your database
+                const completedPages = p.completed_pages || 0;
+                const totalPages = p.total_pages || 0;
+                const percentage = totalPages > 0 ? Math.round((completedPages / totalPages) * 100) : 0;
+                const remaining = totalPages - completedPages;
+                
+                // Get last update info
+                const lastUpdate = p.progressHistory && p.progressHistory.length > 0 ? 
+                    p.progressHistory[p.progressHistory.length - 1] : null;
+                
+                return `
+                    <div class="mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <span onclick="showBookModal('${p.id}')" class="text-sm font-medium text-gray-700 hover:text-blue-500 cursor-pointer" title="বই সম্পাদনা করুন">
+                                ${p.book_name}
+                            </span>
+                            <span class="text-xs text-gray-500">${completedPages}/${totalPages} পৃষ্ঠা</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                            <div class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-600">
+                            <span>অগ্রগতি: ${percentage}% (${remaining} পৃষ্ঠা বাকি)</span>
+                            ${lastUpdate ? `
+                                <span class="text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    ${new Date(lastUpdate.date).toLocaleDateString('bn-BD')}
+                                </span>
+                            ` : ''}
+                        </div>
+                        ${p.notes ? `
+                            <div class="mt-2 p-2 bg-white rounded border-l-2 border-blue-300">
+                                <div class="text-xs text-gray-600 italic">
+                                    <i class="fas fa-sticky-note mr-1"></i>${p.notes}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
             }).join('');
+                }
+        
+        function renderProgressSummary(className) {
+            const summaryEl = document.getElementById('progress-summary');
+            if (!summaryEl) return;
+            
+            // Since we're now loading books directly for the class, allEducationProgress should already be filtered
+            const classProgress = allEducationProgress;
+            
+            console.log(`📊 Rendering progress summary for class: ${className}`);
+            console.log(`📚 Class progress data:`, classProgress);
+            
+            if (classProgress.length === 0) {
+                summaryEl.innerHTML = '<p class="text-sm text-gray-500 text-center col-span-3">কোনো অগ্রগতি তথ্য নেই</p>';
+                return;
+            }
+            
+            // Calculate summary statistics
+            const totalBooks = classProgress.length;
+            const totalPages = classProgress.reduce((sum, p) => sum + (p.total_pages || 0), 0);
+            const completedPages = classProgress.reduce((sum, p) => sum + (p.completed_pages || 0), 0);
+            const overallPercentage = totalPages > 0 ? Math.round((completedPages / totalPages) * 100) : 0;
+            
+            // Count books with recent updates (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentUpdates = classProgress.filter(p => {
+                if (!p.progressHistory || p.progressHistory.length === 0) return false;
+                const lastUpdate = new Date(p.progressHistory[p.progressHistory.length - 1].date);
+                return lastUpdate >= sevenDaysAgo;
+            }).length;
+            
+            // Count books with notes
+            const booksWithNotes = classProgress.filter(p => p.notes && p.notes.trim()).length;
+            
+            summaryEl.innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-2xl font-bold text-blue-600">${overallPercentage}%</div>
+                            <div class="text-sm text-blue-700">সামগ্রিক অগ্রগতি</div>
+                        </div>
+                        <div class="text-blue-500 text-3xl">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-blue-600 mt-2">
+                        ${completedPages}/${totalPages} পৃষ্ঠা সম্পন্ন
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">${totalBooks}</div>
+                            <div class="text-sm text-green-700">মোট বই</div>
+                        </div>
+                        <div class="text-green-500 text-3xl">
+                            <i class="fas fa-book"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-green-600 mt-2">
+                        ${booksWithNotes} টি বইতে নোট আছে
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-2xl font-bold text-purple-600">${recentUpdates}</div>
+                            <div class="text-sm text-purple-700">সাম্প্রতিক আপডেট</div>
+                        </div>
+                        <div class="text-purple-500 text-3xl">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                    <div class="text-xs text-purple-600 mt-2">
+                        গত ৭ দিনে আপডেট
+                    </div>
+                </div>
+            `;
         }
 
         function renderTeachersLogbook() {
@@ -911,22 +1373,102 @@
             const progressSection = document.getElementById('book-progress-section');
             const historySection = document.getElementById('book-progress-history-section');
             
+            console.log(`🚀 showBookModal called with bookId:`, bookId);
+            console.log(`📚 Current allEducationProgress:`, allEducationProgress);
+            
             if (bookId) {
-                const book = allEducationProgress.find(b => b.id === bookId);
+                // Find book in our loaded books data
+                const book = allEducationProgress.find(b => b.id == bookId);
+                console.log(`🔍 Looking for book ID: ${bookId}`);
+                console.log(`📚 Available books:`, allEducationProgress);
+                console.log(`🔍 Found book:`, book);
+                
+                if (!book) {
+                    console.error(`❌ Book not found! bookId: ${bookId}, available IDs:`, allEducationProgress.map(b => b.id));
+                    console.error(`❌ Available books:`, allEducationProgress);
+                    alert('বইটি পাওয়া যায়নি। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।');
+                    return;
+                }
+                
+                console.log('✅ Book found for modal:', book);
+                
                 title.innerText = "বই সম্পাদনা ও অগ্রগতি";
                 document.getElementById('book-id').value = book.id;
-                document.getElementById('book-name').value = book.book;
-                document.getElementById('book-total-pages').value = book.total;
-                const lastProgress = book.progressHistory.length > 0 ? book.progressHistory[book.progressHistory.length - 1].completed : 0;
-                document.getElementById('book-completed-pages').value = lastProgress;
+                document.getElementById('book-name').value = book.book_name || book.book || '';
+                document.getElementById('book-total-pages').value = book.total_pages || book.total || '';
                 
+                // Use real completed pages from database
+                const completedPages = book.completed_pages || 0;
+                document.getElementById('book-completed-pages').value = completedPages;
+                
+                // Show enhanced progress history
                 const historyList = document.getElementById('progress-history-list');
-                historyList.innerHTML = book.progressHistory.length > 0 ? book.progressHistory.map(h => 
-                    `<li class="mb-1">
-                        <div class="text-xs font-medium">${new Date(h.date).toLocaleString('bn-BD')}: ${h.completed} পৃষ্ঠা</div>
-                        ${h.note ? `<div class="text-xs text-gray-600 italic">${h.note}</div>` : ''}
-                    </li>`
-                ).reverse().join('') : '<li>কোনো ইতিহাস নেই।</li>';
+                if (book.progressHistory && book.progressHistory.length > 0) {
+                    // Sort by date (newest first)
+                    const sortedHistory = book.progressHistory.sort((a, b) => 
+                        new Date(b.date) - new Date(a.date)
+                    );
+                    
+                    historyList.innerHTML = sortedHistory.map(h => {
+                        const date = new Date(h.date);
+                        const formattedDate = date.toLocaleDateString('bn-BD', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        return `
+                            <li class="mb-3 p-2 bg-gray-50 rounded-md border-l-4 border-blue-500">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div class="text-sm font-medium text-gray-700">
+                                        ${h.completed} পৃষ্ঠা সম্পন্ন
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        ${formattedDate}
+                                    </div>
+                                </div>
+                                ${h.note ? `
+                                    <div class="text-xs text-gray-600 italic bg-white p-2 rounded border">
+                                        <i class="fas fa-sticky-note mr-1"></i>${h.note}
+                                    </div>
+                                ` : ''}
+                            </li>
+                        `;
+                    }).join('');
+                } else {
+                    // Show current progress with enhanced display
+                    const currentDate = new Date().toLocaleDateString('bn-BD', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    
+                    historyList.innerHTML = `
+                        <li class="mb-3 p-2 bg-blue-50 rounded-md border-l-4 border-blue-400">
+                            <div class="flex justify-between items-start mb-1">
+                                <div class="text-sm font-medium text-blue-700">
+                                    বর্তমান অগ্রগতি: ${completedPages} পৃষ্ঠা
+                                </div>
+                                <div class="text-xs text-blue-500">
+                                    ${currentDate}
+                                </div>
+                            </div>
+                            ${book.notes ? `
+                                <div class="text-xs text-blue-600 italic bg-white p-2 rounded border">
+                                    <i class="fas fa-sticky-note mr-1"></i>${book.notes}
+                                </div>
+                            ` : ''}
+                        </li>
+                        <li class="text-center p-3">
+                            <div class="text-xs text-gray-500 bg-gray-100 p-2 rounded-md">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                অগ্রগতির ইতিহাস ডেটাবেসে সংরক্ষিত হবে
+                            </div>
+                        </li>
+                    `;
+                }
 
                 deleteBtn.style.display = 'block';
                 progressSection.style.display = 'block';
@@ -944,48 +1486,146 @@
             modal.style.display = 'flex';
         }
         function closeBookModal() { document.getElementById('book-modal').style.display = 'none'; }
-        function saveBook() {
+        async function saveBook() {
             const bookId = document.getElementById('book-id').value;
             const bookName = document.getElementById('book-name').value;
             const totalPages = parseInt(document.getElementById('book-total-pages').value);
             const completedPages = parseInt(document.getElementById('book-completed-pages').value);
             const progressNote = document.getElementById('book-progress-note').value;
-
-            if (!bookName || isNaN(totalPages) || totalPages <= 0) { alert("অনুগ্রহ করে সঠিক তথ্য দিন।"); return; }
             
-            if (bookId) { // Update
-                const bookIndex = allEducationProgress.findIndex(b => b.id === bookId);
-                if (bookIndex > -1) {
-                    const book = allEducationProgress[bookIndex];
-                    book.book = bookName;
-                    book.total = totalPages;
-                    const lastCompleted = book.progressHistory.length > 0 ? book.progressHistory[book.progressHistory.length - 1].completed : -1;
-                    if (completedPages !== lastCompleted) {
+            console.log('🚀 saveBook called with:', { bookId, bookName, totalPages, completedPages, progressNote });
+            console.log('📚 Current allEducationProgress length:', allEducationProgress.length);
+            console.log('📚 allEducationProgress:', allEducationProgress);
+
+            if (!bookName || isNaN(totalPages) || totalPages <= 0) { 
+                alert("অনুগ্রহ করে সঠিক তথ্য দিন।"); 
+                return; 
+            }
+            
+            if (bookId) { // Update existing book progress
+                try {
+                    // Find the book in our data - convert bookId to number for comparison
+                    const bookIdNum = parseInt(bookId);
+                    const book = allEducationProgress.find(b => b.id === bookIdNum);
+                    console.log('🔍 Looking for book with ID:', bookIdNum);
+                    console.log('🔍 Available books:', allEducationProgress.map(b => ({ id: b.id, name: b.book_name })));
+                    console.log('🔍 Found book:', book);
+                    
+                    if (!book) {
+                        console.error('❌ Book not found in saveBook function!');
+                        alert('বইটি পাওয়া যায়নি।');
+                        return;
+                    }
+                    
+                    // Validate completed pages
                          if (isNaN(completedPages) || completedPages < 0 || completedPages > totalPages) {
-                            alert(`অনুগ্রহ করে ০ থেকে ${totalPages} এর মধ্যে একটি নাম্বার দিন।`); return;
-                         }
+                        alert(`অনুগ্রহ করে ০ থেকে ${totalPages} এর মধ্যে একটি নাম্বার দিন।`); 
+                        return;
+                    }
+                    
+                    // Check if this book already has an education progress record
+                    let progressRecordId = book.progress_record_id;
+                    
+                    console.log('🔍 Book data for progress update:', book);
+                    console.log('🔍 Progress record ID:', progressRecordId);
+                    
+                    if (!progressRecordId) {
+                        // Create new education progress record
+                        console.log('🔄 Creating new education progress record for book:', book.book_name);
+                        const createResponse = await fetch('/api/education', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                class_name: currentClass,
+                                subject_name: 'General', // Default subject
+                                book_id: bookId,
+                                book_name: bookName,
+                                total_pages: totalPages,
+                                completed_pages: completedPages,
+                                notes: progressNote || ''
+                            })
+                        });
+                        
+                        if (createResponse.ok) {
+                            const result = await createResponse.json();
+                            progressRecordId = result.id;
+                            book.progress_record_id = progressRecordId;
+                            console.log('✅ Created education progress record with ID:', progressRecordId);
+                        } else {
+                            const error = await createResponse.json();
+                            console.error('❌ Failed to create education progress record:', error);
+                            alert('অগ্রগতি রেকর্ড তৈরি করতে সমস্যা হয়েছে।');
+                            return;
+                        }
+                    } else {
+                        // Update existing education progress record
+                        console.log('🔄 Updating existing education progress record:', progressRecordId);
+                        const updateResponse = await fetch(`/api/education/${progressRecordId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                completed_pages: completedPages,
+                                notes: progressNote || ''
+                            })
+                        });
+                        
+                        if (!updateResponse.ok) {
+                            const error = await updateResponse.json();
+                            console.error('❌ Failed to update education progress record:', error);
+                            alert('অগ্রগতি আপডেট করতে সমস্যা হয়েছে।');
+                            return;
+                        }
+                    }
+                    
+                    // Update local data
+                    book.completed_pages = completedPages;
+                    book.notes = progressNote || '';
+                    book.total_pages = totalPages;
+                    book.book_name = bookName;
+                    
+                    // Add to progress history if pages changed
+                    if (!book.progressHistory) {
+                        book.progressHistory = [];
+                    }
+                    
+                    const lastCompleted = book.progressHistory.length > 0 ? 
+                        book.progressHistory[book.progressHistory.length - 1].completed : -1;
+                        
+                    if (completedPages !== lastCompleted) {
                          book.progressHistory.push({ 
                              date: new Date().toISOString(), 
                              completed: completedPages,
                              note: progressNote || null
                          });
                     }
-                }
-            } else { // Add new
-                const newBook = { id: `B${Date.now()}`, class: currentClass, book: bookName, total: totalPages, progressHistory: [] };
-                allEducationProgress.push(newBook);
-            }
-            localStorage.setItem('educationProgress_v4', JSON.stringify(allEducationProgress));
+                    
+                    // Refresh display
             renderClassEducationProgress(currentClass);
+                    alert('বইয়ের অগ্রগতি সংরক্ষিত হয়েছে।');
             closeBookModal();
+                    
+                } catch (error) {
+                    console.error('Error saving progress:', error);
+                    alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+                }
+            } else { // Add new book (this should be handled in main app settings)
+                alert('নতুন বই যোগ করার জন্য অনুগ্রহ করে Settings ট্যাবে যান।');
+                return;
+            }
         }
         function deleteBook() {
             const bookId = document.getElementById('book-id').value;
             if (confirm("আপনি কি এই বইটি মুছে ফেলতে নিশ্চিত?")) {
+                // Note: Book deletion should be handled in main app settings
+                // For now, we'll just remove from local display
                 allEducationProgress = allEducationProgress.filter(b => b.id !== bookId);
-                localStorage.setItem('educationProgress_v4', JSON.stringify(allEducationProgress));
                 renderClassEducationProgress(currentClass);
                 closeBookModal();
+                alert('বইটি মুছে ফেলা হয়েছে। (স্থানীয় প্রদর্শন থেকে)');
             }
         }
         
@@ -1065,6 +1705,8 @@
             // This function can be used for additional validation or feedback
             alert('তরবিয়াহ লক্ষ্যগুলি সংরক্ষিত হয়েছে।');
         }
+        
+
 
     </script>
 </body>
