@@ -686,6 +686,17 @@ body {
     color: #2c3e50;
 }
 
+/* Status indicators */
+.status-active {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-inactive {
+    color: #dc3545;
+    font-weight: bold;
+}
+
 .attendance-history {
     margin-top: 20px;
     padding: 15px;

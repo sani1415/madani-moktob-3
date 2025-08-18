@@ -44,6 +44,9 @@ window.deleteAllStudents = Registration.deleteAllStudents;
 window.editStudent = Registration.editStudent;
 window.deleteStudent = Registration.deleteStudent;
 window.updateStudentStatus = Registration.updateStudentStatus;
+window.updateStudentStatusWithBackdating = Registration.updateStudentStatusWithBackdating;
+window.confirmBackdating = Registration.confirmBackdating;
+window.closeBackdatingModal = Registration.closeBackdatingModal;
 window.showInactiveStudentsList = Registration.showInactiveStudentsList; // <-- ADD THIS LINE
 window.updateStudentFilter = Registration.updateStudentFilter;
 window.clearStudentFilters = Registration.clearStudentFilters;
@@ -324,6 +327,18 @@ async function initializeApp() {
         }
         
         console.log('✅ Application initialization completed');
+        
+        // Handle URL parameters for student details
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('student');
+        const source = urlParams.get('source');
+        
+        if (studentId) {
+            // Show student detail if student ID is provided in URL
+            if (typeof showStudentDetail === 'function') {
+                showStudentDetail(studentId, source || 'attendance');
+            }
+        }
         
     } catch (error) {
         console.error('❌ Error initializing application:', error);

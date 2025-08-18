@@ -13,6 +13,7 @@ A comprehensive web application for managing student attendance in Islamic schoo
 - 💾 **Robust Storage** - Uses MySQL database for reliable data persistence
 - 🎓 **Education Progress** - Track book completion and learning progress
 - 📈 **Comprehensive Reports** - Detailed attendance and progress reports
+- 👤 **Unified Student Details** - Consistent modal view across all sections
 
 ## 🚀 Quick Start
 
