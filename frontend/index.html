@@ -416,6 +416,7 @@
                     <button class="tab-button" onclick="openSettingsTab(event, 'books')">
                         <i class="fas fa-book"></i> Book Management
                     </button>
+
                     <button class="tab-button" onclick="openSettingsTab(event, 'data')">
                         <i class="fas fa-database"></i> Data Management
                     </button>
@@ -517,6 +518,7 @@
                                 <option value="">All Classes</option>
                                 <!-- Class options will be populated dynamically -->
                             </select>
+                            <input type="number" id="newBookPages" placeholder="Total pages" min="1" style="width: 120px;">
                             <button class="btn btn-primary" onclick="addBook()">
                                 <i class="fas fa-plus"></i> Add Book
                             </button>
@@ -524,8 +526,18 @@
                         <div class="item-list" id="settingsBooksList">
                             <!-- Books will be displayed here -->
                         </div>
+                        
+                        <!-- Book List Display -->
+                        <div class="setting-group" style="margin-top: 25px;">
+                            <h4>Manage Existing Books</h4>
+                            <div id="booksList">
+                                <!-- Books will be displayed here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
+                
+                
 
                 <!-- Data Management Tab -->
                 <div id="data" class="tab-content">
@@ -634,15 +646,17 @@
                         <input type="text" id="bookManagementEditName" required>
                     </div>
                     <div class="form-group">
-                        <label for="bookManagementEditClass">Class</label>
-                        <select id="bookManagementEditClass">
+                        <label for="editBookClass">Class</label>
+                        <select id="editBookClass">
                             <option value="">All Classes</option>
-                            <option value="1">প্রথম শ্রেণি</option>
-                            <option value="2">দ্বিতীয় শ্রেণি</option>
-                            <option value="3">তৃতীয় শ্রেণি</option>
-                            <option value="4">চতুর্থ শ্রেণি</option>
-                            <option value="5">পঞ্চম শ্রেণি</option>
+                            <!-- Class options will be populated dynamically from database -->
                         </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editBookTotalPages">Total Pages</label>
+                        <input type="number" id="editBookTotalPages" min="1" placeholder="Enter total pages">
                     </div>
                 </div>
                 <div class="form-actions">
@@ -656,6 +670,8 @@
             </form>
         </div>
     </div>
+    
+
 
     <script type="module" src="translations.js"></script>
     <script src="modules/hijri.js" type="module"></script>

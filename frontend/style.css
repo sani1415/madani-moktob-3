@@ -55,6 +55,65 @@ body {
     margin-top: 8px;
 }
 
+/* Form Grid Layout for Settings */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Flexbox utilities for settings */
+.flex {
+    display: flex;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
 /* Hijri Date Dashboard Display */
 .hijri-date-dashboard {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -3558,4 +3617,39 @@ body {
 
 .dropdown-toggle:hover i.fa-chevron-down {
     transform: rotate(180deg);
+}
+
+/* Book management styles */
+.book-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    background: white;
+}
+
+.book-info h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.book-info p {
+    margin: 0 0 3px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.book-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.no-data {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
 }
