@@ -13,12 +13,10 @@ import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../transl
 
 // Debug: Check if Settings module is loaded
 console.log('🔍 Settings module loaded:', Settings);
-console.log('🔍 Settings.loadEducationProgress:', Settings.loadEducationProgress);
-console.log('🔍 Settings.loadBooks:', Settings.loadBooks);
-console.log('🔍 Settings.updateBookDropdowns:', Settings.updateBookDropdowns);
-console.log('🔍 typeof Settings.loadEducationProgress:', typeof Settings.loadEducationProgress);
-console.log('🔍 typeof Settings.loadBooks:', typeof Settings.loadBooks);
-console.log('🔍 typeof Settings.updateBookDropdowns:', typeof Settings.updateBookDropdowns);
+    console.log('🔍 Settings.loadBooks:', Settings.loadBooks);
+    console.log('🔍 Settings.updateBookDropdowns:', Settings.updateBookDropdowns);
+    console.log('🔍 typeof Settings.loadBooks:', typeof Settings.loadBooks);
+    console.log('🔍 typeof Settings.updateBookDropdowns:', typeof Settings.updateBookDropdowns);
 
 // Expose translation function globally
 window.t = t;
@@ -95,7 +93,6 @@ window.showResetAttendanceModal = Attendance.showResetAttendanceModal;
 window.displayClasses = Settings.displayClasses;
 window.displayHolidays = Settings.displayHolidays;
 window.loadBooks = Settings.loadBooks;
-window.loadEducationProgress = Settings.loadEducationProgress;
 window.updateClassFilterOptions = Registration.updateClassFilterOptions;
 window.updateClassDropdowns = Settings.updateClassDropdowns;
 
@@ -107,33 +104,17 @@ window.updateBookDropdowns = Settings.updateBookDropdowns;
 // Debug: Check if functions are properly exposed
 console.log('🔍 After exposing to window:');
 console.log('🔍 window.loadBooks:', window.loadBooks);
-console.log('🔍 window.loadEducationProgress:', window.loadEducationProgress);
 console.log('🔍 window.updateBookDropdowns:', window.updateBookDropdowns);
 console.log('🔍 typeof window.loadBooks:', typeof window.loadBooks);
-console.log('🔍 typeof window.loadEducationProgress:', typeof window.loadEducationProgress);
 console.log('🔍 typeof window.updateBookDropdowns:', typeof window.updateBookDropdowns);
 window.isHoliday = Settings.isHoliday;
 window.editClass = Settings.editClass;
 window.deleteClass = Settings.deleteClass;
 window.editBook = Settings.editBook;
 window.deleteBook = Settings.deleteBook;
-window.editBookDetails = Settings.editBookDetails;
-window.addBookProgress = Settings.addBookProgress;
-window.updateBookProgress = Settings.updateBookProgress;
-window.deleteBookProgress = Settings.deleteBookProgress;
+// Note: Education Progress functions removed - Progress tracking is now handled in Teachers Corner
 
-// Test function for debugging
-window.testAddBookProgress = function() {
-    console.log('testAddBookProgress called');
-    console.log('window.addBookProgress:', window.addBookProgress);
-    console.log('typeof window.addBookProgress:', typeof window.addBookProgress);
-    if (typeof window.addBookProgress === 'function') {
-        console.log('Calling addBookProgress...');
-        window.addBookProgress();
-    } else {
-        console.error('addBookProgress is not a function!');
-    }
-};
+// Note: testAddBookProgress function removed - Education Progress is now handled in Teachers Corner
 
 // Modal functions
 window.showModal = Misc.showModal;
@@ -285,10 +266,7 @@ async function initializeApp() {
         }
         
         // Load education progress and books from database
-        if (typeof loadEducationProgress === 'function') {
-            await loadEducationProgress();
-            console.log('✅ Loaded education progress from database');
-        }
+        // Note: loadEducationProgress removed - Education Progress is now handled in Teachers Corner
         
         if (typeof loadBooks === 'function') {
             await loadBooks();

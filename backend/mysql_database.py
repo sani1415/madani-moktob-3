@@ -123,9 +123,20 @@ class MySQLDatabase:
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     book_name VARCHAR(255) NOT NULL,
                     class_id INT,
+                    total_pages INT DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
+            
+            # Add total_pages column to existing books table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM books LIKE 'total_pages'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding total_pages column to books table...")
+                    cursor.execute('ALTER TABLE books ADD COLUMN total_pages INT DEFAULT NULL')
+                    logger.info("✅ MySQLDatabase: total_pages column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add total_pages column: {e}")
             
             # Create education progress table
             cursor.execute('''
@@ -841,14 +852,41 @@ class MySQLDatabase:
             print(f"Error getting books: {e}")
             raise
     
-    def add_book(self, book_name, class_id=None):
-        """Add a new book"""
+    def add_book(self, book_name, class_id=None, total_pages=None):
+        """Add a new book and create corresponding education progress record"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            cursor.execute('INSERT INTO books (book_name, class_id) VALUES (%s, %s)', (book_name, class_id))
+            # Add the book
+            cursor.execute('INSERT INTO books (book_name, class_id, total_pages) VALUES (%s, %s, %s)', 
+                         (book_name, class_id, total_pages))
             book_id = cursor.lastrowid
+            
+            # Get class name if class_id is provided
+            class_name = None
+            if class_id:
+                cursor.execute('SELECT name FROM classes WHERE id = %s', (class_id,))
+                class_result = cursor.fetchone()
+                if class_result:
+                    class_name = class_result[0]
+            
+            # Create education progress record
+            if class_name:
+                cursor.execute('''
+                    INSERT INTO education_progress 
+                    (class_name, subject_name, book_id, book_name, total_pages, completed_pages, notes, last_updated)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    class_name,
+                    'General',  # Default subject
+                    book_id,
+                    book_name,
+                    total_pages or 100,  # Use provided total_pages or default to 100
+                    0,  # Start with 0 completed pages
+                    '',  # No notes initially
+                    '2025-08-18'  # Current date
+                ))
             
             conn.commit()
             cursor.close()
@@ -859,14 +897,14 @@ class MySQLDatabase:
             print(f"Error adding book: {e}")
             raise
     
-    def update_book(self, book_id, book_name, class_id=None):
+    def update_book(self, book_id, book_name, class_id=None, total_pages=None):
         """Update an existing book"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            cursor.execute('UPDATE books SET book_name = %s, class_id = %s WHERE id = %s', 
-                         (book_name, class_id, book_id))
+            cursor.execute('UPDATE books SET book_name = %s, class_id = %s, total_pages = %s WHERE id = %s', 
+                         (book_name, class_id, total_pages, book_id))
             
             conn.commit()
             cursor.close()
@@ -878,11 +916,15 @@ class MySQLDatabase:
             raise
     
     def delete_book(self, book_id):
-        """Delete a book"""
+        """Delete a book and its corresponding education progress record"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
+            # Delete education progress record first (foreign key constraint)
+            cursor.execute('DELETE FROM education_progress WHERE book_id = %s', (book_id,))
+            
+            # Delete the book
             cursor.execute('DELETE FROM books WHERE id = %s', (book_id,))
             
             conn.commit()

@@ -190,6 +190,24 @@ async function showSection(sectionId, event) {
             }
         }
         
+        // Update class dropdowns to show real database classes
+        if (typeof updateClassDropdowns === 'function') {
+            console.log('✅ updateClassDropdowns function found, calling...');
+            updateClassDropdowns();
+            console.log('✅ updateClassDropdowns completed');
+        } else {
+            console.error('❌ updateClassDropdowns function not found');
+        }
+        
+        // Update book dropdowns to show real database books
+        if (typeof updateBookDropdowns === 'function') {
+            console.log('✅ updateBookDropdowns function found, calling...');
+            updateBookDropdowns();
+            console.log('✅ updateBookDropdowns completed');
+        } else {
+            console.error('❌ updateBookDropdowns function not found');
+        }
+        
         console.log('✅ Settings section data loading completed');
     }
 }

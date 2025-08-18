@@ -452,8 +452,9 @@ def add_book():
         
         book_name = data['book_name']
         class_id = data.get('class_id')
+        total_pages = data.get('total_pages')
         
-        book_id = db.add_book(book_name, class_id)
+        book_id = db.add_book(book_name, class_id, total_pages)
         return jsonify({'success': True, 'book_id': book_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -467,8 +468,9 @@ def update_book(book_id):
         
         book_name = data['book_name']
         class_id = data.get('class_id')
+        total_pages = data.get('total_pages')
         
-        success = db.update_book(book_id, book_name, class_id)
+        success = db.update_book(book_id, book_name, class_id, total_pages)
         if success:
             return jsonify({'success': True})
         else:
