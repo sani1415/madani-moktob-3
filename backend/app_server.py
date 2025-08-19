@@ -404,6 +404,31 @@ def get_books_by_class(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Teachers' Corner API Routes
+@app.route('/api/teachers-corner', methods=['GET'])
+def get_teachers_corner_data():
+    try:
+        data = db.get_teachers_corner_data()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teachers-corner', methods=['POST'])
+def add_teachers_corner_entry():
+    try:
+        data = request.json
+        if not data or 'title' not in data:
+            return jsonify({'error': 'Title is required'}), 400
+        
+        title = data['title']
+        content = data.get('content', '')
+        category = data.get('category', 'General')
+        
+        db.add_teachers_corner_entry(title, content, category)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
     try:

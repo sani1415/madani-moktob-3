@@ -3479,3 +3479,27 @@ body {
         width: 100%;
     }
 }
+
+.teachers-corner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.teachers-corner-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.category-badge {
+    display: inline-block;
+    background-color: #3498db;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-top: 10px;
+}

@@ -861,8 +861,8 @@ function backToReports() {
         document.getElementById('registration').classList.add('active');
         window.location.hash = 'registration';
     } else {
-    document.getElementById('attendance').classList.add('active');
-    window.location.hash = 'attendance';
+        document.getElementById('attendance').classList.add('active');
+        window.location.hash = 'attendance';
     }
 }
 

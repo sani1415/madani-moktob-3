@@ -10,6 +10,7 @@ import * as Calendar from './calendar.js';
 import * as Settings from './settings.js';
 import * as Hijri from './hijri.js';
 import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../translations.js';
+import { initializeTeachersCorner } from './teachers-corner.js';
 
 // Debug: Check if Settings module is loaded
 console.log('🔍 Settings module loaded:', Settings);
@@ -31,8 +32,48 @@ window.updateAllTexts = updateAllTexts;
 // while the code is organized in ES6 modules
 
 // Navigation functions
-window.showSection = Misc.showSection;
-window.openSettingsTab = Misc.openSettingsTab;
+function showSection(sectionId, event) {
+    if (event) event.preventDefault();
+    
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Deactivate all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Show the selected section
+    const activeSection = document.getElementById(sectionId);
+    if (activeSection) {
+        activeSection.classList.add('active');
+        
+        // Activate the corresponding nav link
+        const activeLink = document.querySelector(`.nav-link[href*="${sectionId}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+    
+    window.location.hash = sectionId;
+    
+    // Initialize section-specific modules
+    const initializers = {
+        'dashboard': initializeDashboard,
+        'registration': initializeRegistration,
+        'attendance': initializeAttendance,
+        'reports': initializeReports,
+        'settings': initializeSettings,
+        'calendar': initializeCalendar,
+        'teachers-corner': initializeTeachersCorner,
+    };
+    
+    if (initializers[sectionId]) {
+        initializers[sectionId]();
+    }
+}
 
 // Registration functions
 window.hideBulkImport = Registration.hideBulkImport;
