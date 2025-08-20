@@ -55,6 +55,11 @@
                     <li><a href="#" onclick="showSection('settings', event)" class="nav-link">
                         <i class="fas fa-cog"></i> Settings
                     </a></li>
+                    <li>
+                        <a href="#" onclick="showSection('teachers-corner', event)" class="nav-link">
+                            <i class="fas fa-chalkboard-teacher"></i> Teachers Corner
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -695,6 +700,27 @@
                         </button>
                     </div>
                 </div>
+            </section>
+
+            <section id="teachers-corner" class="section">
+                <h2><i class="fas fa-chalkboard-teacher"></i> Teachers Corner</h2>
+    
+                <div id="tc-class-selector-container" class="form-group">
+                    <label for="tc-class-selector">Select a Class to View:</label>
+                    <select id="tc-class-selector" onchange="loadClassDashboard(this.value)">
+                        <option value="">-- Select a Class --</option>
+                        </select>
+                </div>
+    
+                <div id="tc-dashboard-content" style="display: none;">
+                    <h3 id="class-dashboard-title"></h3>
+                    <div class="stats-grid"> <div class="stat-card">
+                            <i class="fas fa-users"></i>
+                            <h3 id="class-total-students">0</h3>
+                            <p>Total Students</p>
+                        </div>
+                        </div>
+                    </div>
             </section>
         </div>
     </main>
