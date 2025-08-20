@@ -381,10 +381,14 @@ function populateTeachersCornerDropdown() {
 }
 
 function openTeachersCornerForClass(className) {
-    // Open Teachers Corner with the selected class
-    const url = `teachers-corner.html?class=${encodeURIComponent(className)}`;
-    window.open(url, '_blank');
-    
+    // Show integrated Teachers Corner section
+    if (typeof showSection === 'function') {
+        showSection('teachers-corner-section');
+    }
+    // Load dashboard for the selected class
+    if (typeof showClassDashboard === 'function') {
+        showClassDashboard(className);
+    }
     // Close the dropdown
     document.getElementById('teachersCornerDropdown').style.display = 'none';
 }
