@@ -237,8 +237,138 @@
         });
 
         function initTeachersCorner() {
-            // No need to initialize dropdown - prototype gets class from main app
-            // This function is kept for future use if needed
+            console.log('🚀 Initializing Teachers Corner section...');
+            
+            // Get the teachers corner section
+            const teachersCornerSection = document.getElementById('teachers-corner-section');
+            if (!teachersCornerSection) {
+                console.error('❌ teachers-corner-section element not found');
+                return;
+            }
+            
+            // Check if the section already has the required content
+            const hasRequiredContent = document.getElementById('class-dashboard-title') && 
+                                    document.getElementById('class-student-list') && 
+                                    document.getElementById('class-education-progress') && 
+                                    document.getElementById('performance-chart') && 
+                                    document.getElementById('logbook-display');
+            
+            if (hasRequiredContent) {
+                console.log('✅ Teachers Corner section already has required content');
+                return;
+            }
+            
+            console.log('🔄 Populating Teachers Corner section with dashboard content...');
+            
+            // Populate the section with the required HTML structure
+            teachersCornerSection.innerHTML = `
+                <h2 id="class-dashboard-title" class="text-2xl font-bold mb-6 pb-2">শ্রেণী নির্বাচন করুন</h2>
+    
+                <!-- Today's Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                    <div class="stat-card"><i class="fas fa-users text-4xl text-blue-500 mb-4"></i><h3 id="class-total-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">মোট ছাত্র</p></div>
+                    <div class="stat-card"><i class="fas fa-user-check text-4xl text-green-500 mb-4"></i><h3 id="class-present-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ উপস্থিত</p></div>
+                    <div class="stat-card"><i class="fas fa-user-times text-4xl text-red-500 mb-4"></i><h3 id="class-absent-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ অনুপস্থিত</p></div>
+                    <div class="stat-card"><i class="fas fa-percentage text-4xl text-purple-500 mb-4"></i><h3 id="class-attendance-rate" class="text-4xl font-bold text-gray-800">0%</h3><p class="text-gray-500">উপস্থিতির হার</p></div>
+                    <div class="stat-card" onclick="showInactiveStudentsModal()" style="cursor: pointer;"><i class="fas fa-user-slash text-4xl text-orange-500 mb-4"></i><h3 id="class-inactive-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">নিষ্ক্রিয় ছাত্র</p></div>
+                </div>
+    
+                <!-- Dashboard Alerts -->
+                <div id="dashboard-alerts" class="mb-8 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                        এক নজরে সতর্কতা
+                    </h3>
+                    <div id="alerts-content" class="space-y-3">
+                        <!-- Alerts will be rendered here -->
+                    </div>
+                </div>
+    
+                <!-- Class Overview & Teacher's Logbook -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                         <h3 class="text-xl font-semibold mb-4 text-gray-700">শ্রেণীর সার্বিক অবস্থা</h3>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div>
+                                  <h4 class="font-semibold text-gray-600 text-sm mb-2">ছাত্রদের স্তর</h4>
+                                  <div id="performance-chart" class="space-y-3">
+                                      <!-- Performance categories will be rendered here -->
+                                  </div>
+                              </div>
+                             <div>
+                                 <h4 class="font-semibold text-gray-600 text-sm mb-2">সাম্প্রতিক শ্রেণী লগ</h4>
+                                 <div id="recent-class-logs" class="space-y-2">
+                                     <!-- Recent logs will be rendered here -->
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">📔 শিক্ষকের লগবুক</h3>
+                            <button onclick="showAddLogModal()" class="btn-success text-white px-3 py-1 rounded-md text-sm font-semibold flex items-center gap-2"><i class="fas fa-plus"></i> নতুন নোট</button>
+                        </div>
+                        <div class="logbook-tabs border-b border-gray-200 mb-4">
+                            <button onclick="switchLogTab('class')" class="tab-button py-2 px-4 text-gray-500 font-semibold active">শ্রেণী লগ</button>
+                            <button onclick="switchLogTab('student')" class="tab-button py-2 px-4 text-gray-500 font-semibold">ছাত্র লগ</button>
+                        </div>
+                        <div id="logbook-display" class="space-y-4 max-h-[200px] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+    
+                <!-- Student List & Education Progress -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">ছাত্রদের তালিকা</h3>
+                            <button onclick="clearStudentFilter()" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                                সব ছাত্র দেখুন
+                            </button>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto student-list-container">
+                            <table class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 text-center">হুসনুল খুলুক</th>
+                                        <th class="px-4 py-3">রোল</th>
+                                        <th class="px-4 py-3">নাম</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="class-student-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">শিক্ষার অগ্রগতি</h3>
+                            <div class="flex gap-2">
+                                <button onclick="showBookModal()" class="text-gray-500 hover:text-blue-500" title="নতুন বই যোগ করুন"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div id="class-education-progress" class="space-y-4"></div>
+                    </div>
+                    
+                    <!-- Progress History Summary -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700">অগ্রগতির সারসংক্ষেপ</h3>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-chart-line mr-1"></i>শ্রেণীর সামগ্রিক অগ্রগতি
+                            </div>
+                        </div>
+                        <div id="progress-summary" class="space-y-4"></div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('✅ Teachers Corner section populated with dashboard content');
+            console.log('🔍 Required elements after population:', {
+                'class-dashboard-title': !!document.getElementById('class-dashboard-title'),
+                'class-student-list': !!document.getElementById('class-student-list'),
+                'class-education-progress': !!document.getElementById('class-education-progress'),
+                'performance-chart': !!document.getElementById('performance-chart'),
+                'logbook-display': !!document.getElementById('logbook-display')
+            });
         }
 
         // --- NAVIGATION ---
