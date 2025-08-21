@@ -447,77 +447,86 @@
             console.log('✅ All required elements found, proceeding with dashboard...');
             
             try {
-                // Ensure the element exists before setting innerText
-                const dashboardTitle = document.getElementById('class-dashboard-title');
-                if (dashboardTitle) {
-                    dashboardTitle.innerText = `${className} - ড্যাশবোর্ড`;
-                } else {
-                    console.error('❌ class-dashboard-title element not found despite check');
-                    return;
-                }
-                
-                // Get active and inactive students separately
-                const activeStudentsInClass = getActiveStudentsForClass(className);
-                const inactiveStudentsInClass = getInactiveStudentsForClass(className);
+            // Ensure the element exists before setting innerText
+            const dashboardTitle = document.getElementById('class-dashboard-title');
+            if (dashboardTitle) {
+                dashboardTitle.innerText = `${className} - ড্যাশবোর্ড`;
+            } else {
+                console.error('❌ class-dashboard-title element not found despite check');
+                return;
+            }
+            
+            // Get active and inactive students separately
+            const activeStudentsInClass = getActiveStudentsForClass(className);
+            const inactiveStudentsInClass = getInactiveStudentsForClass(className);
                 
                 console.log(`👥 Found ${activeStudentsInClass.length} active students and ${inactiveStudentsInClass.length} inactive students for class: ${className}`);
-                
-                // Load real book data for this class
-                const books = await loadBooksForClass(className);
-                console.log(`📚 Loaded ${books.length} books for class ${className}:`, books);
-                
-                // Load existing education progress for this class
-                let existingProgress = [];
-                try {
-                    const progressResponse = await fetch(`/api/education?class_name=${encodeURIComponent(className)}`);
-                    if (progressResponse.ok) {
-                        existingProgress = await progressResponse.json();
-                        console.log(`📊 Loaded ${existingProgress.length} existing progress records for class:`, className);
-                    }
-                } catch (error) {
-                    console.error('Error loading existing progress:', error);
+            
+            // Load real book data for this class
+            const books = await loadBooksForClass(className);
+            console.log(`📚 Loaded ${books.length} books for class ${className}:`, books);
+            
+            // Load existing education progress for this class
+            let existingProgress = [];
+            try {
+                const progressResponse = await fetch(`/api/education?class_name=${encodeURIComponent(className)}`);
+                if (progressResponse.ok) {
+                    existingProgress = await progressResponse.json();
+                    console.log(`📊 Loaded ${existingProgress.length} existing progress records for class:`, className);
                 }
+            } catch (error) {
+                console.error('Error loading existing progress:', error);
+            }
                 
-                // Convert books to education progress format for display
-                console.log('🔄 Starting conversion of books to education progress format');
-                console.log('📚 Books to convert:', books);
-                allEducationProgress = books.map(book => {
-                    // Find existing progress for this book
-                    const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
-                    
-                    const converted = {
-                        id: book.id,
-                        book_name: book.book_name,
-                        class_id: book.class_id,
-                        class_name: className, // Use the class name passed to the function
-                        total_pages: book.total_pages || 100, // Default if not set
-                        completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
-                        notes: existingBookProgress ? existingBookProgress.notes : '',
-                        progressHistory: book.progressHistory || [],
-                        progress_record_id: existingBookProgress ? existingBookProgress.id : null
-                    };
-                    console.log(`🔄 Converting book:`, book);
-                    console.log(`✅ Converted to:`, converted);
-                    return converted;
-                });
+                // Clear any existing education progress data before loading new data
+                console.log('🧹 Clearing existing allEducationProgress data before loading new data for class:', className);
+                allEducationProgress = [];
+            
+            // Convert books to education progress format for display
+            console.log('🔄 Starting conversion of books to education progress format');
+            console.log('📚 Books to convert:', books);
+            allEducationProgress = books.map(book => {
+                // Find existing progress for this book
+                const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
                 
-                console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
-                
-                console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
-                
-                // Render dashboard with real data
+                const converted = {
+                    id: book.id,
+                    book_name: book.book_name,
+                    class_id: book.class_id,
+                    class_name: className, // Use the class name passed to the function
+                    total_pages: book.total_pages || 100, // Default if not set
+                    completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
+                    notes: existingBookProgress ? existingBookProgress.notes : '',
+                    progressHistory: book.progressHistory || [],
+                    progress_record_id: existingBookProgress ? existingBookProgress.id : null
+                };
+                console.log(`🔄 Converting book:`, book);
+                console.log(`✅ Converted to:`, converted);
+                return converted;
+            });
+            
+            console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
+            
+            console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
+            
+            // Render dashboard with real data
                 console.log('🎨 Starting to render dashboard components...');
-                renderTodaySummary(activeStudentsInClass);
-                renderClassStudentList(activeStudentsInClass);
-                renderClassEducationProgress(className); // This now also calls renderProgressSummary
-                renderClassOverview(activeStudentsInClass);
-                renderTeachersLogbook();
-                renderDashboardAlerts(activeStudentsInClass);
+            renderTodaySummary(activeStudentsInClass);
+            renderClassStudentList(activeStudentsInClass);
+            renderClassEducationProgress(className); // This now also calls renderProgressSummary
+            renderClassOverview(activeStudentsInClass);
+            renderTeachersLogbook();
+            renderDashboardAlerts(activeStudentsInClass);
                 
-                // Update inactive students count
-                const inactiveStudentsEl = document.getElementById('class-inactive-students');
-                if (inactiveStudentsEl) {
-                    updateElementText('class-inactive-students', inactiveStudentsInClass.length);
+                // Additional debugging for progress summary
+                console.log(`🔍 After rendering, currentClass: ${currentClass}`);
+                console.log(`🔍 After rendering, allEducationProgress length: ${allEducationProgress.length}`);
+                console.log(`🔍 After rendering, allEducationProgress class names:`, allEducationProgress.map(p => p.class_name));
+            
+            // Update inactive students count
+            const inactiveStudentsEl = document.getElementById('class-inactive-students');
+            if (inactiveStudentsEl) {
+                updateElementText('class-inactive-students', inactiveStudentsInClass.length);
                 }
                 
                 console.log('✅ Dashboard rendering completed successfully');
@@ -703,7 +712,7 @@
                     
             const rate = total > 0 ? Math.round((present / total) * 100) : 0;
             
-            // Batch DOM updates
+                    // Batch DOM updates with color coding
             requestAnimationFrame(() => {
                 // Check if elements exist before updating
                 const totalStudentsEl = document.getElementById('class-total-students');
@@ -711,15 +720,32 @@
                 const absentTodayEl = document.getElementById('class-absent-today');
                 const attendanceRateEl = document.getElementById('class-attendance-rate');
                 
-                if (totalStudentsEl) updateElementText('class-total-students', total);
-                if (presentTodayEl) updateElementText('class-present-today', present);
-                if (absentTodayEl) updateElementText('class-absent-today', absent);
-                if (attendanceRateEl) updateElementText('class-attendance-rate', `${rate}%`);
+                        if (totalStudentsEl) {
+                            updateElementText('class-total-students', total);
+                        }
+                        if (presentTodayEl) {
+                            updateElementText('class-present-today', present);
+                        }
+                        if (absentTodayEl) {
+                            updateElementText('class-absent-today', absent);
+                        }
+                        if (attendanceRateEl) {
+                            updateElementText('class-attendance-rate', `${rate}%`);
+                            // Color coding for attendance rate based on percentage using CSS classes
+                            attendanceRateEl.classList.remove('attendance-high', 'attendance-medium', 'attendance-low');
+                            if (rate >= 80) {
+                                attendanceRateEl.classList.add('attendance-high'); // Green for ≥80%
+                            } else if (rate >= 60) {
+                                attendanceRateEl.classList.add('attendance-medium'); // Orange for ≥60%
+                            } else {
+                                attendanceRateEl.classList.add('attendance-low'); // Red for <60%
+                            }
+                        }
                     });
                 })
                 .catch(error => {
                     console.error('Error loading attendance data:', error);
-                    // Fallback to showing just total students
+                    // Fallback to showing just total students with default colors
                     requestAnimationFrame(() => {
                         // Check if elements exist before updating
                         const totalStudentsEl = document.getElementById('class-total-students');
@@ -727,10 +753,20 @@
                         const absentTodayEl = document.getElementById('class-absent-today');
                         const attendanceRateEl = document.getElementById('class-attendance-rate');
                         
-                        if (totalStudentsEl) updateElementText('class-total-students', total);
-                        if (presentTodayEl) updateElementText('class-present-today', '0');
-                        if (absentTodayEl) updateElementText('class-absent-today', '0');
-                        if (attendanceRateEl) updateElementText('class-attendance-rate', '0%');
+                        if (totalStudentsEl) {
+                            updateElementText('class-total-students', total);
+                        }
+                        if (presentTodayEl) {
+                            updateElementText('class-present-today', '0');
+                        }
+                        if (absentTodayEl) {
+                            updateElementText('class-absent-today', '0');
+                        }
+                        if (attendanceRateEl) {
+                            updateElementText('class-attendance-rate', '0%');
+                            attendanceRateEl.classList.remove('attendance-high', 'attendance-medium', 'attendance-low');
+                            attendanceRateEl.classList.add('attendance-low'); // Red for 0%
+                        }
                     });
             });
         }
@@ -850,7 +886,7 @@
             }
             
             // Check for students with no progress
-            const classProgress = allEducationProgress.filter(p => p.class === currentClass);
+            const classProgress = allEducationProgress.filter(p => p.class_name === currentClass);
             const studentsWithNoProgress = students.filter(s => {
                 return !classProgress.some(p => p.progressHistory.length > 0);
             });
@@ -938,16 +974,31 @@
             if (!allEducationProgress || allEducationProgress.length === 0) {
                 console.log(`⚠️ No education progress data available for class: ${className}`);
                 progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
+                // Still render the progress summary even when there are no books
+                console.log(`🔍 renderClassEducationProgress - No books, but still calling renderProgressSummary for class: ${className}`);
+                const targetClassName = currentClass || className;
+                console.log(`🔍 renderClassEducationProgress - Final targetClassName for no books case: ${targetClassName}`);
+                renderProgressSummary(targetClassName);
                 return;
             }
             
-            // Since we're now loading books directly for the class, allEducationProgress should already be filtered
-            const classProgress = allEducationProgress;
+            // Filter progress data by the specific class to ensure we only show data for this class
+            const classProgress = allEducationProgress.filter(p => p.class_name === className);
+            
+            console.log(`🔍 renderClassEducationProgress - Filtering for class: ${className}`);
+            console.log(`🔍 renderClassEducationProgress - allEducationProgress length: ${allEducationProgress.length}`);
+            console.log(`🔍 renderClassEducationProgress - allEducationProgress class names:`, allEducationProgress.map(p => p.class_name));
+            console.log(`🔍 renderClassEducationProgress - Filtered classProgress length: ${classProgress.length}`);
             
             console.log(`📚 Found ${classProgress.length} books/progress items for class: ${className}`);
             
             if (classProgress.length === 0) {
                 progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
+                // Still render the progress summary even when there are no books for this class
+                console.log(`🔍 renderClassEducationProgress - No books for class ${className}, but still calling renderProgressSummary`);
+                const targetClassName = currentClass || className;
+                console.log(`🔍 renderClassEducationProgress - Final targetClassName for filtered no books case: ${targetClassName}`);
+                renderProgressSummary(targetClassName);
                 return;
             }
             
@@ -994,24 +1045,95 @@
             }).join('');
             
             // Also render the progress summary
-            renderProgressSummary(className);
-        }
+            console.log(`🔍 renderClassEducationProgress - Calling renderProgressSummary with className: ${className}`);
+            console.log(`🔍 renderClassEducationProgress - Current currentClass: ${currentClass}`);
+            console.log(`🔍 renderClassEducationProgress - Ensuring className matches currentClass`);
+            
+            // Ensure we're using the current class name
+            const targetClassName = currentClass || className;
+            console.log(`🔍 renderClassEducationProgress - Final targetClassName: ${targetClassName}`);
+            renderProgressSummary(targetClassName);
+                }
         
         function renderProgressSummary(className) {
+            console.log(`🚀 renderProgressSummary called with className: ${className}`);
+            console.log(`🔍 Current currentClass: ${currentClass}`);
+            
             const summaryEl = document.getElementById('progress-summary');
             if (!summaryEl) {
                 console.error('❌ progress-summary element not found');
                 return;
             }
             
-            // Since we're now loading books directly for the class, allEducationProgress should already be filtered
-            const classProgress = allEducationProgress;
+            // Clear any previous content first to ensure fresh rendering
+            console.log(`🧹 Clearing previous progress summary content for class: ${className}`);
+            summaryEl.innerHTML = '';
+            
+            // Validate that we're working with the correct class
+            if (currentClass && currentClass !== className) {
+                console.warn(`⚠️ Class mismatch: currentClass (${currentClass}) !== className (${className})`);
+            }
+            
+            // Filter progress data by the specific class
+            const classProgress = allEducationProgress.filter(p => p.class_name === className);
+            
+            // Debug: Log the filtering process
+            console.log(`🔍 Filtering allEducationProgress (${allEducationProgress.length} items) for class: ${className}`);
+            console.log(`🔍 allEducationProgress class names:`, allEducationProgress.map(p => p.class_name));
+            console.log(`🔍 Filtered classProgress (${classProgress.length} items):`, classProgress);
             
             console.log(`📊 Rendering progress summary for class: ${className}`);
-            console.log(`📚 Class progress data:`, classProgress);
+            console.log(`📚 Class progress data for ${className}:`, classProgress);
             
             if (classProgress.length === 0) {
-                summaryEl.innerHTML = '<p class="text-sm text-gray-500 text-center col-span-3">কোনো অগ্রগতি তথ্য নেই</p>';
+                console.log(`⚠️ No progress data found for class: ${className} - showing empty state`);
+                // Clear the progress summary completely and show empty state
+                summaryEl.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-2xl font-bold text-gray-600">0%</div>
+                                <div class="text-sm text-gray-700">সামগ্রিক অগ্রগতি</div>
+                            </div>
+                            <div class="text-gray-500 text-3xl">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-2">
+                            এই শ্রেণীর জন্য কোনো অগ্রগতি তথ্য নেই
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-2xl font-bold text-gray-600">0</div>
+                                <div class="text-sm text-gray-700">মোট বই</div>
+                            </div>
+                            <div class="text-gray-500 text-3xl">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-2">
+                            কোনো বই যুক্ত করা হয়নি
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-2xl font-bold text-gray-600">0</div>
+                                <div class="text-sm text-gray-700">সাম্প্রতিক আপডেট</div>
+                            </div>
+                            <div class="text-gray-500 text-3xl">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-2">
+                            কোনো আপডেট নেই
+                        </div>
+                    </div>
+                `;
                 return;
             }
             
@@ -1823,7 +1945,7 @@
             if (!student) return;
             const score = getHusnulKhulukScore(student.id);
             const studentLogs = (teachersLogbook[student.class]?.student_logs[student.id] || []).sort((a,b) => new Date(b.date) - new Date(a.date));
-            const classProgress = allEducationProgress.filter(p => p.class === student.class);
+            const classProgress = allEducationProgress.filter(p => p.class_name === student.class);
             const printContent = `<html><head><title>${student.name} - ছাত্র রিপোর্ট</title><script src="https://cdn.tailwindcss.com"><\/script><style> body { font-family: 'Segoe UI', sans-serif; } @media print { .no-print { display: none; } } </style></head><body class="bg-white p-8"><div class="text-center mb-8 border-b pb-4"><h1 class="text-3xl font-bold text-gray-800">মাদানী মক্তব</h1><p class="text-lg text-gray-600">ছাত্রের সার্বিক অবস্থার রিপোর্ট</p></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">মৌলিক তথ্য</h2><div class="grid grid-cols-2 gap-4 text-sm"><p><strong>নাম:</strong> ${student.name}</p><p><strong>রোল:</strong> ${student.rollNumber}</p><p><strong>পিতার নাম:</strong> ${student.fatherName}</p><p><strong>শ্রেণী:</strong> ${student.class}</p><p><strong>মোবাইল:</strong> ${student.mobile}</p><p><strong>ঠিকানা:</strong> ${student.upazila}, ${student.district}</p></div></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">এক নজরে</h2><div class="grid grid-cols-4 gap-4 text-center bg-gray-50 p-4 rounded-lg"><div><div class="text-2xl font-bold text-green-600">95%</div><div class="text-sm text-gray-500">উপস্থিতি</div></div><div><div class="text-2xl font-bold text-blue-600">${score}</div><div class="text-sm text-gray-500">হুসনুল খুলুক</div></div><div><div class="text-2xl font-bold text-purple-600">${studentLogs.length}</div><div class="text-sm text-gray-500">নোট সংখ্যা</div></div><div><div class="text-2xl font-bold text-yellow-600">${classProgress.length}</div><div class="text-sm text-gray-500">মোট বই</div></div></div></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">শিক্ষকের নোট</h2><div class="space-y-3 text-sm">${studentLogs.length > 0 ? studentLogs.map(log => `<div class="p-2 border rounded-md"><p><strong>${log.type} (${new Date(log.date).toLocaleDateString('bn-BD')}):</strong> ${log.details}</p></div>`).join('') : '<p>কোনো নোট নেই।</p>'}</div></div><div class="text-center text-xs text-gray-400 mt-8"><p>রিপোর্টটি ${new Date().toLocaleString('bn-BD')} তারিখে তৈরি করা হয়েছে।</p></div></body></html>`;
             const printWindow = window.open('', '_blank');
             printWindow.document.write(printContent);
