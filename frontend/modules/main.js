@@ -67,6 +67,10 @@ window.calculateStudentAttendanceStats = Attendance.calculateStudentAttendanceSt
 window.getStudentAbsentDays = Attendance.getStudentAbsentDays;
 window.showAbsentDaysModal = Attendance.showAbsentDaysModal;
 window.changeSummaryPeriod = Attendance.changeSummaryPeriod;
+window.populateAttendanceClassFilter = Attendance.populateAttendanceClassFilter;
+window.refreshAttendanceClassFilter = Attendance.refreshAttendanceClassFilter;
+window.resetAttendanceClassFilter = Attendance.resetAttendanceClassFilter;
+window.updateFilterStatus = Attendance.updateFilterStatus;
 
 // Report functions
 window.generateReport = Misc.generateReport;
@@ -281,6 +285,11 @@ async function initializeApp() {
             updateClassDropdowns();
         }
         
+        // Populate attendance class filter after classes are loaded
+        if (typeof Attendance.populateAttendanceClassFilter === 'function') {
+            Attendance.populateAttendanceClassFilter();
+        }
+        
         // Update book dropdowns after loading books
         if (typeof updateBookDropdowns === 'function') {
             updateBookDropdowns();
@@ -323,6 +332,10 @@ async function initializeApp() {
         if (classFilterInput) {
             classFilterInput.addEventListener('change', function() {
                 loadAttendanceForDate();
+                // Update filter status immediately after change
+                if (typeof updateFilterStatus === 'function') {
+                    updateFilterStatus();
+                }
             });
         }
         

@@ -41,6 +41,14 @@ async function loadAttendanceForDate() {
     let selectedDate = document.getElementById('attendanceDate').value;
     const attendanceList = document.getElementById('attendanceList');
     
+    // Ensure class filter is populated with a delay to ensure classes are loaded
+    if (typeof populateAttendanceClassFilter === 'function') {
+        console.log('🔄 Ensuring class filter is populated...');
+        setTimeout(() => {
+            populateAttendanceClassFilter();
+        }, 500);
+    }
+    
     console.log('Selected date:', selectedDate);
     console.log('Attendance list element:', attendanceList);
     
@@ -85,6 +93,9 @@ async function loadAttendanceForDate() {
     });
     
     updateFilteredStudentCount(filteredStudents.length);
+    
+    // Update filter status indicator
+    updateFilterStatus();
     
     if (filteredStudents.length === 0) {
         attendanceList.innerHTML = `<p>${t('noStudentsFound')}</p>`;
@@ -539,9 +550,46 @@ function updateFilteredStudentCount(count) {
     }
 }
 
+// Function to update filter status indicator
+function updateFilterStatus() {
+    const classFilter = document.getElementById('classFilter');
+    const resetButton = document.querySelector('.class-filter button[onclick*="resetAttendanceClassFilter"]');
+    
+    if (classFilter && resetButton) {
+        const selectedClass = classFilter.value;
+        
+        if (selectedClass && selectedClass.trim() !== '') {
+            // A class is selected - show active state
+            resetButton.style.display = 'inline-block';
+            resetButton.style.opacity = '1';
+            resetButton.title = `Reset to All Classes (currently showing: ${selectedClass})`;
+            
+            // Add visual indicator to the class filter
+            classFilter.style.borderColor = '#3498db';
+            classFilter.style.backgroundColor = '#f8f9fa';
+        } else {
+            // No class selected - show inactive state
+            resetButton.style.display = 'inline-block';
+            resetButton.style.opacity = '0.6';
+            resetButton.title = 'Reset to All Classes';
+            
+            // Remove visual indicator from the class filter
+            classFilter.style.borderColor = '';
+            classFilter.style.backgroundColor = '';
+        }
+    }
+}
+
 function getFilteredStudents() {
     const selectedDate = document.getElementById('attendanceDate').value;
     const selectedClass = document.getElementById('classFilter').value;
+    
+    console.log('🔍 getFilteredStudents - selectedDate:', selectedDate);
+    console.log('🔍 getFilteredStudents - selectedClass:', selectedClass);
+    console.log('🔍 getFilteredStudents - selectedClass type:', typeof selectedClass);
+    console.log('🔍 getFilteredStudents - selectedClass length:', selectedClass ? selectedClass.length : 'N/A');
+    console.log('🔍 getFilteredStudents - students.length:', students.length);
+    console.log('🔍 getFilteredStudents - sample student class:', students[0]?.class);
 
     // Helper function to parse inactivation date
     function parseInactivationDate(inactivationDate) {
@@ -590,8 +638,32 @@ function getFilteredStudents() {
     });
 
     let finalFilteredStudents = dateFilteredStudents;
-    if (selectedClass) {
-        finalFilteredStudents = dateFilteredStudents.filter(student => student.class === selectedClass);
+    if (selectedClass && selectedClass.trim() !== '') {
+        console.log('🔍 getFilteredStudents - Filtering by class:', selectedClass);
+        console.log('🔍 getFilteredStudents - dateFilteredStudents before class filter:', dateFilteredStudents.length);
+        
+        // Debug: Show sample student class data
+        console.log('🔍 getFilteredStudents - Sample student classes:', dateFilteredStudents.slice(0, 5).map(s => ({ name: s.name, class: s.class })));
+        
+        finalFilteredStudents = dateFilteredStudents.filter(student => {
+            const matches = student.class === selectedClass;
+            if (!matches) {
+                console.log(`🔍 getFilteredStudents - Student ${student.name} class "${student.class}" doesn't match selected class "${selectedClass}"`);
+            }
+            return matches;
+        });
+        console.log('🔍 getFilteredStudents - finalFilteredStudents after class filter:', finalFilteredStudents.length);
+        
+        // If no matches found, show more debugging
+        if (finalFilteredStudents.length === 0) {
+            console.warn('⚠️ No students found for class:', selectedClass);
+            console.warn('⚠️ Available classes in student data:', [...new Set(dateFilteredStudents.map(s => s.class))]);
+            console.warn('⚠️ Selected class:', selectedClass);
+        }
+    } else {
+        console.log('🔍 getFilteredStudents - No class selected or "All Classes" selected, showing all students');
+        // When no class is selected or "All Classes" is selected, show all students
+        finalFilteredStudents = dateFilteredStudents;
     }
     return finalFilteredStudents;
 }
@@ -1300,4 +1372,92 @@ async function confirmResetAttendance() {
 }
 
 
-export { studentDetailSource, currentStudentDetailMonth, currentStudentDetailYear, currentStudentData, currentSummaryPeriod, initializeTodayAttendance, updateDateInputMax, updateAbsenceReason, updateFilteredStudentCount, getFilteredStudents, showMarkAllAbsentModal, closeBulkAbsentModal, showStudentDetail, backToReports, generateStudentDetailContent, calculateStudentAttendanceStats, getStudentAbsentDays, showAbsentDaysModal, changeSummaryPeriod, showResetAttendanceModal, closeResetAttendanceModal, markAllPresent, markAllNeutral, copyPreviousDayAttendance, saveAttendance, loadAttendanceForDate, confirmMarkAllAbsent, confirmResetAttendance, toggleAttendance }
+// Function to populate the attendance class filter with available classes
+function populateAttendanceClassFilter() {
+    console.log('🔄 populateAttendanceClassFilter called');
+    
+    const classFilter = document.getElementById('classFilter');
+    if (!classFilter) {
+        console.warn('⚠️ classFilter element not found');
+        return;
+    }
+    
+    console.log('✅ Found classFilter element:', classFilter);
+    
+    // Clear existing options and add "All Classes" option
+    classFilter.innerHTML = '<option value="">All Classes</option>';
+    console.log('✅ Cleared existing options, current options:', Array.from(classFilter.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+    
+    // Ensure the "All Classes" option is selected by default
+    classFilter.value = '';
+    
+    // Get classes from window.classes (populated by main app)
+    console.log('🔍 window.classes:', window.classes);
+    console.log('🔍 typeof window.classes:', typeof window.classes);
+    console.log('🔍 window.classes.length:', window.classes ? window.classes.length : 'undefined');
+    
+    if (window.classes && window.classes.length > 0) {
+        console.log('✅ Populating attendance class filter with classes:', window.classes);
+        console.log('✅ Class names to add:', window.classes.map(cls => cls.name));
+        
+        window.classes.forEach((cls, index) => {
+            console.log(`🔄 Processing class ${index + 1}:`, cls);
+            const option = document.createElement('option');
+            option.value = cls.name;
+            option.textContent = cls.name;
+            classFilter.appendChild(option);
+            console.log(`✅ Added class option: ${cls.name}`);
+        });
+        console.log(`✅ Added ${window.classes.length} class options to attendance filter`);
+        
+        // Debug: Show what's actually in the dropdown
+        console.log('🔍 Final class filter options:', Array.from(classFilter.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+        
+        // Also check for potential class name mismatches
+        if (window.students && window.students.length > 0) {
+            const studentClasses = [...new Set(window.students.map(s => s.class))];
+            console.log('🔍 Student classes found:', studentClasses);
+            console.log('🔍 Database classes:', window.classes.map(cls => cls.name));
+            
+            // Check for mismatches
+            const mismatches = studentClasses.filter(studentClass => 
+                !window.classes.some(dbClass => dbClass.name === studentClass)
+            );
+            if (mismatches.length > 0) {
+                console.warn('⚠️ Class name mismatches found:', mismatches);
+                console.warn('⚠️ These student classes are not in the database classes');
+            }
+        }
+    } else {
+        console.warn('⚠️ No classes available for attendance filter');
+        console.warn('🔍 window.classes:', window.classes);
+        
+        // Try to wait for classes to be loaded
+        if (!window.classes) {
+            console.log('⏳ Classes not loaded yet, waiting...');
+            setTimeout(() => {
+                console.log('🔄 Retrying populateAttendanceClassFilter after delay...');
+                populateAttendanceClassFilter();
+            }, 1000);
+        }
+    }
+}
+
+// Manual function to refresh class filter (can be called from console for debugging)
+function refreshAttendanceClassFilter() {
+    console.log('🔄 Manual refresh of attendance class filter called');
+    populateAttendanceClassFilter();
+}
+
+// Function to reset class filter to "All Classes"
+function resetAttendanceClassFilter() {
+    console.log('🔄 Resetting attendance class filter to "All Classes"');
+    const classFilter = document.getElementById('classFilter');
+    if (classFilter) {
+        classFilter.value = '';
+        // Trigger the change event to refresh the student list
+        loadAttendanceForDate();
+    }
+}
+
+export { studentDetailSource, currentStudentDetailMonth, currentStudentDetailYear, currentStudentData, currentSummaryPeriod, initializeTodayAttendance, updateDateInputMax, updateAbsenceReason, updateFilteredStudentCount, updateFilterStatus, getFilteredStudents, showMarkAllAbsentModal, closeBulkAbsentModal, showStudentDetail, backToReports, generateStudentDetailContent, calculateStudentAttendanceStats, getStudentAbsentDays, showAbsentDaysModal, changeSummaryPeriod, showResetAttendanceModal, closeResetAttendanceModal, markAllPresent, markAllNeutral, copyPreviousDayAttendance, saveAttendance, loadAttendanceForDate, confirmMarkAllAbsent, confirmResetAttendance, toggleAttendance, populateAttendanceClassFilter, refreshAttendanceClassFilter, resetAttendanceClassFilter }
