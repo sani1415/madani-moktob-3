@@ -380,17 +380,233 @@ function populateTeachersCornerDropdown() {
     dropdown.innerHTML = classOptions;
 }
 
-function openTeachersCornerForClass(className) {
+async function openTeachersCornerForClass(className) {
+    console.log(`🚀 Opening Teachers Corner for class: ${className}`);
+    
+    // Check if showSection is available
+    if (typeof showSection !== 'function') {
+        console.error('❌ showSection function is not available!');
+        console.log('🔍 Available global functions:', Object.keys(window).filter(key => 
+            typeof window[key] === 'function' && key.includes('show')
+        ));
+        console.log('🔍 typeof showSection:', typeof showSection);
+        console.log('🔍 window.showSection:', window.showSection);
+        
+        // Try to wait for it to be available
+        let attempts = 0;
+        const maxAttempts = 10;
+        while (typeof showSection !== 'function' && attempts < maxAttempts) {
+            console.log(`⏳ Waiting for showSection to be available... (attempt ${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (typeof showSection !== 'function') {
+            console.error('❌ showSection still not available after waiting');
+            return;
+        }
+    }
+    
+    console.log('🔍 showSection function details:', {
+        name: showSection.name,
+        toString: showSection.toString().substring(0, 100) + '...',
+        isAsync: showSection.constructor.name === 'AsyncFunction'
+    });
+    
     // Show integrated Teachers Corner section
-    if (typeof showSection === 'function') {
-        showSection('teachers-corner-section');
+    try {
+        console.log('✅ Calling showSection...');
+        console.log('🔍 Before showSection - teachers-corner-section element:', document.getElementById('teachers-corner-section'));
+        console.log('🔍 Before showSection - all sections:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, hasActive: s.classList.contains('active'), display: window.getComputedStyle(s).display })));
+        
+        await showSection('teachers-corner-section');
+        console.log('✅ Teachers Corner section should now be visible');
+        
+        // Verify the section is actually visible
+        const teachersCornerSection = document.getElementById('teachers-corner-section');
+        if (teachersCornerSection) {
+            console.log('🔍 Section visibility check:', {
+                hasActiveClass: teachersCornerSection.classList.contains('active'),
+                computedDisplay: window.getComputedStyle(teachersCornerSection).display,
+                classes: teachersCornerSection.className,
+                styleDisplay: teachersCornerSection.style.display
+            });
+            
+            // Force the section to be visible if it's not
+            if (!teachersCornerSection.classList.contains('active')) {
+                console.warn('⚠️ Section not active after showSection, forcing activation...');
+                teachersCornerSection.classList.add('active');
+            }
+            
+            // Also force display if CSS is not working
+            const computedDisplay = window.getComputedStyle(teachersCornerSection).display;
+            if (computedDisplay === 'none') {
+                console.warn('⚠️ CSS display is still none after showSection, forcing display...');
+                teachersCornerSection.style.display = 'block';
+            }
+        }
+        
+        // Check all sections after showSection
+        console.log('🔍 After showSection - all sections:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, hasActive: s.classList.contains('active'), display: window.getComputedStyle(s).display })));
+        
+    } catch (error) {
+        console.error('❌ Error showing teachers corner section:', error);
     }
-    // Load dashboard for the selected class
-    if (typeof showClassDashboard === 'function') {
-        showClassDashboard(className);
-    }
+    
+    // Function to check if we can proceed
+    const canProceed = () => {
+        const requiredElements = [
+            'class-dashboard-title',
+            'class-student-list',
+            'class-education-progress',
+            'performance-chart',
+            'logbook-display'
+        ];
+        
+        // Add comprehensive DOM debugging
+        console.log('🔍 DOM Debugging Information:');
+        console.log('🔍 document.readyState:', document.readyState);
+        console.log('🔍 document.body.children.length:', document.body.children.length);
+        console.log('🔍 All sections found:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, classes: s.className })));
+        console.log('🔍 teachers-corner-section element:', document.getElementById('teachers-corner-section'));
+        
+        // Check if the teachers corner section exists and what's inside it
+        const teachersCornerSection = document.getElementById('teachers-corner-section');
+        if (teachersCornerSection) {
+            console.log('🔍 Teachers corner section content:', {
+                innerHTML: teachersCornerSection.innerHTML.substring(0, 200) + '...',
+                children: Array.from(teachersCornerSection.children).map(child => ({ 
+                    id: child.id, 
+                    tagName: child.tagName, 
+                    className: child.className 
+                }))
+            });
+            
+            // Also check for elements by searching within the section
+            console.log('🔍 Searching for elements within teachers corner section:');
+            requiredElements.forEach(id => {
+                const elementInSection = teachersCornerSection.querySelector(`#${id}`);
+                console.log(`  🔍 ${id} in section: ${elementInSection ? 'FOUND' : 'MISSING'}`);
+                if (elementInSection) {
+                    console.log(`    ✅ Found ${id} within section:`, {
+                        tagName: elementInSection.tagName,
+                        className: elementInSection.className,
+                        textContent: elementInSection.textContent.substring(0, 50) + '...'
+                    });
+                }
+            });
+            
+            // Check if the section has any content at all
+            console.log('🔍 Section content analysis:', {
+                hasChildren: teachersCornerSection.children.length > 0,
+                childrenCount: teachersCornerSection.children.length,
+                textContent: teachersCornerSection.textContent.substring(0, 100) + '...',
+                innerHTMLLength: teachersCornerSection.innerHTML.length
+            });
+        }
+        
+        const missingElements = requiredElements.filter(id => !document.getElementById(id));
+        
+        if (missingElements.length > 0) {
+            console.warn('⚠️ Some required elements not found:', missingElements);
+            
+            // Add detailed debugging for each required element
+            console.log('🔍 Detailed element status:');
+            requiredElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    console.log(`  ✅ ${id}: FOUND`, {
+                        classes: element.className,
+                        computedDisplay: window.getComputedStyle(element).display,
+                        styleDisplay: element.style.display,
+                        offsetParent: element.offsetParent,
+                        clientHeight: element.clientHeight,
+                        clientWidth: element.clientWidth
+                    });
+                } else {
+                    console.log(`  ❌ ${id}: MISSING`);
+                    
+                    // Try to find it by other means
+                    const byQuerySelector = document.querySelector(`#${id}`);
+                    const byClassName = document.querySelector(`.${id}`);
+                    const byTagName = document.querySelector(id);
+                    
+                    console.log(`    🔍 Search attempts for ${id}:`, {
+                        byQuerySelector: !!byQuerySelector,
+                        byClassName: !!byClassName,
+                        byTagName: !!byTagName
+                    });
+                }
+            });
+            
+            // Check if the teachers corner section itself is visible
+            if (teachersCornerSection) {
+                console.log('🔍 Teachers corner section status:', {
+                    classes: teachersCornerSection.className,
+                    computedDisplay: window.getComputedStyle(teachersCornerSection).display,
+                    styleDisplay: teachersCornerSection.style.display,
+                    offsetParent: teachersCornerSection.offsetParent,
+                    clientHeight: teachersCornerSection.clientHeight,
+                    clientWidth: teachersCornerSection.clientWidth
+                });
+            }
+            
+            return false;
+        }
+        
+        if (typeof window.showClassDashboard !== 'function') {
+            console.warn('⚠️ showClassDashboard function not available yet');
+            return false;
+        }
+        
+        console.log('✅ All required elements and functions found');
+        return true;
+    };
+    
+    // Function to attempt loading dashboard
+    const attemptLoadDashboard = (attempt = 1, maxAttempts = 5) => {
+        console.log(`🔄 Attempt ${attempt} to load dashboard for class: ${className}`);
+        
+        if (canProceed()) {
+            try {
+                console.log('✅ Proceeding with dashboard loading...');
+                window.showClassDashboard(className);
+                return;
+            } catch (error) {
+                console.error('❌ Error calling showClassDashboard:', error);
+            }
+        }
+        
+        if (attempt < maxAttempts) {
+            const delay = Math.min(200 * attempt, 1000); // Progressive delay: 200ms, 400ms, 600ms, 800ms, 1000ms
+            console.log(`⏳ Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxAttempts})`);
+            setTimeout(() => attemptLoadDashboard(attempt + 1, maxAttempts), delay);
+        } else {
+            console.error('❌ Failed to load dashboard after maximum attempts');
+            // Show user-friendly error message
+            const dashboardTitle = document.getElementById('class-dashboard-title');
+            if (dashboardTitle) {
+                dashboardTitle.innerHTML = `
+                    <div class="text-center p-8">
+                        <h2 class="text-2xl font-bold mb-4 text-red-600">লোডিং সমস্যা</h2>
+                        <p class="text-gray-600 mb-4">ড্যাশবোর্ড লোড করতে সমস্যা হয়েছে।</p>
+                        <button onclick="openTeachersCornerForClass('${className}')" class="btn-primary text-white px-4 py-2 rounded-md">
+                            আবার চেষ্টা করুন
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    };
+    
+    // Start the loading process with initial delay
+    setTimeout(() => attemptLoadDashboard(1), 100);
+    
     // Close the dropdown
-    document.getElementById('teachersCornerDropdown').style.display = 'none';
+    const dropdown = document.getElementById('teachersCornerDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
 }
 
 // Close dropdown when clicking outside

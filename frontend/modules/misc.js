@@ -16,16 +16,32 @@ function toggleMobileMenu() {
 }
 
 async function showSection(sectionId, event) {
+    console.log(`🚀 showSection called with sectionId: ${sectionId}`);
+    
     // Hide all sections
     const sections = document.querySelectorAll('.section');
-    sections.forEach(section => section.classList.remove('active'));
+    console.log(`🔍 Found ${sections.length} sections:`, Array.from(sections).map(s => ({ id: s.id, hasActive: s.classList.contains('active') })));
+    
+    sections.forEach(section => {
+        section.classList.remove('active');
+        console.log(`❌ Removed active from section: ${section.id}`);
+    });
     
     // Remove active class from nav links
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => link.classList.remove('active'));
     
     // Show selected section
-    document.getElementById(sectionId).classList.add('active');
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        console.log(`✅ Added active to section: ${sectionId}`);
+        console.log(`🔍 Section ${sectionId} now has classes:`, targetSection.className);
+        console.log(`🔍 Section ${sectionId} computed display:`, window.getComputedStyle(targetSection).display);
+    } else {
+        console.error(`❌ Section with id '${sectionId}' not found!`);
+        console.log('🔍 Available sections:', Array.from(sections).map(s => s.id));
+    }
     
     // Add active class to clicked nav link
     if (event && event.target) {
@@ -79,6 +95,53 @@ async function showSection(sectionId, event) {
             studentsListContainer.style.display = 'block';
             studentRegistrationForm.style.display = 'none';
         }
+    } else if (sectionId === 'teachers-corner-section') {
+        console.log('🎓 Teachers Corner section activated');
+        console.log('🔍 Checking if teachers corner functions are available...');
+        console.log('🔍 typeof showClassDashboard:', typeof window.showClassDashboard);
+        console.log('🔍 typeof renderTodaySummary:', typeof window.renderTodaySummary);
+        console.log('🔍 typeof renderClassStudentList:', typeof window.renderClassStudentList);
+        
+        // Initialize teachers corner if the function exists
+        if (typeof window.initTeachersCorner === 'function') {
+            console.log('✅ Calling initTeachersCorner...');
+            try {
+                window.initTeachersCorner();
+                console.log('✅ initTeachersCorner completed successfully');
+            } catch (error) {
+                console.error('❌ Error in initTeachersCorner:', error);
+            }
+        } else {
+            console.warn('⚠️ initTeachersCorner function not available');
+        }
+        
+        // Force a small delay to ensure DOM is updated
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Double-check that the section is visible
+        const teachersCornerSection = document.getElementById('teachers-corner-section');
+        if (teachersCornerSection) {
+            console.log('🔍 Final section visibility check:', {
+                hasActiveClass: teachersCornerSection.classList.contains('active'),
+                computedDisplay: window.getComputedStyle(teachersCornerSection).display,
+                classes: teachersCornerSection.className
+            });
+            
+            // Force the section to be visible if it's not
+            if (!teachersCornerSection.classList.contains('active')) {
+                console.warn('⚠️ Section not active, forcing activation...');
+                teachersCornerSection.classList.add('active');
+            }
+            
+            // Also force display if CSS is not working
+            const computedDisplay = window.getComputedStyle(teachersCornerSection).display;
+            if (computedDisplay === 'none') {
+                console.warn('⚠️ CSS display is still none, forcing display...');
+                teachersCornerSection.style.display = 'block';
+            }
+        }
+        
+        console.log('✅ Teachers Corner section setup completed');
     } else if (sectionId === 'education') {
         console.log('🔄 Education tab selected, loading data...');
         console.log('🔍 Checking available functions...');

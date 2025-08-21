@@ -225,12 +225,15 @@
             await loadStudentsFromMainApp();
             await loadAttendanceFromMainApp();
             
-              document.getElementById('teachers-corner-section').innerHTML = `
-                    <div class="text-center p-8">
-                        <h2 class="text-2xl font-bold mb-4 text-gray-700">শ্রেণী নির্বাচন করুন</h2>
-                        <p class="text-gray-600">Teachers Corner থেকে একটি শ্রেণী নির্বাচন করুন।</p>
-                    </div>
-                `;
+              const teachersCornerSection = document.getElementById('teachers-corner-section');
+              if (teachersCornerSection) {
+                  teachersCornerSection.innerHTML = `
+                        <div class="text-center p-8">
+                            <h2 class="text-2xl font-bold mb-4 text-gray-700">শ্রেণী নির্বাচন করুন</h2>
+                            <p class="text-gray-600">Teachers Corner থেকে একটি শ্রেণী নির্বাচন করুন।</p>
+                        </div>
+                    `;
+              }
         });
 
         function initTeachersCorner() {
@@ -241,66 +244,170 @@
         // --- NAVIGATION ---
 
         async function showClassDashboard(className) {
-            currentClass = className;
-            document.getElementById('class-dashboard-title').innerText = `${className} - ড্যাশবোর্ড`;
+            console.log(`🚀 showClassDashboard called for class: ${className}`);
             
-            // Get active and inactive students separately
-            const activeStudentsInClass = getActiveStudentsForClass(className);
-            const inactiveStudentsInClass = getInactiveStudentsForClass(className);
-            
-            // Load real book data for this class
-            const books = await loadBooksForClass(className);
-            console.log(`📚 Loaded ${books.length} books for class ${className}:`, books);
-            
-            // Load existing education progress for this class
-            let existingProgress = [];
-            try {
-                const progressResponse = await fetch(`/api/education?class_name=${encodeURIComponent(className)}`);
-                if (progressResponse.ok) {
-                    existingProgress = await progressResponse.json();
-                    console.log(`📊 Loaded ${existingProgress.length} existing progress records for class:`, className);
-                }
-            } catch (error) {
-                console.error('Error loading existing progress:', error);
+            // First check if the teachers corner section is visible
+            const teachersCornerSection = document.getElementById('teachers-corner-section');
+            if (!teachersCornerSection) {
+                console.error('❌ teachers-corner-section element not found');
+                return;
             }
             
-            // Convert books to education progress format for display
-            console.log('🔄 Starting conversion of books to education progress format');
-            console.log('📚 Books to convert:', books);
-            allEducationProgress = books.map(book => {
-                // Find existing progress for this book
-                const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
-                
-                const converted = {
-                    id: book.id,
-                    book_name: book.book_name,
-                    class_id: book.class_id,
-                    class_name: className, // Use the class name passed to the function
-                    total_pages: book.total_pages || 100, // Default if not set
-                    completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
-                    notes: existingBookProgress ? existingBookProgress.notes : '',
-                    progressHistory: book.progressHistory || [],
-                    progress_record_id: existingBookProgress ? existingBookProgress.id : null
-                };
-                console.log(`🔄 Converting book:`, book);
-                console.log(`✅ Converted to:`, converted);
-                return converted;
+            if (!teachersCornerSection.classList.contains('active')) {
+                console.error('❌ teachers-corner-section is not active/visible');
+                console.log('🔍 Current classes on teachers-corner-section:', teachersCornerSection.className);
+                console.log('🔍 Computed display style:', window.getComputedStyle(teachersCornerSection).display);
+                return;
+            }
+            
+            console.log(`🔍 Current DOM state:`, {
+                'class-dashboard-title': !!document.getElementById('class-dashboard-title'),
+                'class-student-list': !!document.getElementById('class-student-list'),
+                'class-education-progress': !!document.getElementById('class-education-progress'),
+                'performance-chart': !!document.getElementById('performance-chart'),
+                'logbook-display': !!document.getElementById('logbook-display')
             });
             
-            console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
+            currentClass = className;
             
-            console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
+            // Check if all required elements exist before proceeding
+            const requiredElements = [
+                'class-dashboard-title',
+                'class-student-list',
+                'class-education-progress',
+                'performance-chart',
+                'logbook-display'
+            ];
             
-            // Render dashboard with real data
-            renderTodaySummary(activeStudentsInClass);
-            renderClassStudentList(activeStudentsInClass);
-            renderClassEducationProgress(className); // This now also calls renderProgressSummary
-            renderClassOverview(activeStudentsInClass);
-            renderTeachersLogbook();
-            renderDashboardAlerts(activeStudentsInClass);
+            const missingElements = requiredElements.filter(id => !document.getElementById(id));
             
-            // Update inactive students count
-            updateElementText('class-inactive-students', inactiveStudentsInClass.length);
+            if (missingElements.length > 0) {
+                console.error('❌ Required elements not found:', missingElements);
+                console.error('❌ Cannot proceed with dashboard loading');
+                console.error('🔍 DOM state at failure:', {
+                    'document.readyState': document.readyState,
+                    'teachers-corner-section visible': !!document.getElementById('teachers-corner-section'),
+                    'all sections': Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, visible: !s.classList.contains('hidden') }))
+                });
+                
+                // Show detailed element status
+                console.error('🔍 Detailed element status:');
+                requiredElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    console.error(`  ${id}: ${element ? 'FOUND' : 'MISSING'} ${element ? `(classes: ${element.className})` : ''}`);
+                });
+                
+                // Show user-friendly error message
+                const dashboardTitle = document.getElementById('class-dashboard-title');
+                if (dashboardTitle) {
+                    dashboardTitle.innerHTML = `
+                        <div class="text-center p-8">
+                            <h2 class="text-2xl font-bold mb-4 text-red-600">ড্যাশবোর্ড লোডিং সমস্যা</h2>
+                            <p class="text-gray-600 mb-4">কিছু প্রয়োজনীয় উপাদান পাওয়া যায়নি।</p>
+                            <p class="text-sm text-gray-500 mb-4">অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।</p>
+                            <button onclick="showClassDashboard('${className}')" class="btn-primary text-white px-4 py-2 rounded-md">
+                                আবার চেষ্টা করুন
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            console.log('✅ All required elements found, proceeding with dashboard...');
+            
+            try {
+                // Ensure the element exists before setting innerText
+                const dashboardTitle = document.getElementById('class-dashboard-title');
+                if (dashboardTitle) {
+                    dashboardTitle.innerText = `${className} - ড্যাশবোর্ড`;
+                } else {
+                    console.error('❌ class-dashboard-title element not found despite check');
+                    return;
+                }
+                
+                // Get active and inactive students separately
+                const activeStudentsInClass = getActiveStudentsForClass(className);
+                const inactiveStudentsInClass = getInactiveStudentsForClass(className);
+                
+                console.log(`👥 Found ${activeStudentsInClass.length} active students and ${inactiveStudentsInClass.length} inactive students for class: ${className}`);
+                
+                // Load real book data for this class
+                const books = await loadBooksForClass(className);
+                console.log(`📚 Loaded ${books.length} books for class ${className}:`, books);
+                
+                // Load existing education progress for this class
+                let existingProgress = [];
+                try {
+                    const progressResponse = await fetch(`/api/education?class_name=${encodeURIComponent(className)}`);
+                    if (progressResponse.ok) {
+                        existingProgress = await progressResponse.json();
+                        console.log(`📊 Loaded ${existingProgress.length} existing progress records for class:`, className);
+                    }
+                } catch (error) {
+                    console.error('Error loading existing progress:', error);
+                }
+                
+                // Convert books to education progress format for display
+                console.log('🔄 Starting conversion of books to education progress format');
+                console.log('📚 Books to convert:', books);
+                allEducationProgress = books.map(book => {
+                    // Find existing progress for this book
+                    const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
+                    
+                    const converted = {
+                        id: book.id,
+                        book_name: book.book_name,
+                        class_id: book.class_id,
+                        class_name: className, // Use the class name passed to the function
+                        total_pages: book.total_pages || 100, // Default if not set
+                        completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
+                        notes: existingBookProgress ? existingBookProgress.notes : '',
+                        progressHistory: book.progressHistory || [],
+                        progress_record_id: existingBookProgress ? existingBookProgress.id : null
+                    };
+                    console.log(`🔄 Converting book:`, book);
+                    console.log(`✅ Converted to:`, converted);
+                    return converted;
+                });
+                
+                console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
+                
+                console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
+                
+                // Render dashboard with real data
+                console.log('🎨 Starting to render dashboard components...');
+                renderTodaySummary(activeStudentsInClass);
+                renderClassStudentList(activeStudentsInClass);
+                renderClassEducationProgress(className); // This now also calls renderProgressSummary
+                renderClassOverview(activeStudentsInClass);
+                renderTeachersLogbook();
+                renderDashboardAlerts(activeStudentsInClass);
+                
+                // Update inactive students count
+                const inactiveStudentsEl = document.getElementById('class-inactive-students');
+                if (inactiveStudentsEl) {
+                    updateElementText('class-inactive-students', inactiveStudentsInClass.length);
+                }
+                
+                console.log('✅ Dashboard rendering completed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error in showClassDashboard:', error);
+                // Show user-friendly error message
+                const dashboardTitle = document.getElementById('class-dashboard-title');
+                if (dashboardTitle) {
+                    dashboardTitle.innerHTML = `
+                        <div class="text-center p-8">
+                            <h2 class="text-2xl font-bold mb-4 text-red-600">ড্যাশবোর্ড লোডিং সমস্যা</h2>
+                            <p class="text-gray-600 mb-4">${error.message || 'একটি ত্রুটি ঘটেছে।'}</p>
+                            <button onclick="showClassDashboard('${className}')" class="btn-primary text-white px-4 py-2 rounded-md">
+                                আবার চেষ্টা করুন
+                            </button>
+                        </div>
+                    `;
+                }
+            }
         }
 
         // --- DATA CALCULATION ---
@@ -331,14 +438,20 @@
         }
 
         function editHusnulKhuluk(studentId, currentScore) {
-            document.getElementById('score-student-id').value = studentId;
-            document.getElementById('new-score').value = currentScore;
-            document.getElementById('score-change-reason').value = '';
-            document.getElementById('score-modal').style.display = 'flex';
+            const scoreStudentId = document.getElementById('score-student-id');
+            const newScore = document.getElementById('new-score');
+            const scoreChangeReason = document.getElementById('score-change-reason');
+            const scoreModal = document.getElementById('score-modal');
+            
+            if (scoreStudentId) scoreStudentId.value = studentId;
+            if (newScore) newScore.value = currentScore;
+            if (scoreChangeReason) scoreChangeReason.value = '';
+            if (scoreModal) scoreModal.style.display = 'flex';
         }
 
         function closeScoreModal() {
-            document.getElementById('score-modal').style.display = 'none';
+            const scoreModal = document.getElementById('score-modal');
+            if (scoreModal) scoreModal.style.display = 'none';
         }
         
         // Inactive Students Modal Functions
@@ -387,13 +500,23 @@
         }
         
         function closeInactiveStudentsModal() {
-            document.getElementById('inactive-students-modal').style.display = 'none';
+            const inactiveStudentsModal = document.getElementById('inactive-students-modal');
+            if (inactiveStudentsModal) inactiveStudentsModal.style.display = 'none';
         }
 
         function saveNewScore() {
-            const studentId = document.getElementById('score-student-id').value;
-            const newScore = document.getElementById('new-score').value;
-            const changeReason = document.getElementById('score-change-reason').value;
+            const scoreStudentId = document.getElementById('score-student-id');
+            const newScoreElement = document.getElementById('new-score');
+            const changeReasonElement = document.getElementById('score-change-reason');
+            
+            if (!scoreStudentId || !newScoreElement || !changeReasonElement) {
+                console.error('❌ Required score change elements not found');
+                return;
+            }
+            
+            const studentId = scoreStudentId.value;
+            const newScore = newScoreElement.value;
+            const changeReason = changeReasonElement.value;
             const oldScore = studentScores[studentId] || 0;
             
             if (newScore !== null && !isNaN(newScore) && newScore >= 0 && newScore <= 100) {
@@ -452,20 +575,32 @@
             
             // Batch DOM updates
             requestAnimationFrame(() => {
-                updateElementText('class-total-students', total);
-                updateElementText('class-present-today', present);
-                updateElementText('class-absent-today', absent);
-                updateElementText('class-attendance-rate', `${rate}%`);
+                // Check if elements exist before updating
+                const totalStudentsEl = document.getElementById('class-total-students');
+                const presentTodayEl = document.getElementById('class-present-today');
+                const absentTodayEl = document.getElementById('class-absent-today');
+                const attendanceRateEl = document.getElementById('class-attendance-rate');
+                
+                if (totalStudentsEl) updateElementText('class-total-students', total);
+                if (presentTodayEl) updateElementText('class-present-today', present);
+                if (absentTodayEl) updateElementText('class-absent-today', absent);
+                if (attendanceRateEl) updateElementText('class-attendance-rate', `${rate}%`);
                     });
                 })
                 .catch(error => {
                     console.error('Error loading attendance data:', error);
                     // Fallback to showing just total students
                     requestAnimationFrame(() => {
-                        updateElementText('class-total-students', total);
-                        updateElementText('class-present-today', '0');
-                        updateElementText('class-absent-today', '0');
-                        updateElementText('class-attendance-rate', '0%');
+                        // Check if elements exist before updating
+                        const totalStudentsEl = document.getElementById('class-total-students');
+                        const presentTodayEl = document.getElementById('class-present-today');
+                        const absentTodayEl = document.getElementById('class-absent-today');
+                        const attendanceRateEl = document.getElementById('class-attendance-rate');
+                        
+                        if (totalStudentsEl) updateElementText('class-total-students', total);
+                        if (presentTodayEl) updateElementText('class-present-today', '0');
+                        if (absentTodayEl) updateElementText('class-absent-today', '0');
+                        if (attendanceRateEl) updateElementText('class-attendance-rate', '0%');
                     });
             });
         }
@@ -484,7 +619,13 @@
                 { label: 'মুতাওয়াসসিত (متوسط)', value: performance.mutawassit, color: 'text-yellow-600' },
                 { label: 'মুজতাহিদ (مجتهد)', value: performance.mujtahid, color: 'text-red-600' },
             ];
-            document.getElementById('performance-chart').innerHTML = performanceData.map(p => {
+            const performanceChart = document.getElementById('performance-chart');
+            if (!performanceChart) {
+                console.error('❌ performance-chart element not found');
+                return;
+            }
+            
+            performanceChart.innerHTML = performanceData.map(p => {
                 const tierKey = p.label.includes('মুস্তাইদ') ? 'mustaid' : p.label.includes('মুতাওয়াসসিত') ? 'mutawassit' : 'mujtahid';
                 return `<div class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 cursor-pointer transition-colors" onclick="filterStudentsByTier('${tierKey}')"><span class="text-sm font-semibold ${p.color}">${p.label}</span><span class="text-sm font-bold text-gray-700">${p.value} জন</span></div>`;
             }).join('');
@@ -492,7 +633,10 @@
             const classLogs = (teachersLogbook[currentClass]?.class_logs || []).sort((a,b) => new Date(b.date) - new Date(b.date)).slice(0, 3);
             const logsHTML = classLogs.length > 0 ? classLogs.map(log => `<div class="text-xs bg-gray-50 p-2 rounded"><p class="font-semibold text-gray-700">${log.details}</p><p class="text-gray-500">${new Date(log.date).toLocaleDateString('bn-BD')} - ${log.type}</p></div>`).join('') : '<p class="text-xs text-gray-500 italic">কোনো শ্রেণী লগ নেই।</p>';
             
-            updateElementHTML('recent-class-logs', logsHTML);
+            const recentClassLogsEl = document.getElementById('recent-class-logs');
+            if (recentClassLogsEl) {
+                updateElementHTML('recent-class-logs', logsHTML);
+            }
         }
 
 
@@ -537,7 +681,10 @@
                             সব ছাত্র দেখুন
                         </button>
                     `;
-                    updateElementHTML('class-dashboard-title', titleHTML);
+                    const dashboardTitleEl = document.getElementById('class-dashboard-title');
+                    if (dashboardTitleEl) {
+                        updateElementHTML('class-dashboard-title', titleHTML);
+                    }
                 }
             });
         }
@@ -547,7 +694,10 @@
             
             requestAnimationFrame(() => {
                 renderClassStudentList(studentsInClass);
-                updateElementText('class-dashboard-title', `${currentClass} - ড্যাশবোর্ড`);
+                const dashboardTitleEl = document.getElementById('class-dashboard-title');
+                if (dashboardTitleEl) {
+                    updateElementText('class-dashboard-title', `${currentClass} - ড্যাশবোর্ড`);
+                }
             });
         }
 
@@ -602,6 +752,11 @@
             }
             
             const alertsContent = document.getElementById('alerts-content');
+            if (!alertsContent) {
+                console.error('❌ alerts-content element not found');
+                return;
+            }
+            
             if (alerts.length === 0) {
                 alertsContent.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">কোনো সতর্কতা নেই। সবকিছু ঠিক আছে!</p>';
             } else {
@@ -622,6 +777,11 @@
 
         function renderClassStudentList(students) {
             const listEl = document.getElementById('class-student-list');
+            if (!listEl) {
+                console.error('❌ class-student-list element not found');
+                return;
+            }
+            
             if (students.length === 0) {
                 listEl.innerHTML = `<tr><td colspan="3" class="text-center p-4">এই শ্রেণীতে কোন ছাত্র নেই।</td></tr>`;
                 return;
@@ -637,6 +797,10 @@
         
         function renderClassEducationProgress(className) {
             const progressEl = document.getElementById('class-education-progress');
+            if (!progressEl) {
+                console.error('❌ class-education-progress element not found');
+                return;
+            }
             
             console.log(`🎨 Rendering education progress for class: ${className}`);
             console.log(`📊 Current allEducationProgress:`, allEducationProgress);
@@ -698,11 +862,17 @@
                     </div>
                 `;
             }).join('');
-                }
+            
+            // Also render the progress summary
+            renderProgressSummary(className);
+        }
         
         function renderProgressSummary(className) {
             const summaryEl = document.getElementById('progress-summary');
-            if (!summaryEl) return;
+            if (!summaryEl) {
+                console.error('❌ progress-summary element not found');
+                return;
+            }
             
             // Since we're now loading books directly for the class, allEducationProgress should already be filtered
             const classProgress = allEducationProgress;
@@ -783,6 +953,11 @@
 
         function renderTeachersLogbook() {
             const displayEl = document.getElementById('logbook-display');
+            if (!displayEl) {
+                console.error('❌ logbook-display element not found');
+                return;
+            }
+            
             if (!teachersLogbook[currentClass]) teachersLogbook[currentClass] = { class_logs: [], student_logs: {} };
             let logsToShow = currentLogTab === 'class' ? teachersLogbook[currentClass].class_logs : Object.values(teachersLogbook[currentClass].student_logs).flat();
             logsToShow.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -821,24 +996,48 @@
             renderTeachersLogbook();
         }
         function showAddLogModal() {
-            document.getElementById('log-id').value = '';
-            document.getElementById('log-modal-title').innerText = `"${currentClass}" এর জন্য নতুন নোট`;
-            document.getElementById('log-details').value = '';
-            document.getElementById('log-type').value = 'শিক্ষামূলক';
-            document.getElementById('log-student-id').value = '';
-            document.getElementById('log-important').checked = false;
-            document.getElementById('log-followup').checked = false;
-            document.getElementById('log-modal').style.display = 'flex';
+            const logId = document.getElementById('log-id');
+            const logModalTitle = document.getElementById('log-modal-title');
+            const logDetails = document.getElementById('log-details');
+            const logType = document.getElementById('log-type');
+            const logStudentId = document.getElementById('log-student-id');
+            const logImportant = document.getElementById('log-important');
+            const logFollowup = document.getElementById('log-followup');
+            const logModal = document.getElementById('log-modal');
+            
+            if (logId) logId.value = '';
+            if (logModalTitle) logModalTitle.innerText = `"${currentClass}" এর জন্য নতুন নোট`;
+            if (logDetails) logDetails.value = '';
+            if (logType) logType.value = 'শিক্ষামূলক';
+            if (logStudentId) logStudentId.value = '';
+            if (logImportant) logImportant.checked = false;
+            if (logFollowup) logFollowup.checked = false;
+            if (logModal) logModal.style.display = 'flex';
         }
-        function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; }
+        function closeLogModal() { 
+            const logModal = document.getElementById('log-modal');
+            if (logModal) logModal.style.display = 'none';
+        }
         function saveLogEntry() {
-            const logId = document.getElementById('log-id').value;
+            const logIdElement = document.getElementById('log-id');
+            const logStudentIdElement = document.getElementById('log-student-id');
+            const logTypeElement = document.getElementById('log-type');
+            const logDetailsElement = document.getElementById('log-details');
+            const logImportantElement = document.getElementById('log-important');
+            const logFollowupElement = document.getElementById('log-followup');
+            
+            if (!logDetailsElement) {
+                console.error('❌ Required log elements not found');
+                return;
+            }
+            
+            const logId = logIdElement ? logIdElement.value : '';
             const className = currentClass;
-            const studentId = document.getElementById('log-student-id').value;
-            const type = document.getElementById('log-type').value;
-            const details = document.getElementById('log-details').value;
-            const isImportant = document.getElementById('log-important').checked;
-            const needsFollowup = document.getElementById('log-followup').checked;
+            const studentId = logStudentIdElement ? logStudentIdElement.value : '';
+            const type = logTypeElement ? logTypeElement.value : '';
+            const details = logDetailsElement.value;
+            const isImportant = logImportantElement ? logImportantElement.checked : false;
+            const needsFollowup = logFollowupElement ? logFollowupElement.checked : false;
             
             if (!details.trim()) { alert('অনুগ্রহ করে বিস্তারিত লিখুন।'); return; }
             
@@ -879,7 +1078,8 @@
             }
             localStorage.setItem('teachersLogbook_v3', JSON.stringify(teachersLogbook));
             renderTeachersLogbook();
-            if(document.getElementById('student-profile-modal').style.display === 'flex') showStudentProfile(studentId || currentStudentIdForProfile);
+            const studentProfileModal = document.getElementById('student-profile-modal');
+            if(studentProfileModal && studentProfileModal.style.display === 'flex') showStudentProfile(studentId || currentStudentIdForProfile);
             closeLogModal();
         }
         function editLog(logId) {
@@ -893,14 +1093,24 @@
                 }
             }
             if (!log) return;
-            document.getElementById('log-id').value = log.id;
-            document.getElementById('log-modal-title').innerText = 'নোট সম্পাদনা করুন';
-            document.getElementById('log-type').value = log.type;
-            document.getElementById('log-details').value = log.details;
-            document.getElementById('log-student-id').value = studentId || '';
-            document.getElementById('log-important').checked = log.isImportant || false;
-            document.getElementById('log-followup').checked = log.needsFollowup || false;
-            document.getElementById('log-modal').style.display = 'flex';
+            
+            const logIdElement = document.getElementById('log-id');
+            const logModalTitle = document.getElementById('log-modal-title');
+            const logType = document.getElementById('log-type');
+            const logDetails = document.getElementById('log-details');
+            const logStudentId = document.getElementById('log-student-id');
+            const logImportant = document.getElementById('log-important');
+            const logFollowup = document.getElementById('log-followup');
+            const logModal = document.getElementById('log-modal');
+            
+            if (logIdElement) logIdElement.value = log.id;
+            if (logModalTitle) logModalTitle.innerText = 'নোট সম্পাদনা করুন';
+            if (logType) logType.value = log.type;
+            if (logDetails) logDetails.value = log.details;
+            if (logStudentId) logStudentId.value = studentId || '';
+            if (logImportant) logImportant.checked = log.isImportant || false;
+            if (logFollowup) logFollowup.checked = log.needsFollowup || false;
+            if (logModal) logModal.style.display = 'flex';
         }
         function deleteLog(logId) {
             if (!confirm('আপনি কি এই নোটটি মুছে ফেলতে নিশ্চিত?')) return;
@@ -926,7 +1136,8 @@
             currentStudentIdForProfile = studentId;
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
-            document.getElementById('student-profile-title').innerText = `${student.name} - বিস্তারিত প্রোফাইল`;
+            const profileTitle = document.getElementById('student-profile-title');
+            if (profileTitle) profileTitle.innerText = `${student.name} - বিস্তারিত প্রোফাইল`;
             const score = getHusnulKhulukScore(studentId);
             const studentLogs = (teachersLogbook[student.class]?.student_logs[studentId] || []).sort((a, b) => new Date(b.date) - new Date(a.date));
             const scoreHistory = scoreChangeHistory[studentId] || [];
@@ -1124,10 +1335,17 @@
                     </div>
                 </div>
             </div>`;
-            document.getElementById('student-profile-content').innerHTML = profileContent;
-            document.getElementById('student-profile-modal').style.display = 'flex';
+            const studentProfileContent = document.getElementById('student-profile-content');
+            if (studentProfileContent) {
+                studentProfileContent.innerHTML = profileContent;
+            }
+            const studentProfileModal = document.getElementById('student-profile-modal');
+            if (studentProfileModal) studentProfileModal.style.display = 'flex';
         }
-        function closeStudentProfileModal() { document.getElementById('student-profile-modal').style.display = 'none'; }
+        function closeStudentProfileModal() { 
+            const studentProfileModal = document.getElementById('student-profile-modal');
+            if (studentProfileModal) studentProfileModal.style.display = 'none';
+        }
         
         function switchProfileTab(tabName) {
             // Hide all tab contents
@@ -1158,12 +1376,20 @@
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
             closeStudentProfileModal();
-            document.getElementById('log-id').value = '';
-            document.getElementById('log-modal-title').innerText = `"${student.name}" এর জন্য নতুন নোট`;
-            document.getElementById('log-details').value = '';
-            document.getElementById('log-type').value = 'শিক্ষামূলক';
-            document.getElementById('log-student-id').value = studentId;
-            document.getElementById('log-modal').style.display = 'flex';
+            
+            const logId = document.getElementById('log-id');
+            const logModalTitle = document.getElementById('log-modal-title');
+            const logDetails = document.getElementById('log-details');
+            const logType = document.getElementById('log-type');
+            const logStudentId = document.getElementById('log-student-id');
+            const logModal = document.getElementById('log-modal');
+            
+            if (logId) logId.value = '';
+            if (logModalTitle) logModalTitle.innerText = `"${student.name}" এর জন্য নতুন নোট`;
+            if (logDetails) logDetails.value = '';
+            if (logType) logType.value = 'শিক্ষামূলক';
+            if (logStudentId) logStudentId.value = studentId;
+            if (logModal) logModal.style.display = 'flex';
         }
 
         // --- EDUCATION PROGRESS LOGIC ---
@@ -1193,14 +1419,20 @@
                 
                 console.log('✅ Book found for modal:', book);
                 
-                title.innerText = "বই সম্পাদনা ও অগ্রগতি";
-                document.getElementById('book-id').value = book.id;
-                document.getElementById('book-name').value = book.book_name || book.book || '';
-                document.getElementById('book-total-pages').value = book.total_pages || book.total || '';
+                if (title) title.innerText = "বই সম্পাদনা ও অগ্রগতি";
+                
+                const bookIdElement = document.getElementById('book-id');
+                const bookNameElement = document.getElementById('book-name');
+                const bookTotalPagesElement = document.getElementById('book-total-pages');
+                const bookCompletedPagesElement = document.getElementById('book-completed-pages');
+                
+                if (bookIdElement) bookIdElement.value = book.id;
+                if (bookNameElement) bookNameElement.value = book.book_name || book.book || '';
+                if (bookTotalPagesElement) bookTotalPagesElement.value = book.total_pages || book.total || '';
                 
                 // Use real completed pages from database
                 const completedPages = book.completed_pages || 0;
-                document.getElementById('book-completed-pages').value = completedPages;
+                if (bookCompletedPagesElement) bookCompletedPagesElement.value = completedPages;
                 
                 // Show enhanced progress history
                 const historyList = document.getElementById('progress-history-list');
@@ -1276,23 +1508,42 @@
                 historySection.style.display = 'block';
             } else {
                 title.innerText = "নতুন বই যোগ করুন";
-                document.getElementById('book-id').value = '';
-                document.getElementById('book-name').value = '';
-                document.getElementById('book-total-pages').value = '';
-                deleteBtn.style.display = 'none';
-                progressSection.style.display = 'none';
-                historySection.style.display = 'none';
-                document.getElementById('book-progress-note').value = '';
+                const bookIdElement = document.getElementById('book-id');
+                const bookNameElement = document.getElementById('book-name');
+                const bookTotalPagesElement = document.getElementById('book-total-pages');
+                const bookProgressNoteElement = document.getElementById('book-progress-note');
+                
+                if (bookIdElement) bookIdElement.value = '';
+                if (bookNameElement) bookNameElement.value = '';
+                if (bookTotalPagesElement) bookTotalPagesElement.value = '';
+                if (deleteBtn) deleteBtn.style.display = 'none';
+                if (progressSection) progressSection.style.display = 'none';
+                if (historySection) historySection.style.display = 'none';
+                if (bookProgressNoteElement) bookProgressNoteElement.value = '';
             }
             modal.style.display = 'flex';
         }
-        function closeBookModal() { document.getElementById('book-modal').style.display = 'none'; }
+        function closeBookModal() { 
+            const bookModal = document.getElementById('book-modal');
+            if (bookModal) bookModal.style.display = 'none';
+        }
         async function saveBook() {
-            const bookId = document.getElementById('book-id').value;
-            const bookName = document.getElementById('book-name').value;
-            const totalPages = parseInt(document.getElementById('book-total-pages').value);
-            const completedPages = parseInt(document.getElementById('book-completed-pages').value);
-            const progressNote = document.getElementById('book-progress-note').value;
+            const bookIdElement = document.getElementById('book-id');
+            const bookNameElement = document.getElementById('book-name');
+            const totalPagesElement = document.getElementById('book-total-pages');
+            const completedPagesElement = document.getElementById('book-completed-pages');
+            const progressNoteElement = document.getElementById('book-progress-note');
+            
+            if (!bookIdElement || !bookNameElement || !totalPagesElement || !completedPagesElement || !progressNoteElement) {
+                console.error('❌ Required book elements not found');
+                return;
+            }
+            
+            const bookId = bookIdElement.value;
+            const bookName = bookNameElement.value;
+            const totalPages = parseInt(totalPagesElement.value);
+            const completedPages = parseInt(completedPagesElement.value);
+            const progressNote = progressNoteElement.value;
 
             console.log('🚀 saveBook called with:', { bookId, bookName, totalPages, completedPages, progressNote });
             console.log('📚 Current allEducationProgress length:', allEducationProgress.length);
@@ -1419,7 +1670,13 @@
             }
         }
         function deleteBook() {
-            const bookId = document.getElementById('book-id').value;
+            const bookIdElement = document.getElementById('book-id');
+            if (!bookIdElement) {
+                console.error('❌ Book ID element not found');
+                return;
+            }
+            
+            const bookId = bookIdElement.value;
             if (confirm("আপনি কি এই বইটি মুছে ফেলতে নিশ্চিত?")) {
                 // Note: Book deletion should be handled in main app settings
                 // For now, we'll just remove from local display
@@ -1557,6 +1814,61 @@
             };
         }
         
+        // --- GLOBAL FUNCTION EXPORTS ---
+        // Make required functions available to the main application
+        // Wait for DOM to be fully ready before exporting
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', exportFunctions);
+        } else {
+            exportFunctions();
+        }
         
+        function exportFunctions() {
+            console.log('🚀 Exporting Teachers Corner functions to global scope...');
+            
+            window.showClassDashboard = showClassDashboard;
+            window.renderTodaySummary = renderTodaySummary;
+            window.renderClassStudentList = renderClassStudentList;
+            window.renderClassEducationProgress = renderClassEducationProgress;
+            window.renderClassOverview = renderClassOverview;
+            window.renderTeachersLogbook = renderTeachersLogbook;
+            window.renderDashboardAlerts = renderDashboardAlerts;
+            window.renderProgressSummary = renderProgressSummary;
+            window.showAddLogModal = showAddLogModal;
+            window.closeLogModal = closeLogModal;
+            window.saveLogEntry = saveLogEntry;
+            window.editLog = editLog;
+            window.deleteLog = deleteLog;
+            window.switchLogTab = switchLogTab;
+            window.showBookModal = showBookModal;
+            window.closeBookModal = closeBookModal;
+            window.saveBook = saveBook;
+            window.deleteBook = deleteBook;
+            window.showStudentProfile = showStudentProfile;
+            window.closeStudentProfileModal = closeStudentProfileModal;
+            window.switchProfileTab = switchProfileTab;
+            window.showAddStudentLogModal = showAddStudentLogModal;
+            window.editHusnulKhuluk = editHusnulKhuluk;
+            window.closeScoreModal = closeScoreModal;
+            window.saveNewScore = saveNewScore;
+            window.showInactiveStudentsModal = showInactiveStudentsModal;
+            window.closeInactiveStudentsModal = closeInactiveStudentsModal;
+            window.filterStudentsByTier = filterStudentsByTier;
+            window.clearStudentFilter = clearStudentFilter;
+            window.printStudentProfile = printStudentProfile;
+            window.updateTarbiyahGoal = updateTarbiyahGoal;
+            window.saveTarbiyahGoals = saveTarbiyahGoals;
+            window.initTeachersCorner = initTeachersCorner;
+            window.loadClassMapping = loadClassMapping;
+            window.loadStudentsFromMainApp = loadStudentsFromMainApp;
+            window.loadAttendanceFromMainApp = loadAttendanceFromMainApp;
+            
+            console.log('✅ Teachers Corner functions exported to global scope');
+            console.log('🔍 Available functions:', Object.keys(window).filter(key => 
+                typeof window[key] === 'function' && 
+                ['showClassDashboard', 'renderTodaySummary', 'renderClassStudentList'].includes(key)
+            ));
+        }
+
 
 
