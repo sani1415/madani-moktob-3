@@ -971,7 +971,7 @@ async function showStudentDetail(studentId, source = 'attendance') {
     if (typeof window.showStudentProfile === 'function') {
         // Call the Teachers Corner profile function
         await window.showStudentProfile(studentId);
-    } else {
+        } else {
         // Fallback to basic modal if Teachers Corner function not available
         showModal(t('studentDetails'), `
             <div class="space-y-4">
@@ -980,7 +980,7 @@ async function showStudentDetail(studentId, source = 'attendance') {
                 <div><strong>${t('class')}:</strong> ${student.class}</div>
                 <div><strong>${t('mobile')}:</strong> ${student.mobileNumber || student.mobile || 'N/A'}</div>
                 <div><strong>${t('address')}:</strong> ${student.upazila}, ${student.district}</div>
-            </div>
+                    </div>
         `);
     }
 }
