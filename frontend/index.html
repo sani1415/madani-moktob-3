@@ -127,7 +127,11 @@
                 <div class="class-wise-stats">
                     <h3>Class-wise Information</h3>
                     <div class="class-stats-table-container">
-                        <table class="class-stats-table">
+                        <div id="classStatsLoading" class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading class statistics...</span>
+                        </div>
+                        <table class="class-stats-table" id="classStatsTable" style="display: none;">
                             <thead>
                                 <tr>
                                     <th>Class</th>

@@ -537,6 +537,47 @@ def get_students_with_scores():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/all-student-scores', methods=['GET'])
+def get_all_student_scores():
+    try:
+        logger.info("🔄 Fetching all student scores for batch processing...")
+        
+        # Get all active students
+        students = db.get_students()
+        active_students = [s for s in students if s.get('status') == 'active']
+        
+        if not active_students:
+            logger.info("⚠️ No active students found")
+            return jsonify({'scores': {}})
+        
+        # Fetch scores for all active students in one batch
+        scores_data = {}
+        for student in active_students:
+            try:
+                score = db.get_student_score(student['id'])
+                if score is not None:
+                    scores_data[student['id']] = {
+                        'score': score,
+                        'class': student.get('class'),
+                        'name': student.get('name')
+                    }
+            except Exception as e:
+                logger.error(f"❌ Error fetching score for student {student['id']}: {e}")
+                # Continue with other students even if one fails
+                continue
+        
+        logger.info(f"✅ Successfully fetched scores for {len(scores_data)} students")
+        return jsonify({
+            'success': True,
+            'total_students': len(active_students),
+            'scores_fetched': len(scores_data),
+            'scores': scores_data
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error in get_all_student_scores: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # Class Management API Endpoints
 @app.route('/api/classes', methods=['GET'])
 def get_classes():
