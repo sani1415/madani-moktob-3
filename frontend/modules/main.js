@@ -63,10 +63,7 @@ window.showAttendanceCalendar = Misc.showAttendanceCalendar;
 window.loadAttendanceForDate = Attendance.loadAttendanceForDate;
 window.showStudentDetail = Attendance.showStudentDetail;
 window.updateDateInputMax = Attendance.updateDateInputMax;
-window.calculateStudentAttendanceStats = Attendance.calculateStudentAttendanceStats;
-window.getStudentAbsentDays = Attendance.getStudentAbsentDays;
-window.showAbsentDaysModal = Attendance.showAbsentDaysModal;
-window.changeSummaryPeriod = Attendance.changeSummaryPeriod;
+
 window.populateAttendanceClassFilter = Attendance.populateAttendanceClassFilter;
 window.refreshAttendanceClassFilter = Attendance.refreshAttendanceClassFilter;
 window.resetAttendanceClassFilter = Attendance.resetAttendanceClassFilter;
@@ -75,7 +72,7 @@ window.updateFilterStatus = Attendance.updateFilterStatus;
 // Report functions
 window.generateReport = Misc.generateReport;
 window.generateFromBeginningReport = Misc.generateFromBeginningReport;
-window.backToReports = Attendance.backToReports;
+
 window.addHijriToReports = Misc.addHijriToReports;
 
 // Settings functions
