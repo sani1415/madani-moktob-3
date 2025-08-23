@@ -1804,6 +1804,438 @@
         }
 
         // --- STUDENT PROFILE LOGIC (UNIFIED VIEW) ---
+        
+        // Function to generate print-friendly student detail
+        function generateStudentDetailPrint(student, attendanceStats, studentLogs, scoreHistory) {
+            const currentDate = new Date().toLocaleDateString('bn-BD');
+            const currentTime = new Date().toLocaleTimeString('bn-BD');
+            
+            const printContent = `
+                <!DOCTYPE html>
+                <html lang="bn">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Student Detail - ${student.name}</title>
+                    <style>
+                        @media print {
+                            body { margin: 0; padding: 20px; }
+                            .no-print { display: none !important; }
+                        }
+                        
+                        .print-button {
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            padding: 10px 20px;
+                            background: #2c5aa0;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            z-index: 1000;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        }
+                        
+                        .print-button:hover {
+                            background: #1e3a5f;
+                        }
+                        
+                        body {
+                            font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
+                            line-height: 1.4;
+                            color: #333;
+                            background: white;
+                            margin: 0;
+                            padding: 20px;
+                        }
+                        
+                        .print-header {
+                            text-align: center;
+                            border-bottom: 3px solid #2c5aa0;
+                            padding-bottom: 15px;
+                            margin-bottom: 30px;
+                        }
+                        
+                        .school-name {
+                            font-size: 28px;
+                            font-weight: bold;
+                            color: #2c5aa0;
+                            margin: 0;
+                        }
+                        
+                        .school-subtitle {
+                            font-size: 16px;
+                            color: #666;
+                            margin: 5px 0 0 0;
+                        }
+                        
+                        .student-title {
+                            font-size: 24px;
+                            font-weight: bold;
+                            text-align: center;
+                            color: #2c5aa0;
+                            margin: 20px 0;
+                            padding: 10px;
+                            background: #f8f9fa;
+                            border-radius: 8px;
+                        }
+                        
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 30px;
+                            margin-bottom: 30px;
+                        }
+                        
+                        .info-section {
+                            background: #f8f9fa;
+                            padding: 20px;
+                            border-radius: 8px;
+                            border-left: 4px solid #2c5aa0;
+                        }
+                        
+                        .section-title {
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #2c5aa0;
+                            margin-bottom: 15px;
+                            padding-bottom: 8px;
+                            border-bottom: 2px solid #e9ecef;
+                        }
+                        
+                        .info-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 8px;
+                            padding: 5px 0;
+                        }
+                        
+                        .info-label {
+                            font-weight: 600;
+                            color: #495057;
+                            min-width: 120px;
+                        }
+                        
+                        .info-value {
+                            color: #333;
+                            text-align: right;
+                            flex: 1;
+                        }
+                        
+                        .status-active {
+                            color: #28a745;
+                            font-weight: bold;
+                        }
+                        
+                        .status-inactive {
+                            color: #dc3545;
+                            font-weight: bold;
+                        }
+                        
+                        .stats-grid {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 15px;
+                            margin: 20px 0;
+                        }
+                        
+                        .stat-box {
+                            text-align: center;
+                            padding: 15px;
+                            background: white;
+                            border: 2px solid #e9ecef;
+                            border-radius: 8px;
+                        }
+                        
+                        .stat-number {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #2c5aa0;
+                        }
+                        
+                        .stat-label {
+                            font-size: 12px;
+                            color: #666;
+                            margin-top: 5px;
+                        }
+                        
+                        .attendance-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                            font-size: 12px;
+                        }
+                        
+                        .attendance-table th,
+                        .attendance-table td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: center;
+                        }
+                        
+                        .attendance-table th {
+                            background: #f8f9fa;
+                            font-weight: bold;
+                            color: #495057;
+                        }
+                        
+                        .present { background: #d4edda; }
+                        .absent { background: #f8d7da; }
+                        .leave { background: #fff3cd; }
+                        
+                        .teacher-logs {
+                            margin: 20px 0;
+                        }
+                        
+                        .log-entry {
+                            background: #f8f9fa;
+                            padding: 15px;
+                            margin-bottom: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #17a2b8;
+                        }
+                        
+                        .log-header {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 10px;
+                            font-size: 14px;
+                        }
+                        
+                        .log-type {
+                            font-weight: bold;
+                            color: #17a2b8;
+                        }
+                        
+                        .log-date {
+                            color: #666;
+                        }
+                        
+                        .log-details {
+                            color: #333;
+                            line-height: 1.5;
+                        }
+                        
+                        .score-history {
+                            margin: 20px 0;
+                        }
+                        
+                        .score-entry {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 10px;
+                            background: #f8f9fa;
+                            margin-bottom: 8px;
+                            border-radius: 5px;
+                        }
+                        
+                        .score-change {
+                            font-weight: bold;
+                        }
+                        
+                        .score-increase { color: #28a745; }
+                        .score-decrease { color: #dc3545; }
+                        
+                        .footer {
+                            margin-top: 40px;
+                            text-align: center;
+                            color: #666;
+                            font-size: 12px;
+                            border-top: 1px solid #e9ecef;
+                            padding-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <!-- Print Button -->
+                    <div class="no-print">
+                        <button onclick="window.print()" class="print-button">
+                            🖨️ প্রিন্ট করুন
+                        </button>
+                    </div>
+                    
+                    <!-- Header -->
+                    <div class="print-header">
+                        <h1 class="school-name">মাদানি মক্তব</h1>
+                        <p class="school-subtitle">ইসলামিক স্কুল অ্যাটেনডেন্স ম্যানেজমেন্ট সিস্টেম</p>
+                        <p class="school-subtitle">Student Detail Report</p>
+                    </div>
+                    
+                    <!-- Student Title -->
+                    <div class="student-title">
+                        ${student.name} বিন ${student.fatherName} - ${student.class} শ্রেণী
+                    </div>
+                    
+                    <!-- Basic Information Grid -->
+                    <div class="info-grid">
+                        <!-- Personal Information -->
+                        <div class="info-section">
+                            <h3 class="section-title">ব্যক্তিগত তথ্য</h3>
+                            <div class="info-row">
+                                <span class="info-label">পূর্ণ নাম:</span>
+                                <span class="info-value">${student.name} বিন ${student.fatherName}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">রোল নম্বর:</span>
+                                <span class="info-value">${student.rollNumber || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">শ্রেণী:</span>
+                                <span class="info-value">${student.class}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">নিবন্ধনের তারিখ:</span>
+                                <span class="info-value">${student.registrationDate || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">অবস্থা:</span>
+                                <span class="info-value ${student.status === 'inactive' ? 'status-inactive' : 'status-active'}">
+                                    ${student.status === 'inactive' ? 'নিষ্ক্রিয়' : 'সক্রিয়'}
+                                    ${student.status === 'inactive' && student.inactivationDate ? ` (${student.inactivationDate} থেকে)` : ''}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Information -->
+                        <div class="info-section">
+                            <h3 class="section-title">যোগাযোগের তথ্য</h3>
+                            <div class="info-row">
+                                <span class="info-label">মোবাইল নম্বর:</span>
+                                <span class="info-value">${student.mobileNumber || student.mobile || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">জেলা:</span>
+                                <span class="info-value">${student.district || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">উপজেলা:</span>
+                                <span class="info-value">${student.upazila || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">ঠিকানা:</span>
+                                <span class="info-value">${student.upazila || ''}, ${student.district || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Statistics Overview -->
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number">${attendanceStats.attendanceRate}%</div>
+                            <div class="stat-label">উপস্থিতি হার</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">${getHusnulKhulukScore(student.id)}</div>
+                            <div class="stat-label">হুসনুল খুলুক</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">${studentLogs.length}</div>
+                            <div class="stat-label">শিক্ষকের নোট</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">${student.class}</div>
+                            <div class="stat-label">বর্তমান শ্রেণী</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Attendance Summary -->
+                    <div class="info-section">
+                        <h3 class="section-title">উপস্থিতি সারসংক্ষেপ</h3>
+                        <div class="info-grid">
+                            <div>
+                                <div class="info-row">
+                                    <span class="info-label">মোট উপস্থিত:</span>
+                                    <span class="info-value">${attendanceStats.present} দিন</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">মোট অনুপস্থিত:</span>
+                                    <span class="info-value">${attendanceStats.absent} দিন</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-row">
+                                    <span class="info-label">ছুটির দিন:</span>
+                                    <span class="info-value">${attendanceStats.leave} দিন</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">উপস্থিতির হার:</span>
+                                    <span class="info-value">${attendanceStats.attendanceRate}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Teacher Logs -->
+                    <div class="teacher-logs">
+                        <h3 class="section-title">শিক্ষকের নোট</h3>
+                        ${studentLogs.map(log => `
+                            <div class="log-entry">
+                                <div class="log-header">
+                                    <span class="log-type">${log.log_type}</span>
+                                    <span class="log-date">${log.date}</span>
+                                </div>
+                                <div class="log-details">
+                                    ${log.details}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Score History -->
+                    <div class="score-history">
+                        <h3 class="section-title">হুসনুল খুলুক স্কোর ইতিহাস</h3>
+                        ${scoreHistory.length > 0 ? scoreHistory.map(score => `
+                            <div class="score-entry">
+                                <span>${new Date(score.date).toLocaleDateString('bn-BD')} - ${score.reason}</span>
+                                <span class="score-change ${score.newScore > score.oldScore ? 'score-increase' : 'score-decrease'}">
+                                    ${score.oldScore} → ${score.newScore}
+                                </span>
+                            </div>
+                        `).join('') : '<p class="text-sm text-gray-500 text-center p-4">কোনো স্কোর পরিবর্তনের ইতিহাস নেই।</p>'}
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="footer">
+                        <p>এই রিপোর্টটি মাদানি মক্তব সিস্টেম থেকে তৈরি করা হয়েছে</p>
+                        <p>তারিখ: ${currentDate} | সময়: ${currentTime}</p>
+                        <p>প্রতিবেদন তৈরি করেছেন: সিস্টেম অ্যাডমিন</p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            return printContent;
+        }
+        
+        // Function to print student detail
+        async function printStudentDetail(studentId) {
+            const student = allStudents.find(s => s.id === studentId);
+            if (!student) return;
+            
+            // Load score history from database first
+            await loadScoreHistoryFromDatabase(studentId);
+            
+            // Get student data
+            const score = getHusnulKhulukScore(studentId);
+            const studentLogs = (teachersLogbook[student.class]?.student_logs[studentId] || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const scoreHistory = scoreChangeHistory[studentId] || [];
+            
+            // Calculate attendance statistics
+            calculateAttendanceStats(student).then(attendanceStats => {
+                const printContent = generateStudentDetailPrint(student, attendanceStats, studentLogs, scoreHistory);
+                
+                // Create new window for printing
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(printContent);
+                printWindow.document.close();
+                
+                // Don't auto-print, let user decide when to print
+                // User can use the print button in the generated content
+            });
+        }
+        
         async function showStudentProfile(studentId) {
             currentStudentIdForProfile = studentId;
             const student = allStudents.find(s => s.id === studentId);
@@ -1824,20 +2256,27 @@
             const profileContent = `<div class="space-y-6">
                 <!-- Profile Tabs -->
                 <div class="border-b border-gray-200">
-                    <nav class="flex space-x-8">
-                        <button onclick="switchProfileTab('overview')" class="profile-tab active py-2 px-1 border-b-2 border-blue-500 text-sm font-medium text-blue-600">এক নজরে</button>
-                        <button onclick="switchProfileTab('personal')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">ব্যক্তিগত তথ্য</button>
-                        <button onclick="switchProfileTab('attendance')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">উপস্থিতি</button>
-                        <button onclick="switchProfileTab('logs')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">শিক্ষকের নোট</button>
-                        <button onclick="switchProfileTab('score-history')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">স্কোর ইতিহাস</button>
-                        <button onclick="switchProfileTab('tarbiyah-goals')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">তরবিয়াহ লক্ষ্য</button>
-                    </nav>
+                    <div class="flex justify-between items-center">
+                        <nav class="flex space-x-8">
+                            <button onclick="switchProfileTab('overview')" class="profile-tab active py-2 px-1 border-b-2 border-blue-500 text-sm font-medium text-blue-600">এক নজরে</button>
+                            <button onclick="switchProfileTab('personal')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">ব্যক্তিগত তথ্য</button>
+                            <button onclick="switchProfileTab('attendance')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">উপস্থিতি</button>
+                            <button onclick="switchProfileTab('logs')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">শিক্ষকের নোট</button>
+                            <button onclick="switchProfileTab('score-history')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">স্কোর ইতিহাস</button>
+                            <button onclick="switchProfileTab('tarbiyah-goals')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">তরবিয়াহ লক্ষ্য</button>
+                        </nav>
+                        <button onclick="printStudentDetail('${student.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            🖨️ প্রিন্ট করুন
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Overview Tab -->
                 <div id="profile-overview" class="profile-tab-content">
                     <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-3">এক নজরে</h4>
+                        <div class="mb-3">
+                            <h4 class="font-semibold text-gray-700">এক নজরে</h4>
+                        </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                             <div><div class="text-lg font-bold text-green-600">${attendanceStats.attendanceRate}%</div><div class="text-xs text-gray-500">উপস্থিতি</div></div>
                             <div><div class="text-lg font-bold text-blue-600">${score}</div><div class="text-xs text-gray-500">হুসনুল খুলুক</div></div>
@@ -1973,11 +2412,8 @@
                 
                 <!-- Score History Tab -->
                 <div id="profile-score-history" class="profile-tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="mb-4">
                         <h4 class="font-semibold text-gray-700">হুসনুল খুলুক স্কোর ইতিহাস</h4>
-                        <button onclick="editHusnulKhuluk('${student.id}', ${score})" class="btn-primary text-white px-3 py-1 text-sm rounded-md">
-                            স্কোর পরিবর্তন করুন
-                        </button>
                     </div>
                     <div class="space-y-3">
                         ${scoreHistory.length > 0 ? scoreHistory.map(change => `
@@ -2394,17 +2830,11 @@
         }
         
         // --- PRINT FUNCTIONALITY ---
-        function printStudentProfile() {
-            const student = allStudents.find(s => s.id === currentStudentIdForProfile);
-            if (!student) return;
-            const score = getHusnulKhulukScore(student.id);
-            const studentLogs = (teachersLogbook[student.class]?.student_logs[student.id] || []).sort((a,b) => new Date(b.date) - new Date(a.date));
-            const classProgress = allEducationProgress.filter(p => p.class_name === student.class);
-            const printContent = `<html><head><title>${student.name} - ছাত্র রিপোর্ট</title><script src="https://cdn.tailwindcss.com"><\/script><style> body { font-family: 'Segoe UI', sans-serif; } @media print { .no-print { display: none; } } </style></head><body class="bg-white p-8"><div class="text-center mb-8 border-b pb-4"><h1 class="text-3xl font-bold text-gray-800">মাদানী মক্তব</h1><p class="text-lg text-gray-600">ছাত্রের সার্বিক অবস্থার রিপোর্ট</p></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">মৌলিক তথ্য</h2><div class="grid grid-cols-2 gap-4 text-sm"><p><strong>নাম:</strong> ${student.name}</p><p><strong>রোল:</strong> ${student.rollNumber}</p><p><strong>পিতার নাম:</strong> ${student.fatherName}</p><p><strong>শ্রেণী:</strong> ${student.class}</p><p><strong>মোবাইল:</strong> ${student.mobile}</p><p><strong>ঠিকানা:</strong> ${student.upazila}, ${student.district}</p></div></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">এক নজরে</h2><div class="grid grid-cols-4 gap-4 text-center bg-gray-50 p-4 rounded-lg"><div><div class="text-2xl font-bold text-green-600">95%</div><div class="text-sm text-gray-500">উপস্থিতি</div></div><div><div class="text-2xl font-bold text-blue-600">${score}</div><div class="text-sm text-gray-500">হুসনুল খুলুক</div></div><div><div class="text-2xl font-bold text-purple-600">${studentLogs.length}</div><div class="text-sm text-gray-500">নোট সংখ্যা</div></div><div><div class="text-2xl font-bold text-yellow-600">${classProgress.length}</div><div class="text-sm text-gray-500">মোট বই</div></div></div></div><div class="mb-6"><h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4">শিক্ষকের নোট</h2><div class="space-y-3 text-sm">${studentLogs.length > 0 ? studentLogs.map(log => `<div class="p-2 border rounded-md"><p><strong>${log.type} (${new Date(log.date).toLocaleDateString('bn-BD')}):</strong> ${log.details}</p></div>`).join('') : '<p>কোনো নোট নেই।</p>'}</div></div><div class="text-center text-xs text-gray-400 mt-8"><p>রিপোর্টটি ${new Date().toLocaleString('bn-BD')} তারিখে তৈরি করা হয়েছে।</p></div></body></html>`;
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        // Old printStudentProfile function removed - replaced with printStudentDetail
+        
+        // Function to get current student ID from modal
+        function getCurrentStudentId() {
+            return currentStudentIdForProfile;
         }
 
         // --- TARBIYAH GOALS FUNCTIONS ---
@@ -2561,13 +2991,15 @@
             window.closeInactiveStudentsModal = closeInactiveStudentsModal;
             window.filterStudentsByTier = filterStudentsByTier;
             window.clearStudentFilter = clearStudentFilter;
-            window.printStudentProfile = printStudentProfile;
+            // window.printStudentProfile = printStudentProfile; // Removed old function
+            window.printStudentDetail = printStudentDetail;
             window.updateTarbiyahGoal = updateTarbiyahGoal;
             window.saveTarbiyahGoals = saveTarbiyahGoals;
             window.initTeachersCorner = initTeachersCorner;
             window.loadClassMapping = loadClassMapping;
             window.loadStudentsFromMainApp = loadStudentsFromMainApp;
             window.loadAttendanceFromMainApp = loadAttendanceFromMainApp;
+            window.getCurrentStudentId = getCurrentStudentId;
             
             console.log('✅ Teachers Corner functions exported to global scope');
             console.log('🔍 Available functions:', Object.keys(window).filter(key => 
