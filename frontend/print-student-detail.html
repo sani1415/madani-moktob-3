@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Detail Print - Madani Maktab</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+        }
+        
+        body {
+            font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .print-header {
+            text-align: center;
+            border-bottom: 3px solid #2c5aa0;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .school-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin: 0;
+        }
+        
+        .school-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin: 5px 0 0 0;
+        }
+        
+        .student-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: #2c5aa0;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2c5aa0;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+        }
+        
+        .status-active {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .status-inactive {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        
+        .attendance-table th,
+        .attendance-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .attendance-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .present { background: #d4edda; }
+        .absent { background: #f8d7da; }
+        .leave { background: #fff3cd; }
+        .holiday { background: #e2e3e5; }
+        
+        .teacher-logs {
+            margin: 20px 0;
+        }
+        
+        .log-entry {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .log-type {
+            font-weight: bold;
+            color: #17a2b8;
+        }
+        
+        .log-date {
+            color: #666;
+        }
+        
+        .log-details {
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .score-history {
+            margin: 20px 0;
+        }
+        
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            margin-bottom: 8px;
+            border-radius: 5px;
+        }
+        
+        .score-change {
+            font-weight: bold;
+        }
+        
+        .score-increase { color: #28a745; }
+        .score-decrease { color: #dc3545; }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #2c5aa0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .print-button:hover {
+            background: #1e3a5f;
+        }
+        
+        @media print {
+            .print-button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Print</button>
+    
+    <!-- Header -->
+    <div class="print-header">
+        <h1 class="school-name">মাদানি মক্তব</h1>
+        <p class="school-subtitle">ইসলামিক স্কুল অ্যাটেনডেন্স ম্যানেজমেন্ট সিস্টেম</p>
+        <p class="school-subtitle">Student Detail Report</p>
+    </div>
+    
+    <!-- Student Title -->
+    <div class="student-title">
+        আহমদ বিন মোহাম্মদ আলী - নুরানি ১ম শ্রেণী
+    </div>
+    
+    <!-- Basic Information Grid -->
+    <div class="info-grid">
+        <!-- Personal Information -->
+        <div class="info-section">
+            <h3 class="section-title">ব্যক্তিগত তথ্য</h3>
+            <div class="info-row">
+                <span class="info-label">পূর্ণ নাম:</span>
+                <span class="info-value">আহমদ বিন মোহাম্মদ আলী</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">রোল নম্বর:</span>
+                <span class="info-value">001</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">শ্রেণী:</span>
+                <span class="info-value">নুরানি ১ম</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">নিবন্ধনের তারিখ:</span>
+                <span class="info-value">2024-01-15</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">অবস্থা:</span>
+                <span class="info-value status-active">সক্রিয়</span>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="info-section">
+            <h3 class="section-title">যোগাযোগের তথ্য</h3>
+            <div class="info-row">
+                <span class="info-label">মোবাইল নম্বর:</span>
+                <span class="info-value">01712345678</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">জেলা:</span>
+                <span class="info-value">ঢাকা</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">উপজেলা:</span>
+                <span class="info-value">মোহাম্মদপুর</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ঠিকানা:</span>
+                <span class="info-value">মোহাম্মদপুর, ঢাকা</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Overview -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-number">85%</div>
+            <div class="stat-label">উপস্থিতি হার</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">85</div>
+            <div class="stat-label">হুসনুল খুলুক</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">5</div>
+            <div class="stat-label">শিক্ষকের নোট</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">নুরানি ১ম</div>
+            <div class="stat-label">বর্তমান শ্রেণী</div>
+        </div>
+    </div>
+    
+    <!-- Attendance Summary -->
+    <div class="info-section">
+        <h3 class="section-title">উপস্থিতি সারসংক্ষেপ</h3>
+        <div class="info-grid">
+            <div>
+                <div class="info-row">
+                    <span class="info-label">মোট উপস্থিত:</span>
+                    <span class="info-value">24 দিন</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">মোট অনুপস্থিত:</span>
+                    <span class="info-value">3 দিন</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-row">
+                    <span class="info-label">ছুটির দিন:</span>
+                    <span class="info-value">2 দিন</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">উপস্থিতির হার:</span>
+                    <span class="info-value">85%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Attendance -->
+    <div class="info-section">
+        <h3 class="section-title">সাম্প্রতিক উপস্থিতি (গত 7 দিন)</h3>
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th>তারিখ</th>
+                    <th>দিন</th>
+                    <th>অবস্থা</th>
+                    <th>কারণ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="present">
+                    <td>2024-08-23</td>
+                    <td>শুক্রবার</td>
+                    <td>উপস্থিত</td>
+                    <td>-</td>
+                </tr>
+                <tr class="present">
+                    <td>2024-08-22</td>
+                    <td>বৃহস্পতিবার</td>
+                    <td>উপস্থিত</td>
+                    <td>-</td>
+                </tr>
+                <tr class="absent">
+                    <td>2024-08-21</td>
+                    <td>বুধবার</td>
+                    <td>অনুপস্থিত</td>
+                    <td>অসুস্থ</td>
+                </tr>
+                <tr class="present">
+                    <td>2024-08-20</td>
+                    <td>মঙ্গলবার</td>
+                    <td>উপস্থিত</td>
+                    <td>-</td>
+                </tr>
+                <tr class="present">
+                    <td>2024-08-19</td>
+                    <td>সোমবার</td>
+                    <td>উপস্থিত</td>
+                    <td>-</td>
+                </tr>
+                <tr class="leave">
+                    <td>2024-08-18</td>
+                    <td>রবিবার</td>
+                    <td>ছুটি</td>
+                    <td>পরিবারিক অনুষ্ঠান</td>
+                </tr>
+                <tr class="present">
+                    <td>2024-08-17</td>
+                    <td>শনিবার</td>
+                    <td>উপস্থিত</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Teacher Logs -->
+    <div class="teacher-logs">
+        <h3 class="section-title">শিক্ষকের নোট</h3>
+        
+        <div class="log-entry">
+            <div class="log-header">
+                <span class="log-type">ব্যক্তিগত</span>
+                <span class="log-date">2024-08-20</span>
+            </div>
+            <div class="log-details">
+                আহমদ আজ খুব ভালভাবে পড়েছে। তাকে পুরস্কার দেওয়া হয়েছে। সবাইকে তার উদাহরণ অনুসরণ করতে বলা হয়েছে।
+            </div>
+        </div>
+        
+        <div class="log-entry">
+            <div class="log-header">
+                <span class="log-type">শিক্ষামূলক</span>
+                <span class="log-date">2024-08-15</span>
+            </div>
+            <div class="log-details">
+                নতুন অধ্যায় শুরু করা হয়েছে। আহমদ খুব আগ্রহ সহকারে শিখছে এবং প্রশ্ন করছে। তার আগ্রহ দেখে খুশি লাগছে।
+            </div>
+        </div>
+        
+        <div class="log-entry">
+            <div class="log-header">
+                <span class="log-type">আচরণগত</span>
+                <span class="log-date">2024-08-10</span>
+            </div>
+            <div class="log-details">
+                আজ ক্লাসে একটু বেশি কথা বলেছে। তাকে শাসন করা হয়েছে। আগামীকাল থেকে আরও মনোযোগ সহকারে পড়াশোনা করার প্রতিশ্রুতি দিয়েছে।
+            </div>
+        </div>
+    </div>
+    
+    <!-- Score History -->
+    <div class="score-history">
+        <h3 class="section-title">হুসনুল খুলুক স্কোর ইতিহাস</h3>
+        
+        <div class="score-entry">
+            <span>2024-08-20 - Initial score</span>
+            <span class="score-change score-increase">70 → 85</span>
+        </div>
+        
+        <div class="score-entry">
+            <span>2024-08-18 - ভাল আচরণের জন্য</span>
+            <span class="score-change score-increase">85 → 87</span>
+        </div>
+        
+        <div class="score-entry">
+            <span>2024-08-15 - ক্লাসে মনোযোগ</span>
+            <span class="score-change score-increase">87 → 89</span>
+        </div>
+        
+        <div class="score-entry">
+            <span>2024-08-12 - অসদাচরণ</span>
+            <span class="score-change score-decrease">89 → 87</span>
+        </div>
+        
+        <div class="score-entry">
+            <span>2024-08-10 - ভাল আচরণ</span>
+            <span class="score-change score-increase">87 → 90</span>
+        </div>
+    </div>
+    
+    <!-- Education Progress -->
+    <div class="info-section">
+        <h3 class="section-title">শিক্ষা অগ্রগতি</h3>
+        <div class="info-grid">
+            <div>
+                <div class="info-row">
+                    <span class="info-label">বিষয়:</span>
+                    <span class="info-value">নুরানি</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">বই:</span>
+                    <span class="info-value">নুরানি কিতাব</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-row">
+                    <span class="info-label">মোট পৃষ্ঠা:</span>
+                    <span class="info-value">50</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">সম্পন্ন পৃষ্ঠা:</span>
+                    <span class="info-value">35 (70%)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>এই রিপোর্টটি মাদানি মক্তব সিস্টেম থেকে তৈরি করা হয়েছে</p>
+        <p>তারিখ: 2024-08-23 | সময়: 17:30</p>
+        <p>প্রতিবেদন তৈরি করেছেন: সিস্টেম অ্যাডমিন</p>
+    </div>
+    
+    <script>
+        // Add any JavaScript functionality here if needed
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('bn-BD');
+        }
+        
+        function formatTime(time) {
+            return new Date(time).toLocaleTimeString('bn-BD');
+        }
+    </script>
+</body>
+</html>

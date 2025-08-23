@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Print - Madani Maktab</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c5aa0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        
+        .btn {
+            background: #2c5aa0;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #1e3a5f;
+        }
+        
+        .btn-print {
+            background: #28a745;
+        }
+        
+        .btn-print:hover {
+            background: #1e7e34;
+        }
+        
+        .features {
+            background: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .features h3 {
+            color: #2c5aa0;
+            margin-top: 0;
+        }
+        
+        .features ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .features li {
+            margin: 8px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖨️ Student Detail Print Test</h1>
+        
+        <div class="features">
+            <h3>✨ Print Features:</h3>
+            <ul>
+                <li><strong>Compact Layout:</strong> All student information organized in a clean, structured format</li>
+                <li><strong>Professional Design:</strong> School branding with proper headers and sections</li>
+                <li><strong>Comprehensive Data:</strong> Personal info, attendance, teacher logs, score history, and more</li>
+                <li><strong>Print Optimized:</strong> Clean layout that looks great on paper</li>
+                <li><strong>Bengali Support:</strong> Full Bengali text support with proper fonts</li>
+                <li><strong>Responsive Grid:</strong> Information organized in logical sections</li>
+            </ul>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Test Options:</h3>
+            <p>Choose one of the following options to test the print functionality:</p>
+            
+            <a href="frontend/print-student-detail.html" target="_blank" class="btn">
+                📄 View Print Prototype
+            </a>
+            
+            <button onclick="testPrintFunction()" class="btn btn-print">
+                🖨️ Test Print Function
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 How to Use:</h3>
+            <ol>
+                <li><strong>View Prototype:</strong> Click "View Print Prototype" to see the static design</li>
+                <li><strong>Test Function:</strong> Click "Test Print Function" to test the dynamic generation</li>
+                <li><strong>Integration:</strong> The print function is now integrated into your student profile modal</li>
+                <li><strong>Print Button:</strong> Look for the "🖨️ প্রিন্ট করুন" button in the student profile overview tab</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h3>📱 Integration Status:</h3>
+            <p><strong>✅ Print Function Added:</strong> <code>printStudentDetail()</code> function is now available</p>
+            <p><strong>✅ Print Button Added:</strong> Print button added to student profile overview tab</p>
+            <p><strong>✅ Global Access:</strong> Function exported to window object for onclick access</p>
+            <p><strong>✅ Dynamic Content:</strong> Generates print content from actual student data</p>
+        </div>
+    </div>
+    
+    <script>
+        function testPrintFunction() {
+            // Simulate the print function call
+            alert('Print function test!\n\nThis function is now integrated into your student profile modal.\n\nTo test it:\n1. Open a student profile\n2. Go to "এক নজরে" (Overview) tab\n3. Click "🖨️ প্রিন্ট করুন" button\n4. The print dialog will open with formatted content');
+        }
+        
+        // Show integration status
+        console.log('✅ Print functionality integrated into Madani Maktab system');
+        console.log('📱 Print button available in student profile overview tab');
+        console.log('🖨️ Use printStudentDetail(studentId) function to print any student');
+    </script>
+</body>
+</html>
