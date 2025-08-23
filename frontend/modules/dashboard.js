@@ -155,6 +155,9 @@ async function updateDashboard() {
     // Update class-wise information
     updateClassWiseStats();
     
+    // Update performance metrics
+    updatePerformanceMetrics();
+    
     // Update Hijri date display
     if (typeof updateDashboardWithHijri === 'function') {
         updateDashboardWithHijri();
@@ -233,10 +236,13 @@ function updateTodayOverview() {
     overviewDiv.innerHTML = html;
 }
 
-function updateClassWiseStats() {
-    // Use local date methods to avoid timezone issues (same as attendance module)
-    const today = getTodayString();
-    const todayAttendance = attendance[today] || {};
+async function updateClassWiseStats() {
+    try {
+        console.log('🔄 Updating class-wise stats...');
+        
+        // Use local date methods to avoid timezone issues (same as attendance module)
+        const today = getTodayString();
+        const todayAttendance = attendance[today] || {};
     
     // Use date-aware filtering to get students who were active on today's date
     const activeStudentsForToday = students.filter(student => {
@@ -266,8 +272,12 @@ function updateClassWiseStats() {
                 total: 0,
                 present: 0,
                 absent: 0,
-                inactive: 0, // <-- Add inactive counter
-                rate: 0
+                inactive: 0,
+                rate: 0,
+                averageScore: 0,
+                mustaidCount: 0,
+                mutawassitCount: 0,
+                mujtahidCount: 0
             };
         }
     });
@@ -280,7 +290,12 @@ function updateClassWiseStats() {
                     total: 0,
                     present: 0,
                     absent: 0,
-                    rate: 0
+                    inactive: 0,
+                    rate: 0,
+                    averageScore: 0,
+                    mustaidCount: 0,
+                    mutawassitCount: 0,
+                    mujtahidCount: 0
                 };
             }
         });
@@ -317,6 +332,53 @@ function updateClassWiseStats() {
             classData.rate = Math.round((classData.present / classData.total) * 100);
         }
     });
+
+    // Calculate performance metrics for each class
+    const classPromises = Object.keys(classSummary).map(async (className) => {
+        const classStudents = students.filter(student => 
+            student.class === className && student.status === 'active'
+        );
+        
+        if (classStudents.length > 0) {
+            // Fetch scores for all students in this class
+            const scorePromises = classStudents.map(async (student) => {
+                try {
+                    const response = await fetch(`/api/student-scores/${student.id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.score || 0;
+                    }
+                    return 0;
+                } catch (error) {
+                    console.error(`❌ Error fetching score for student ${student.id}:`, error);
+                    return 0;
+                }
+            });
+            
+            const scores = await Promise.all(scorePromises);
+            const validScores = scores.filter(score => score > 0);
+            
+            if (validScores.length > 0) {
+                // Calculate average score
+                const totalScore = validScores.reduce((sum, score) => sum + score, 0);
+                classSummary[className].averageScore = Math.round(totalScore / validScores.length);
+                
+                // Categorize students into performance tiers
+                validScores.forEach(score => {
+                    if (score >= 80) {
+                        classSummary[className].mustaidCount++;
+                    } else if (score >= 60) {
+                        classSummary[className].mutawassitCount++;
+                    } else {
+                        classSummary[className].mujtahidCount++;
+                    }
+                });
+            }
+        }
+    });
+    
+    // Wait for all class calculations to complete
+    await Promise.all(classPromises);
     
     // Sort classes by name for consistent display
     const sortedClasses = Object.keys(classSummary).sort((a, b) => {
@@ -326,37 +388,51 @@ function updateClassWiseStats() {
         return a.localeCompare(b);
     });
     
-    // Render class-wise stats
-    const classWiseGrid = document.getElementById('classWiseGrid');
-    if (classWiseGrid) {
-        // Only show classes that have at least one ACTIVE student
-        classWiseGrid.innerHTML = sortedClasses
-            .filter(className => classSummary[className].total > 0) 
-            .map(className => {
-                const data = classSummary[className];
-                return `
-                    <div class="class-stat-card">
-                        <h4>${className}</h4>
-                        <div class="class-stats">
-                            <span>${t('totalStudentsLabel')} (Active):</span>
-                            <span class="stat-number">${data.total}</span>
-                        </div>
-                        <div class="class-stats">
-                            <span>${t('presentLabel')}:</span>
-                            <span class="stat-number" style="color: #27ae60;">${data.present}</span>
-                        </div>
-                        <div class="class-stats">
-                            <span>${t('absentLabel')}:</span>
-                            <span class="stat-number" style="color: #e74c3c;">${data.absent}</span>
-                        </div>
-                        <div class="class-stats">
-                            <span>${t('inactiveStudents')}:</span>
-                            <span class="stat-number" style="color: #6c757d;">${data.inactive}</span>
-                        </div>
-                        <div class="class-attendance-rate">${data.rate}% ${t('attendanceLabel')}</div>
-                    </div>
-                `;
-            }).join('');
+        // Render class-wise stats table
+        const tableBody = document.getElementById('classWiseTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = sortedClasses
+                .filter(className => classSummary[className].total > 0)
+                .map(className => {
+                    const data = classSummary[className];
+                    
+                    // Determine attendance rate color class
+                    let rateColorClass = 'attendance-low';
+                    if (data.rate >= 80) rateColorClass = 'attendance-high';
+                    else if (data.rate >= 60) rateColorClass = 'attendance-medium';
+                    
+                    // Determine score color class
+                    let scoreColorClass = 'score-poor';
+                    if (data.averageScore >= 80) scoreColorClass = 'score-excellent';
+                    else if (data.averageScore >= 60) scoreColorClass = 'score-average';
+                    
+                    // Debug logging for average score
+                    console.log(`Class: ${className}, Average Score: ${data.averageScore}, Valid: ${data.averageScore > 0}, Type: ${typeof data.averageScore}`);
+                    
+                    // Also log the entire data object for debugging
+                    console.log(`Class ${className} data:`, data);
+                    
+                    return `
+                        <tr>
+                            <td>${className}</td>
+                            <td>${data.total}</td>
+                            <td style="color: #27ae60;">${data.present}</td>
+                            <td style="color: #e74c3c;">${data.absent}</td>
+                            <td class="${rateColorClass}">${data.rate}%</td>
+                            <td style="color: #f39c12;">${data.inactive}</td>
+                            <td class="${scoreColorClass}" style="border: 1px solid #ddd; background-color: #f9f9f9;">${data.averageScore > 0 ? data.averageScore : 'N/A'}</td>
+                            <td style="color: #27ae60;">${data.mustaidCount}</td>
+                            <td style="color: #f39c12;">${data.mutawassitCount}</td>
+                            <td style="color: #e74c3c;">${data.mujtahidCount}</td>
+                        </tr>
+                    `;
+                }).join('');
+        }
+        
+        console.log('✅ Class-wise stats updated successfully');
+        
+    } catch (error) {
+        console.error('❌ Error updating class-wise stats:', error);
     }
 }
 
@@ -475,4 +551,76 @@ async function refreshAttendanceData() {
     }
 }
 
-export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData }
+// Function to update performance metrics (overall average score and tier distribution)
+async function updatePerformanceMetrics() {
+    try {
+        console.log('🔄 Updating performance metrics...');
+        
+        // Get all active students
+        const activeStudents = students.filter(student => student.status === 'active');
+        
+        if (activeStudents.length === 0) {
+            console.log('⚠️ No active students found for performance metrics');
+            return;
+        }
+        
+        // Fetch scores for all active students
+        const scorePromises = activeStudents.map(async (student) => {
+            try {
+                const response = await fetch(`/api/student-scores/${student.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.score || 0;
+                }
+                return 0;
+            } catch (error) {
+                console.error(`❌ Error fetching score for student ${student.id}:`, error);
+                return 0;
+            }
+        });
+        
+        const scores = await Promise.all(scorePromises);
+        const validScores = scores.filter(score => score > 0);
+        
+        if (validScores.length === 0) {
+            console.log('⚠️ No valid scores found for performance metrics');
+            return;
+        }
+        
+        // Categorize students into performance tiers
+        let mustaidCount = 0;    // ≥80: Excellent (Green)
+        let mutawassitCount = 0; // 60-79: Average (Orange)
+        let mujtahidCount = 0;   // <60: Needs Improvement (Red)
+        
+        validScores.forEach(score => {
+            if (score >= 80) {
+                mustaidCount++;
+            } else if (score >= 60) {
+                mutawassitCount++;
+            } else {
+                mujtahidCount++;
+            }
+        });
+        
+        // Update DOM elements
+        const mustaidElement = document.getElementById('mustaidCount');
+        const mutawassitElement = document.getElementById('mutawassitCount');
+        const mujtahidElement = document.getElementById('mujtahidCount');
+        
+        if (mustaidElement) mustaidElement.textContent = mustaidCount;
+        if (mutawassitElement) mutawassitElement.textContent = mutawassitCount;
+        if (mujtahidElement) mujtahidElement.textContent = mujtahidCount;
+        
+        console.log('✅ Performance metrics updated successfully:', {
+            mustaidCount,
+            mutawassitCount,
+            mujtahidCount,
+            totalStudents: validScores.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating performance metrics:', error);
+    }
+}
+
+export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData, updatePerformanceMetrics }
