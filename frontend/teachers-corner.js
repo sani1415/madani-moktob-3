@@ -708,7 +708,7 @@
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
                                 <h4 class="font-semibold text-gray-800">
-                                    <span class="clickable-name" onclick="showStudentProfile('${student.id}').catch(console.error)" style="cursor: pointer; color: #3498db;">
+                                    <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'teachers-corner')" style="cursor: pointer; color: #3498db;">
                                         ${student.name} বিন ${student.fatherName}
                                     </span>
                                 </h4>
@@ -1074,7 +1074,7 @@
                 let scoreClass = 'score-attention';
                 if (score >= 80) scoreClass = 'score-good';
                 else if (score >= 60) scoreClass = 'score-average';
-                return `<tr class="border-b hover:bg-gray-50"><td class="px-4 py-2 text-center"><span onclick="editHusnulKhuluk('${s.id}', ${score})" class="score-badge ${scoreClass}" title="স্কোর পরিবর্তন করুন">${score}</span></td><td class="px-4 py-2 font-medium">${s.rollNumber}</td><td onclick="showStudentProfile('${s.id}').catch(console.error)" class="px-4 py-2 text-blue-600 hover:underline cursor-pointer">${s.name}</td></tr>`;
+                return `<tr class="border-b hover:bg-gray-50"><td class="px-4 py-2 text-center"><span onclick="editHusnulKhuluk('${s.id}', ${score})" class="score-badge ${scoreClass}" title="স্কোর পরিবর্তন করুন">${score}</span></td><td class="px-4 py-2 font-medium">${s.rollNumber}</td><td onclick="showStudentDetail('${s.id}', 'teachers-corner')" class="px-4 py-2 text-blue-600 hover:underline cursor-pointer">${s.name}</td></tr>`;
             }).join('');
         }
         
@@ -1710,7 +1710,7 @@
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
                                 <h4 class="font-semibold text-gray-800">
-                                    <span class="clickable-name" onclick="showStudentProfile('${student.id}').catch(console.error)" style="cursor: pointer; color: #3498db;">
+                                    <span class="clickable-name" onclick="showStudentDetail('${student.id}', 'teachers-corner')" style="cursor: pointer; color: #3498db;">
                                         ${student.name} বিন ${student.fatherName}
                                     </span>
                                 </h4>

@@ -100,7 +100,14 @@ except Exception as e:
 # ✅ Serve frontend files with correct path
 @app.route('/')
 def serve_index():
-    return send_from_directory(FRONTEND_PATH, 'index.html')
+    logger.info(f"🔍 Serving index.html from: {FRONTEND_PATH}")
+    logger.info(f"🔍 FRONTEND_PATH exists: {os.path.exists(FRONTEND_PATH)}")
+    logger.info(f"🔍 index.html exists: {os.path.exists(os.path.join(FRONTEND_PATH, 'index.html'))}")
+    try:
+        return send_from_directory(FRONTEND_PATH, 'index.html')
+    except Exception as e:
+        logger.error(f"❌ Error serving index.html: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/test-books')
 def test_books():

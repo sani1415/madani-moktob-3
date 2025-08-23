@@ -405,13 +405,37 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
             console.log(`${filteredStudents.length} students to process.`);
             
             const reportData = filteredStudents.map(student => {
-                const stats = calculateStudentAttendanceStats(student, startDate, endDate);
-        return {
+                // Simple attendance calculation for reports
+                let present = 0, absent = 0, leave = 0, totalSchoolDays = 0;
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    if (isHoliday(dateStr)) continue;
+                    if (!attendance[dateStr] || Object.keys(attendance[dateStr]).length === 0) continue;
+                    
+                    totalSchoolDays++;
+                    const record = attendance[dateStr] ? attendance[dateStr][student.id] : null;
+                    
+                    if (record) {
+                        if (record.status === 'present') present++;
+                        else if (record.status === 'absent') absent++;
+                        else if (record.status === 'leave') leave++;
+                    } else {
+                        absent++;
+                    }
+                }
+                
+                const attendanceRate = totalSchoolDays > 0 ? Math.round((present / (totalSchoolDays - leave)) * 100) : 0;
+                
+                return {
                     ...student,
-                    presentDays: stats.present,
-                    absentDays: stats.absent,
-                    leaveDays: stats.leave,
-                    attendanceRate: stats.attendanceRate
+                    presentDays: present,
+                    absentDays: absent,
+                    leaveDays: leave,
+                    attendanceRate: isNaN(attendanceRate) ? 0 : attendanceRate
                 };
             }).sort((a, b) => {
                 const classA = getClassNumber(a.class);
