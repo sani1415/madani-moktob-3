@@ -804,6 +804,27 @@ body {
     background-color: rgba(231, 76, 60, 0.1);
 }
 
+/* Loading Indicator Styles */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 16px;
+    gap: 15px;
+}
+
+.loading-indicator i {
+    font-size: 24px;
+    color: #3498db;
+}
+
+.loading-indicator span {
+    font-weight: 500;
+}
+
 /* Student Detail Styles */
 .student-detail-header {
     display: flex;

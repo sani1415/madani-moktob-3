@@ -333,52 +333,57 @@ async function updateClassWiseStats() {
         }
     });
 
-    // Calculate performance metrics for each class
-    const classPromises = Object.keys(classSummary).map(async (className) => {
-        const classStudents = students.filter(student => 
-            student.class === className && student.status === 'active'
-        );
-        
-        if (classStudents.length > 0) {
-            // Fetch scores for all students in this class
-            const scorePromises = classStudents.map(async (student) => {
-                try {
-                    const response = await fetch(`/api/student-scores/${student.id}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.score || 0;
+    // Fetch all student scores in one batch API call
+    console.log('🔄 Fetching all student scores in batch...');
+    try {
+        const response = await fetch('/api/all-student-scores');
+        if (response.ok) {
+            const scoresData = await response.json();
+            const allScores = scoresData.scores || {};
+            
+            console.log(`✅ Fetched scores for ${scoresData.scores_fetched} students in batch`);
+            
+            // Calculate performance metrics for each class using batch data
+            Object.keys(classSummary).forEach(className => {
+                const classStudents = students.filter(student => 
+                    student.class === className && student.status === 'active'
+                );
+                
+                if (classStudents.length > 0) {
+                    const classScores = [];
+                    
+                    // Get scores for students in this class from batch data
+                    classStudents.forEach(student => {
+                        const studentScoreData = allScores[student.id];
+                        if (studentScoreData && studentScoreData.score > 0) {
+                            classScores.push(studentScoreData.score);
+                        }
+                    });
+                    
+                    if (classScores.length > 0) {
+                        // Calculate average score
+                        const totalScore = classScores.reduce((sum, score) => sum + score, 0);
+                        classSummary[className].averageScore = Math.round(totalScore / classScores.length);
+                        
+                        // Categorize students into performance tiers
+                        classScores.forEach(score => {
+                            if (score >= 80) {
+                                classSummary[className].mustaidCount++;
+                            } else if (score >= 60) {
+                                classSummary[className].mutawassitCount++;
+                            } else {
+                                classSummary[className].mujtahidCount++;
+                            }
+                        });
                     }
-                    return 0;
-                } catch (error) {
-                    console.error(`❌ Error fetching score for student ${student.id}:`, error);
-                    return 0;
                 }
             });
-            
-            const scores = await Promise.all(scorePromises);
-            const validScores = scores.filter(score => score > 0);
-            
-            if (validScores.length > 0) {
-                // Calculate average score
-                const totalScore = validScores.reduce((sum, score) => sum + score, 0);
-                classSummary[className].averageScore = Math.round(totalScore / validScores.length);
-                
-                // Categorize students into performance tiers
-                validScores.forEach(score => {
-                    if (score >= 80) {
-                        classSummary[className].mustaidCount++;
-                    } else if (score >= 60) {
-                        classSummary[className].mutawassitCount++;
-                    } else {
-                        classSummary[className].mujtahidCount++;
-                    }
-                });
-            }
+        } else {
+            console.error('❌ Failed to fetch batch scores:', response.status);
         }
-    });
-    
-    // Wait for all class calculations to complete
-    await Promise.all(classPromises);
+    } catch (error) {
+        console.error('❌ Error fetching batch scores:', error);
+    }
     
     // Sort classes by name for consistent display
     const sortedClasses = Object.keys(classSummary).sort((a, b) => {
@@ -388,6 +393,13 @@ async function updateClassWiseStats() {
         return a.localeCompare(b);
     });
     
+        // Show table and hide loading indicator
+        const loadingIndicator = document.getElementById('classStatsLoading');
+        const statsTable = document.getElementById('classStatsTable');
+        
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        if (statsTable) statsTable.style.display = 'table';
+        
         // Render class-wise stats table
         const tableBody = document.getElementById('classWiseTableBody');
         if (tableBody) {
@@ -420,7 +432,7 @@ async function updateClassWiseStats() {
                             <td style="color: #e74c3c;">${data.absent}</td>
                             <td class="${rateColorClass}">${data.rate}%</td>
                             <td style="color: #f39c12;">${data.inactive}</td>
-                            <td class="${scoreColorClass}" style="border: 1px solid #ddd; background-color: #f9f9f9;">${data.averageScore > 0 ? data.averageScore : 'N/A'}</td>
+                            <td class="${scoreColorClass}">${data.averageScore > 0 ? data.averageScore : 'N/A'}</td>
                             <td style="color: #27ae60;">${data.mustaidCount}</td>
                             <td style="color: #f39c12;">${data.mutawassitCount}</td>
                             <td style="color: #e74c3c;">${data.mujtahidCount}</td>
