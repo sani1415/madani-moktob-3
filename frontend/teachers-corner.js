@@ -169,10 +169,11 @@
         }
         // New clean education system - will be populated from main app database
         let allEducationProgress = [];
-        let teachersLogbook = JSON.parse(localStorage.getItem('teachersLogbook_v3')) || {};
-        let studentScores = JSON.parse(localStorage.getItem('studentScores_v3')) || {};
-        let scoreChangeHistory = JSON.parse(localStorage.getItem('scoreChangeHistory_v1')) || {};
-        let tarbiyahGoals = JSON.parse(localStorage.getItem('tarbiyahGoals_v1')) || {};
+        // Remove localStorage dependencies and use database instead
+        let teachersLogbook = {}; // Will be loaded from database
+        let studentScores = {}; // Will be loaded from database
+        let scoreChangeHistory = {}; // Will be loaded from database
+        let tarbiyahGoals = JSON.parse(localStorage.getItem('tarbiyahGoals_v1')) || {}; // Keep this for now
 
         // --- GLOBAL STATE ---
         let currentClass = null; let currentLogTab = 'class'; let currentStudentIdForProfile = null;
@@ -214,7 +215,110 @@
             };
         }
         
-
+        // --- DATABASE INTEGRATION FUNCTIONS ---
+        
+        // Load teacher logs from database
+        async function loadTeacherLogsFromDatabase(className) {
+            try {
+                const response = await fetch(`/api/teacher-logs?class=${encodeURIComponent(className)}`);
+                if (response.ok) {
+                    const logs = await response.json();
+                    console.log(`✅ Loaded ${logs.length} teacher logs for class: ${className}`);
+                    
+                    // Convert database format to local format for compatibility
+                    teachersLogbook[className] = { class_logs: [], student_logs: {} };
+                    
+                    logs.forEach(log => {
+                        if (log.student_id) {
+                            // Student-specific log
+                            if (!teachersLogbook[className].student_logs[log.student_id]) {
+                                teachersLogbook[className].student_logs[log.student_id] = [];
+                            }
+                            teachersLogbook[className].student_logs[log.student_id].push({
+                                id: log.id,
+                                type: log.log_type,
+                                details: log.details,
+                                date: log.created_at,
+                                isImportant: log.is_important,
+                                needsFollowup: log.needs_followup,
+                                studentId: log.student_id,
+                                student_id: log.student_id  // Add both for compatibility
+                            });
+                        } else {
+                            // Class log
+                            teachersLogbook[className].class_logs.push({
+                                id: log.id,
+                                type: log.log_type,
+                                details: log.details,
+                                date: log.created_at,
+                                isImportant: log.is_important,
+                                needsFollowup: log.needs_followup
+                            });
+                        }
+                    });
+                    
+                    return true;
+                } else {
+                    console.error('❌ Failed to load teacher logs from database');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error loading teacher logs:', error);
+                return false;
+            }
+        }
+        
+        // Load student scores from database
+        async function loadStudentScoresFromDatabase(className) {
+            try {
+                const response = await fetch(`/api/students-with-scores?class=${encodeURIComponent(className)}`);
+                if (response.ok) {
+                    const studentsWithScores = await response.json();
+                    console.log(`✅ Loaded ${studentsWithScores.length} student scores for class: ${className}`);
+                    
+                    // Update local studentScores object
+                    studentsWithScores.forEach(student => {
+                        studentScores[student.id] = student.current_score || 70;
+                    });
+                    
+                    return true;
+                } else {
+                    console.error('❌ Failed to load student scores from database');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error loading student scores:', error);
+                return false;
+            }
+        }
+        
+        // Load score change history from database
+        async function loadScoreHistoryFromDatabase(studentId) {
+            try {
+                const response = await fetch(`/api/student-scores/${studentId}/history`);
+                if (response.ok) {
+                    const history = await response.json();
+                    console.log(`✅ Loaded ${history.length} score changes for student: ${studentId}`);
+                    
+                    // Convert database format to local format
+                    scoreChangeHistory[studentId] = history.map(change => ({
+                        date: change.changed_at,
+                        oldScore: change.old_score,
+                        newScore: change.new_score,
+                        reason: change.change_reason || 'কোন কারণ উল্লেখ করা হয়নি',
+                        changedBy: 'শিক্ষক'
+                    }));
+                    
+                    return true;
+                } else {
+                    console.error('❌ Failed to load score history from database');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error loading score history:', error);
+                return false;
+            }
+        }
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -509,6 +613,11 @@
             
             console.log(`🔄 Converted ${allEducationProgress.length} books to education progress format:`, allEducationProgress);
             
+            // Load teacher logs and student scores from database
+            console.log('📝 Loading teacher logs and student scores from database...');
+            await loadTeacherLogsFromDatabase(className);
+            await loadStudentScoresFromDatabase(className);
+            
             // Render dashboard with real data
                 console.log('🎨 Starting to render dashboard components...');
             renderTodaySummary(activeStudentsInClass);
@@ -551,30 +660,15 @@
 
         // --- DATA CALCULATION ---
         function getHusnulKhulukScore(studentId) {
-            // Try to get score from localStorage first (for persistence)
-            if (!studentScores[studentId]) {
-                // Load from main app database if available
-                loadStudentScoreFromMainApp(studentId);
-                // Return a default score for now
-                return 70; // Default score
-            }
+            // Get score from local studentScores object (loaded from database)
+            if (studentScores[studentId] !== undefined) {
             return studentScores[studentId];
         }
-        
-        // Function to load student score from main app
-        async function loadStudentScoreFromMainApp(studentId) {
-            try {
-                // For now, we'll use localStorage, but this can be connected to your database later
-                if (!studentScores[studentId]) {
-                    studentScores[studentId] = 70; // Default score
-                    localStorage.setItem('studentScores_v3', JSON.stringify(studentScores));
-                }
-            } catch (error) {
-                console.error('Error loading student score:', error);
-                // Fallback to default score
-                studentScores[studentId] = 70;
-            }
+            // Return default score if not loaded yet
+            return 70;
         }
+        
+
 
         function editHusnulKhuluk(studentId, currentScore) {
             const scoreStudentId = document.getElementById('score-student-id');
@@ -656,31 +750,54 @@
             const studentId = scoreStudentId.value;
             const newScore = newScoreElement.value;
             const changeReason = changeReasonElement.value;
-            const oldScore = studentScores[studentId] || 0;
             
             if (newScore !== null && !isNaN(newScore) && newScore >= 0 && newScore <= 100) {
-                // Log the score change
-                if (!scoreChangeHistory[studentId]) {
-                    scoreChangeHistory[studentId] = [];
-                }
-                scoreChangeHistory[studentId].push({
-                    date: new Date().toISOString(),
-                    oldScore: oldScore,
-                    newScore: parseInt(newScore),
-                    reason: changeReason || 'কোন কারণ উল্লেখ করা হয়নি',
-                    changedBy: 'শিক্ষক'
+                // Save score to database
+                updateScoreInDatabase(studentId, parseInt(newScore), changeReason);
+            } else {
+                alert("অনুগ্রহ করে ০ থেকে ১০০ এর মধ্যে একটি নাম্বার দিন।");
+            }
+        }
+        
+        // Update score in database
+        async function updateScoreInDatabase(studentId, newScore, reason) {
+            try {
+                const response = await fetch(`/api/student-scores/${studentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        new_score: newScore,
+                        reason: reason || 'কোন কারণ উল্লেখ করা হয়নি'
+                    })
                 });
                 
-                studentScores[studentId] = parseInt(newScore);
-                localStorage.setItem('studentScores_v3', JSON.stringify(studentScores));
-                localStorage.setItem('scoreChangeHistory_v1', JSON.stringify(scoreChangeHistory));
-                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Score updated successfully:', result);
+                    
+                    // Update local score
+                    studentScores[studentId] = newScore;
+                    
+                    // Reload score history from database
+                    await loadScoreHistoryFromDatabase(studentId);
+                    
+                    // Refresh display
                 const activeStudentsInClass = getActiveStudentsForClass(currentClass);
                 renderClassStudentList(activeStudentsInClass);
                 renderClassOverview(activeStudentsInClass);
+                    
                 closeScoreModal();
+                    alert('স্কোর সফলভাবে আপডেট হয়েছে।');
             } else {
-                alert("অনুগ্রহ করে ০ থেকে ১০০ এর মধ্যে একটি নাম্বার দিন।");
+                    const error = await response.json();
+                    console.error('❌ Failed to update score:', error);
+                    alert('স্কোর আপডেট করতে সমস্যা হয়েছে।');
+                }
+            } catch (error) {
+                console.error('❌ Error updating score:', error);
+                alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
             }
         }
 
@@ -1210,34 +1327,101 @@
                 return;
             }
             
+            console.log('🔍 Rendering teacher logbook for class:', currentClass);
+            console.log('🔍 Current log tab:', currentLogTab);
+            console.log('🔍 Teachers logbook data:', teachersLogbook[currentClass]);
+            
             if (!teachersLogbook[currentClass]) teachersLogbook[currentClass] = { class_logs: [], student_logs: {} };
-            let logsToShow = currentLogTab === 'class' ? teachersLogbook[currentClass].class_logs : Object.values(teachersLogbook[currentClass].student_logs).flat();
-            logsToShow.sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (logsToShow.length === 0) {
-                displayEl.innerHTML = `<p class="text-center text-sm text-gray-500 p-4">কোনো নোট পাওয়া যায়নি।</p>`; return;
+            
+            // Get logs based on current tab
+            let logsToShow = [];
+            let logTitle = '';
+            
+            if (currentLogTab === 'class') {
+                logsToShow = teachersLogbook[currentClass].class_logs || [];
+                logTitle = 'শ্রেণী লগ';
+                console.log('📝 Showing class logs:', logsToShow.length);
+            } else {
+                // For student logs, get all student logs and flatten them
+                logsToShow = [];
+                Object.values(teachersLogbook[currentClass].student_logs || {}).forEach(studentLogs => {
+                    logsToShow.push(...studentLogs);
+                });
+                logTitle = 'ছাত্র লগ';
+                console.log('📝 Showing student logs:', logsToShow.length);
             }
-            displayEl.innerHTML = logsToShow.map(log => {
-                const student = log.studentId ? allStudents.find(s => s.id === log.studentId) : null;
-                const priorityFlags = [];
-                if (log.isImportant) priorityFlags.push('<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">গুরুত্বপূর্ণ</span>');
-                if (log.needsFollowup) priorityFlags.push('<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">অনুসরণ প্রয়োজন</span>');
+            
+            logsToShow.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (logsToShow.length === 0) {
+                displayEl.innerHTML = `
+                    <div class="text-center text-sm text-gray-500 p-4">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>কোনো ${logTitle} পাওয়া যায়নি।</p>
+                        <p class="text-xs mt-1">নতুন নোট যোগ করতে উপরের "নতুন নোট" বোতামে ক্লিক করুন।</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Group student logs by student name for better organization
+            if (currentLogTab === 'student') {
+                const studentLogsGrouped = {};
+                logsToShow.forEach(log => {
+                    const student = allStudents.find(s => s.id === log.studentId);
+                    const studentName = student ? student.name : 'Unknown Student';
+                    if (!studentLogsGrouped[studentName]) {
+                        studentLogsGrouped[studentName] = [];
+                    }
+                    studentLogsGrouped[studentName].push(log);
+                });
                 
-                return `<div class="log-entry bg-gray-50 p-3 rounded-md relative ${log.isImportant ? 'border-l-4 border-red-500' : ''}">
+                // Render grouped student logs
+                displayEl.innerHTML = Object.entries(studentLogsGrouped).map(([studentName, studentLogs]) => `
+                    <div class="mb-4 border-l-4 border-blue-500 pl-4">
+                        <h4 class="font-semibold text-blue-700 mb-2">${studentName}</h4>
+                        <div class="space-y-2">
+                            ${studentLogs.map(log => renderLogEntry(log, true)).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                // Render class logs normally
+                displayEl.innerHTML = logsToShow.map(log => renderLogEntry(log, false)).join('');
+            }
+        }
+        
+        function renderLogEntry(log, isStudentLog) {
+            console.log('🔍 Rendering log entry:', log);
+            console.log('🔍 Is student log:', isStudentLog);
+            
+            const student = log.studentId ? allStudents.find(s => s.id === log.studentId) : null;
+            console.log('🔍 Found student:', student);
+            
+            const priorityFlags = [];
+            if (log.isImportant) priorityFlags.push('<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">গুরুত্বপূর্ণ</span>');
+            if (log.needsFollowup) priorityFlags.push('<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">অনুসরণ প্রয়োজন</span>');
+            
+            const logTypeLabel = isStudentLog ? `ছাত্র লগ` : `শ্রেণী লগ`;
+            const studentInfo = student ? ` (${student.name})` : '';
+            
+            return `
+                <div class="log-entry bg-gray-50 p-3 rounded-md relative ${log.isImportant ? 'border-l-4 border-red-500' : 'border-l-4 border-blue-500'}">
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
                             <div class="text-xs text-gray-500 mb-1">
-                                <span><strong>${log.type}</strong> ${student ? `(${student.name})` : ''}</span> - <span>${new Date(log.date).toLocaleDateString('bn-BD')}</span>
+                                <span><strong>${logTypeLabel}${studentInfo}</strong></span> - <span>${new Date(log.date).toLocaleDateString('bn-BD')}</span>
                                 ${priorityFlags.length > 0 ? `<div class="mt-1 flex gap-1">${priorityFlags.join('')}</div>` : ''}
                             </div>
                             <p class="text-sm text-gray-800">${log.details}</p>
                         </div>
                         <div class="log-actions flex gap-2 text-gray-500">
-                            <button onclick="editLog('${log.id}')" class="hover:text-blue-500"><i class="fas fa-edit text-xs"></i></button>
-                            <button onclick="deleteLog('${log.id}')" class="hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
+                            <button onclick="editLog('${log.id}')" class="hover:text-blue-500" title="সম্পাদনা করুন"><i class="fas fa-edit text-xs"></i></button>
+                            <button onclick="deleteLog('${log.id}')" class="hover:text-red-500" title="মুছুন"><i class="fas fa-trash text-xs"></i></button>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>
+            `;
         }
 
         // --- LOGBOOK LOGIC (Same as before) ---
@@ -1252,11 +1436,13 @@
             const logModalTitle = document.getElementById('log-modal-title');
             const logDetails = document.getElementById('log-details');
             const logType = document.getElementById('log-type');
+            const logStudentSelect = document.getElementById('log-student-select');
             const logStudentId = document.getElementById('log-student-id');
             const logImportant = document.getElementById('log-important');
             const logFollowup = document.getElementById('log-followup');
             const logModal = document.getElementById('log-modal');
             
+            // Reset form
             if (logId) logId.value = '';
             if (logModalTitle) logModalTitle.innerText = `"${currentClass}" এর জন্য নতুন নোট`;
             if (logDetails) logDetails.value = '';
@@ -1264,19 +1450,74 @@
             if (logStudentId) logStudentId.value = '';
             if (logImportant) logImportant.checked = false;
             if (logFollowup) logFollowup.checked = false;
+            
+            // Restore student dropdown for class context
+            if (logStudentSelect) {
+                const studentSelectContainer = logStudentSelect.parentElement;
+                if (studentSelectContainer) {
+                    // Restore the original dropdown structure
+                    studentSelectContainer.innerHTML = `
+                        <label for="log-student-select" class="block text-sm font-medium text-gray-700 mb-1">ছাত্র নির্বাচন (ঐচ্ছিক)</label>
+                        <select id="log-student-select" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="">সবাই (শ্রেণী লগ)</option>
+                        </select>
+                        <input type="hidden" id="log-student-id" value="">
+                    `;
+                    
+                    // Re-populate student dropdown
+                    const newStudentSelect = document.getElementById('log-student-select');
+                    if (newStudentSelect) {
+                        // Get students for current class
+                        const classStudents = allStudents.filter(student => student.class === currentClass && student.status === 'active');
+                        
+                        classStudents.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student.id;
+                            option.textContent = `${student.name} (${student.rollNumber})`;
+                            newStudentSelect.appendChild(option);
+                        });
+                    }
+                }
+            }
+            
             if (logModal) logModal.style.display = 'flex';
         }
         function closeLogModal() { 
             const logModal = document.getElementById('log-modal');
             if (logModal) logModal.style.display = 'none';
+            
+            // Restore original form structure for next use
+            const logStudentSelect = document.getElementById('log-student-select');
+            if (logStudentSelect) {
+                const studentSelectContainer = logStudentSelect.parentElement;
+                if (studentSelectContainer) {
+                    // Restore the original dropdown structure
+                    studentSelectContainer.innerHTML = `
+                        <label for="log-student-select" class="block text-sm font-medium text-gray-700 mb-1">ছাত্র নির্বাচন (ঐচ্ছিক)</label>
+                        <select id="log-student-select" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="">সবাই (শ্রেণী লগ)</option>
+                        </select>
+                        <input type="hidden" id="log-student-id" value="">
+                    `;
+                }
+            }
+            
+            // If we were adding a note from student profile, reopen it
+            if (currentStudentIdForProfile) {
+                // Small delay to ensure modal is fully closed
+                setTimeout(() => {
+                    showStudentProfile(currentStudentIdForProfile);
+                }, 100);
+            }
         }
         function saveLogEntry() {
             const logIdElement = document.getElementById('log-id');
-            const logStudentIdElement = document.getElementById('log-student-id');
+            const logStudentSelectElement = document.getElementById('log-student-select');
             const logTypeElement = document.getElementById('log-type');
             const logDetailsElement = document.getElementById('log-details');
             const logImportantElement = document.getElementById('log-important');
             const logFollowupElement = document.getElementById('log-followup');
+            const logStudentIdElement = document.getElementById('log-student-id');
             
             if (!logDetailsElement) {
                 console.error('❌ Required log elements not found');
@@ -1285,109 +1526,292 @@
             
             const logId = logIdElement ? logIdElement.value : '';
             const className = currentClass;
-            const studentId = logStudentIdElement ? logStudentIdElement.value : '';
             const type = logTypeElement ? logTypeElement.value : '';
             const details = logDetailsElement.value;
             const isImportant = logImportantElement ? logImportantElement.checked : false;
             const needsFollowup = logFollowupElement ? logFollowupElement.checked : false;
             
+            // Determine student ID based on context
+            let studentId = '';
+            if (logStudentIdElement && logStudentIdElement.value) {
+                // Student-specific context (from student profile)
+                studentId = logStudentIdElement.value;
+                console.log('🔍 Student-specific context detected, student ID:', studentId);
+            } else if (logStudentSelectElement && logStudentSelectElement.value) {
+                // Class context with student selected
+                studentId = logStudentSelectElement.value;
+                console.log('🔍 Class context with student selected, student ID:', studentId);
+            } else {
+                console.log('🔍 Class-wide context detected, no student selected');
+            }
+            
             if (!details.trim()) { alert('অনুগ্রহ করে বিস্তারিত লিখুন।'); return; }
             
             const logData = { 
-                type, 
+                class_name: className,
+                student_id: studentId || null,
+                log_type: type, 
                 details, 
-                isImportant, 
-                needsFollowup,
-                date: new Date().toISOString() 
+                is_important: isImportant, 
+                needs_followup: needsFollowup
             };
             
+            console.log('📝 Saving log with data:', logData);
+            console.log('🔍 Log type will be:', studentId ? 'STUDENT LOG' : 'CLASS LOG');
+            
             if (logId) {
-                let logFound = false;
-                if (studentId) {
-                    const studentLogs = teachersLogbook[className].student_logs[studentId];
-                    const logIndex = studentLogs.findIndex(l => l.id === logId);
-                    if (logIndex > -1) { 
-                        studentLogs[logIndex] = { ...studentLogs[logIndex], ...logData }; 
-                        logFound = true; 
-                    }
-                } else {
-                    const classLogs = teachersLogbook[className].class_logs;
-                    const logIndex = classLogs.findIndex(l => l.id === logId);
-                    if (logIndex > -1) { 
-                        classLogs[logIndex] = { ...classLogs[logIndex], ...logData }; 
-                        logFound = true; 
-                    }
-                }
+                // Update existing log
+                updateLogInDatabase(logId, logData);
             } else {
-                const newLog = { id: `log_${Date.now()}`, ...logData };
-                if (studentId) {
-                    newLog.studentId = studentId;
-                    if (!teachersLogbook[className].student_logs[studentId]) teachersLogbook[className].student_logs[studentId] = [];
-                    teachersLogbook[className].student_logs[studentId].push(newLog);
-                } else {
-                    teachersLogbook[className].class_logs.push(newLog);
-                }
-            }
-            localStorage.setItem('teachersLogbook_v3', JSON.stringify(teachersLogbook));
-            renderTeachersLogbook();
-            const studentProfileModal = document.getElementById('student-profile-modal');
-            if(studentProfileModal && studentProfileModal.style.display === 'flex') showStudentProfile(studentId || currentStudentIdForProfile);
-            closeLogModal();
-        }
-        function editLog(logId) {
-            let log, studentId;
-            if (teachersLogbook[currentClass].class_logs.find(l => l.id === logId)) {
-                log = teachersLogbook[currentClass].class_logs.find(l => l.id === logId);
-            } else {
-                for (const sId in teachersLogbook[currentClass].student_logs) {
-                    const foundLog = teachersLogbook[currentClass].student_logs[sId].find(l => l.id === logId);
-                    if (foundLog) { log = foundLog; studentId = sId; break; }
-                }
-            }
-            if (!log) return;
-            
-            const logIdElement = document.getElementById('log-id');
-            const logModalTitle = document.getElementById('log-modal-title');
-            const logType = document.getElementById('log-type');
-            const logDetails = document.getElementById('log-details');
-            const logStudentId = document.getElementById('log-student-id');
-            const logImportant = document.getElementById('log-important');
-            const logFollowup = document.getElementById('log-followup');
-            const logModal = document.getElementById('log-modal');
-            
-            if (logIdElement) logIdElement.value = log.id;
-            if (logModalTitle) logModalTitle.innerText = 'নোট সম্পাদনা করুন';
-            if (logType) logType.value = log.type;
-            if (logDetails) logDetails.value = log.details;
-            if (logStudentId) logStudentId.value = studentId || '';
-            if (logImportant) logImportant.checked = log.isImportant || false;
-            if (logFollowup) logFollowup.checked = log.needsFollowup || false;
-            if (logModal) logModal.style.display = 'flex';
-        }
-        function deleteLog(logId) {
-            if (!confirm('আপনি কি এই নোটটি মুছে ফেলতে নিশ্চিত?')) return;
-            let logFound = false;
-            if (teachersLogbook[currentClass].class_logs.some(l => l.id === logId)) {
-                teachersLogbook[currentClass].class_logs = teachersLogbook[currentClass].class_logs.filter(l => l.id !== logId);
-                logFound = true;
-            } else {
-                for (const sId in teachersLogbook[currentClass].student_logs) {
-                    const initialLength = teachersLogbook[currentClass].student_logs[sId].length;
-                    teachersLogbook[currentClass].student_logs[sId] = teachersLogbook[currentClass].student_logs[sId].filter(l => l.id !== logId);
-                    if (teachersLogbook[currentClass].student_logs[sId].length < initialLength) { logFound = true; break; }
-                }
-            }
-            if (logFound) {
-                localStorage.setItem('teachersLogbook_v3', JSON.stringify(teachersLogbook));
-                renderTeachersLogbook();
+                // Create new log
+                createLogInDatabase(logData);
             }
         }
         
+        // Create new log in database
+        async function createLogInDatabase(logData) {
+            try {
+                const response = await fetch('/api/teacher-logs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(logData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Log created successfully:', result);
+                    
+                    // Reload logs from database
+                    await loadTeacherLogsFromDatabase(currentClass);
+                    
+                    // Refresh display
+                    renderTeachersLogbook();
+                    if (currentStudentIdForProfile) {
+                        showStudentProfile(currentStudentIdForProfile);
+                    }
+                    
+                    closeLogModal();
+                    alert('নোট সফলভাবে সংরক্ষিত হয়েছে।');
+            } else {
+                    const error = await response.json();
+                    console.error('❌ Failed to create log:', error);
+                    alert('নোট সংরক্ষণ করতে সমস্যা হয়েছে।');
+                }
+            } catch (error) {
+                console.error('❌ Error creating log:', error);
+                alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            }
+        }
+        
+        // Update existing log in database
+        async function updateLogInDatabase(logId, logData) {
+            try {
+                const response = await fetch(`/api/teacher-logs/${logId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(logData)
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Log updated successfully');
+                    
+                    // Reload logs from database
+                    await loadTeacherLogsFromDatabase(currentClass);
+                    
+                    // Refresh display
+            renderTeachersLogbook();
+                    if (currentStudentIdForProfile) {
+                        showStudentProfile(currentStudentIdForProfile);
+                    }
+                    
+                    closeLogModal();
+                    alert('নোট সফলভাবে আপডেট হয়েছে।');
+            } else {
+                    const error = await response.json();
+                    console.error('❌ Failed to update log:', error);
+                    alert('নোট আপডেট করতে সমস্যা হয়েছে।');
+                }
+            } catch (error) {
+                console.error('❌ Error updating log:', error);
+                alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            }
+        }
+        
+        // Delete log from database
+        async function deleteLogFromDatabase(logId) {
+            try {
+                const response = await fetch(`/api/teacher-logs/${logId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Log deleted successfully');
+                    
+                    // Reload logs from database
+                    await loadTeacherLogsFromDatabase(currentClass);
+                    
+                    // Refresh display
+                    renderTeachersLogbook();
+                    if (currentStudentIdForProfile) {
+                        showStudentProfile(currentStudentIdForProfile);
+                    }
+                    
+                    alert('নোট সফলভাবে মুছে ফেলা হয়েছে।');
+            } else {
+                    const error = await response.json();
+                    console.error('❌ Failed to delete log:', error);
+                    alert('নোট মুছতে সমস্যা হয়েছে।');
+                }
+            } catch (error) {
+                console.error('❌ Error deleting log:', error);
+                alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            }
+        }
+
+        function editHusnulKhuluk(studentId, currentScore) {
+            const scoreStudentId = document.getElementById('score-student-id');
+            const newScore = document.getElementById('new-score');
+            const scoreChangeReason = document.getElementById('score-change-reason');
+            const scoreModal = document.getElementById('score-modal');
+            
+            if (scoreStudentId) scoreStudentId.value = studentId;
+            if (newScore) newScore.value = currentScore;
+            if (scoreChangeReason) scoreChangeReason.value = '';
+            if (scoreModal) scoreModal.style.display = 'flex';
+        }
+
+        function closeScoreModal() { 
+            const scoreModal = document.getElementById('score-modal');
+            if (scoreModal) scoreModal.style.display = 'none';
+        }
+        
+        // Inactive Students Modal Functions
+        function showInactiveStudentsModal() {
+            if (!currentClass) return;
+            
+            const inactiveStudents = getInactiveStudentsForClass(currentClass);
+            const modal = document.getElementById('inactive-students-modal');
+            const listContainer = document.getElementById('inactive-students-list');
+            
+            if (inactiveStudents.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center p-8 text-gray-500">
+                        <i class="fas fa-info-circle text-4xl mb-4"></i>
+                        <p>এই শ্রেণীতে কোনো নিষ্ক্রিয় ছাত্র নেই।</p>
+                    </div>
+                `;
+            } else {
+                const studentsList = inactiveStudents.map(student => `
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-orange-500">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">
+                                    <span class="clickable-name" onclick="showStudentProfile('${student.id}').catch(console.error)" style="cursor: pointer; color: #3498db;">
+                                        ${student.name} বিন ${student.fatherName}
+                                    </span>
+                                </h4>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <span class="mr-4">রোল: ${student.rollNumber}</span>
+                                    <span class="mr-4">মোবাইল: ${student.mobileNumber}</span>
+                                    <span>জেলা: ${student.district}, ${student.upazila}</span>
+                                </div>
+                                <div class="text-xs text-orange-600 mt-2 font-medium">
+                                    <i class="fas fa-exclamation-triangle"></i> নিষ্ক্রিয় অবস্থায়
+                                    ${student.inactivationDate ? ` (${student.inactivationDate} থেকে)` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                listContainer.innerHTML = studentsList;
+            }
+            
+            modal.style.display = 'flex';
+        }
+        
+        function closeInactiveStudentsModal() {
+            const inactiveStudentsModal = document.getElementById('inactive-students-modal');
+            if (inactiveStudentsModal) inactiveStudentsModal.style.display = 'none';
+        }
+
+        function saveNewScore() {
+            const scoreStudentId = document.getElementById('score-student-id');
+            const newScoreElement = document.getElementById('new-score');
+            const changeReasonElement = document.getElementById('score-change-reason');
+            
+            if (!scoreStudentId || !newScoreElement || !changeReasonElement) {
+                console.error('❌ Required score change elements not found');
+                return;
+            }
+            
+            const studentId = scoreStudentId.value;
+            const newScore = newScoreElement.value;
+            const changeReason = changeReasonElement.value;
+            
+            if (newScore !== null && !isNaN(newScore) && newScore >= 0 && newScore <= 100) {
+                // Save score to database
+                updateScoreInDatabase(studentId, parseInt(newScore), changeReason);
+            } else {
+                alert("অনুগ্রহ করে ০ থেকে ১০০ এর মধ্যে একটি নাম্বার দিন।");
+            }
+        }
+        
+        // Update score in database
+        async function updateScoreInDatabase(studentId, newScore, reason) {
+            try {
+                const response = await fetch(`/api/student-scores/${studentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        new_score: newScore,
+                        reason: reason || 'কোন কারণ উল্লেখ করা হয়নি'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Score updated successfully:', result);
+                    
+                    // Update local score
+                    studentScores[studentId] = newScore;
+                    
+                    // Reload score history from database
+                    await loadScoreHistoryFromDatabase(studentId);
+                    
+                    // Refresh display
+                const activeStudentsInClass = getActiveStudentsForClass(currentClass);
+                renderClassStudentList(activeStudentsInClass);
+                renderClassOverview(activeStudentsInClass);
+                    
+                closeScoreModal();
+                    alert('স্কোর সফলভাবে আপডেট হয়েছে।');
+            } else {
+                    const error = await response.json();
+                    console.error('❌ Failed to update score:', error);
+                    alert('স্কোর আপডেট করতে সমস্যা হয়েছে।');
+                }
+            } catch (error) {
+                console.error('❌ Error updating score:', error);
+                alert('সংযোগে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+            }
+        }
+
         // --- STUDENT PROFILE LOGIC (UNIFIED VIEW) ---
         async function showStudentProfile(studentId) {
             currentStudentIdForProfile = studentId;
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
+            
+            // Load score history from database for this student
+            await loadScoreHistoryFromDatabase(studentId);
+            
             const profileTitle = document.getElementById('student-profile-title');
             if (profileTitle) profileTitle.innerText = `${student.name} - বিস্তারিত প্রোফাইল`;
             const score = getHusnulKhulukScore(studentId);
@@ -1627,20 +2051,50 @@
         function showAddStudentLogModal(studentId) {
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
+            
+            // Close student profile modal first to avoid conflicts
             closeStudentProfileModal();
             
             const logId = document.getElementById('log-id');
             const logModalTitle = document.getElementById('log-modal-title');
             const logDetails = document.getElementById('log-details');
             const logType = document.getElementById('log-type');
+            const logStudentSelect = document.getElementById('log-student-select');
             const logStudentId = document.getElementById('log-student-id');
+            const logImportant = document.getElementById('log-important');
+            const logFollowup = document.getElementById('log-followup');
             const logModal = document.getElementById('log-modal');
             
+            // Reset form
             if (logId) logId.value = '';
-            if (logModalTitle) logModalTitle.innerText = `"${student.name}" এর জন্য নতুন নোট`;
             if (logDetails) logDetails.value = '';
             if (logType) logType.value = 'শিক্ষামূলক';
+            if (logImportant) logImportant.checked = false;
+            if (logFollowup) logFollowup.checked = false;
+            
+            // Set student-specific context
+            if (logModalTitle) logModalTitle.innerText = `"${student.name}" এর জন্য নতুন নোট`;
             if (logStudentId) logStudentId.value = studentId;
+            
+            // Hide student dropdown and show student info instead
+            if (logStudentSelect) {
+                const studentSelectContainer = logStudentSelect.parentElement;
+                if (studentSelectContainer) {
+                    // Replace dropdown with student info display
+                    studentSelectContainer.innerHTML = `
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ছাত্র নির্বাচন</label>
+                        <div class="w-full p-3 bg-blue-50 border border-blue-200 rounded-md shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-user text-blue-500"></i>
+                                <span class="text-sm font-medium text-blue-700">${student.name} (${student.rollNumber})</span>
+                                <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">শ্রেণী: ${student.class}</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="log-student-id" value="${studentId}">
+                    `;
+                }
+            }
+            
             if (logModal) logModal.style.display = 'flex';
         }
 
@@ -2120,6 +2574,75 @@
                 typeof window[key] === 'function' && 
                 ['showClassDashboard', 'renderTodaySummary', 'renderClassStudentList'].includes(key)
             ));
+        }
+
+        // Edit log function
+        function editLog(logId) {
+            let log, studentId;
+            
+            // Find the log in our loaded data
+            if (teachersLogbook[currentClass]) {
+                if (teachersLogbook[currentClass].class_logs) {
+                    log = teachersLogbook[currentClass].class_logs.find(l => l.id == logId);
+                }
+                
+                if (!log && teachersLogbook[currentClass].student_logs) {
+                    for (const sId in teachersLogbook[currentClass].student_logs) {
+                        const foundLog = teachersLogbook[currentClass].student_logs[sId].find(l => l.id == logId);
+                        if (foundLog) { 
+                            log = foundLog; 
+                            studentId = sId; 
+                            break; 
+                        }
+                    }
+                }
+            }
+            
+            if (!log) {
+                console.error('❌ Log not found:', logId);
+                return;
+            }
+            
+            const logIdElement = document.getElementById('log-id');
+            const logModalTitle = document.getElementById('log-modal-title');
+            const logType = document.getElementById('log-type');
+            const logDetails = document.getElementById('log-details');
+            const logStudentSelect = document.getElementById('log-student-select');
+            const logStudentId = document.getElementById('log-student-id');
+            const logImportant = document.getElementById('log-important');
+            const logFollowup = document.getElementById('log-followup');
+            const logModal = document.getElementById('log-modal');
+            
+            // Populate student dropdown first
+            if (logStudentSelect) {
+                logStudentSelect.innerHTML = '<option value="">সবাই (শ্রেণী লগ)</option>';
+                
+                // Get students for current class
+                const classStudents = allStudents.filter(student => student.class === currentClass && student.status === 'active');
+                
+                classStudents.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.id;
+                    option.textContent = `${student.name} (${student.rollNumber})`;
+                    logStudentSelect.appendChild(option);
+                });
+            }
+            
+            if (logIdElement) logIdElement.value = log.id;
+            if (logModalTitle) logModalTitle.innerText = 'নোট সম্পাদনা করুন';
+            if (logType) logType.value = log.type;
+            if (logDetails) logDetails.value = log.details;
+            if (logStudentSelect) logStudentSelect.value = studentId || '';
+            if (logStudentId) logStudentId.value = studentId || '';
+            if (logImportant) logImportant.checked = log.isImportant || false;
+            if (logFollowup) logFollowup.checked = log.needsFollowup || false;
+            if (logModal) logModal.style.display = 'flex';
+        }
+        
+        // Delete log function (wrapper for database call)
+        function deleteLog(logId) {
+            if (!confirm('আপনি কি এই নোটটি মুছে ফেলতে নিশ্চিত?')) return;
+            deleteLogFromDatabase(logId);
         }
 
 

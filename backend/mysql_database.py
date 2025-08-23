@@ -84,6 +84,25 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Add current_score and last_updated columns to existing students table if they don't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM students LIKE 'current_score'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding current_score column to students table...")
+                    cursor.execute('ALTER TABLE students ADD COLUMN current_score INT DEFAULT 70')
+                    logger.info("✅ MySQLDatabase: current_score column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add current_score column: {e}")
+            
+            try:
+                cursor.execute("SHOW COLUMNS FROM students LIKE 'last_updated'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding last_updated column to students table...")
+                    cursor.execute('ALTER TABLE students ADD COLUMN last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+                    logger.info("✅ MySQLDatabase: last_updated column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add last_updated column: {e}")
+            
             # Create attendance table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS attendance (
@@ -154,6 +173,38 @@ class MySQLDatabase:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     UNIQUE KEY unique_class_subject_book (class_name, subject_name, book_name),
                     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
+            # Create teacher_logs table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS teacher_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    class_name VARCHAR(50) NOT NULL,
+                    student_id VARCHAR(50) NULL,
+                    log_type VARCHAR(100) NOT NULL,
+                    details TEXT NOT NULL,
+                    is_important BOOLEAN DEFAULT FALSE,
+                    needs_followup BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+                    INDEX idx_class_student (class_name, student_id),
+                    INDEX idx_important_followup (is_important, needs_followup)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
+            # Create score_change_history table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS score_change_history (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    student_id VARCHAR(50) NOT NULL,
+                    old_score INT NOT NULL,
+                    new_score INT NOT NULL,
+                    change_reason TEXT,
+                    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+                    INDEX idx_student_date (student_id, changed_at)
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
@@ -921,7 +972,7 @@ class MySQLDatabase:
             raise
     
     def delete_all_education_progress(self):
-        """Delete all education progress records"""
+        """Delete all education progress data"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -934,8 +985,271 @@ class MySQLDatabase:
             return True
             
         except Error as e:
-            print(f"Error deleting all education progress: {e}")
-            raise
+            logger.error(f"Error deleting all education progress: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error deleting all education progress: {e}")
+            return False
+
+    # ===== TEACHER LOGS METHODS =====
+    
+    def add_teacher_log(self, log_data):
+        """Add a new teacher log entry"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO teacher_logs (class_name, student_id, log_type, details, is_important, needs_followup)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (
+                log_data['class_name'],
+                log_data.get('student_id'),
+                log_data['log_type'],
+                log_data['details'],
+                log_data.get('is_important', False),
+                log_data.get('needs_followup', False)
+            ))
+            
+            log_id = cursor.lastrowid
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"✅ Teacher log added successfully with ID: {log_id}")
+            return log_id
+            
+        except Error as e:
+            logger.error(f"Error adding teacher log: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error adding teacher log: {e}")
+            return None
+    
+    def get_teacher_logs(self, class_name, student_id=None):
+        """Get teacher logs for a class or specific student"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            if student_id:
+                cursor.execute('''
+                    SELECT * FROM teacher_logs 
+                    WHERE class_name = %s AND student_id = %s
+                    ORDER BY created_at DESC
+                ''', (class_name, student_id))
+            else:
+                cursor.execute('''
+                    SELECT * FROM teacher_logs 
+                    WHERE class_name = %s
+                    ORDER BY created_at DESC
+                ''', (class_name,))
+            
+            logs = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return logs
+            
+        except Error as e:
+            logger.error(f"Error getting teacher logs: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error getting teacher logs: {e}")
+            return []
+    
+    def update_teacher_log(self, log_id, log_data):
+        """Update an existing teacher log"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE teacher_logs 
+                SET log_type = %s, details = %s, is_important = %s, needs_followup = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            ''', (
+                log_data['log_type'],
+                log_data['details'],
+                log_data.get('is_important', False),
+                log_data.get('needs_followup', False),
+                log_id
+            ))
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if rows_affected > 0:
+                logger.info(f"✅ Teacher log updated successfully: {log_id}")
+                return True
+            else:
+                logger.warning(f"⚠️ No teacher log found to update: {log_id}")
+                return False
+                
+        except Error as e:
+            logger.error(f"Error updating teacher log: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error updating teacher log: {e}")
+            return False
+    
+    def delete_teacher_log(self, log_id):
+        """Delete a teacher log entry"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM teacher_logs WHERE id = %s', (log_id,))
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if rows_affected > 0:
+                logger.info(f"✅ Teacher log deleted successfully: {log_id}")
+                return True
+            else:
+                logger.warning(f"⚠️ No teacher log found to delete: {log_id}")
+                return False
+                
+        except Error as e:
+            logger.error(f"Error deleting teacher log: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error deleting teacher log: {e}")
+            return False
+
+    # ===== STUDENT SCORES METHODS =====
+    
+    def get_student_score(self, student_id):
+        """Get current score for a student"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('SELECT current_score FROM students WHERE id = %s', (student_id,))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            conn.close()
+            
+            if result:
+                return result['current_score']
+            else:
+                logger.warning(f"⚠️ Student not found: {student_id}")
+                return None
+                
+        except Error as e:
+            logger.error(f"Error getting student score: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error getting student score: {e}")
+            return None
+    
+    def update_student_score(self, student_id, new_score, reason):
+        """Update student score and log change history"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Get current score first
+            cursor.execute('SELECT current_score FROM students WHERE id = %s', (student_id,))
+            result = cursor.fetchone()
+            
+            if not result:
+                logger.error(f"❌ Student not found: {student_id}")
+                return False
+            
+            old_score = result[0]
+            
+            # Update student's current score
+            cursor.execute('''
+                UPDATE students 
+                SET current_score = %s, last_updated = CURRENT_TIMESTAMP
+                WHERE id = %s
+            ''', (new_score, student_id))
+            
+            # Add to score change history
+            cursor.execute('''
+                INSERT INTO score_change_history (student_id, old_score, new_score, change_reason)
+                VALUES (%s, %s, %s, %s)
+            ''', (student_id, old_score, new_score, reason))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"✅ Student score updated successfully: {student_id} ({old_score} → {new_score})")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error updating student score: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error updating student score: {e}")
+            return False
+    
+    def get_score_history(self, student_id):
+        """Get complete score change history for a student"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT * FROM score_change_history 
+                WHERE student_id = %s
+                ORDER BY changed_at DESC
+            ''', (student_id,))
+            
+            history = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return history
+            
+        except Error as e:
+            logger.error(f"Error getting score history: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error getting score history: {e}")
+            return []
+    
+    def get_students_with_scores(self, class_name=None):
+        """Get all students with their current scores"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            if class_name:
+                cursor.execute('''
+                    SELECT id, name, class, current_score, last_updated
+                    FROM students 
+                    WHERE class = %s AND status = 'active'
+                    ORDER BY CAST(rollNumber AS UNSIGNED)
+                ''', (class_name,))
+            else:
+                cursor.execute('''
+                    SELECT id, name, class, current_score, last_updated
+                    FROM students 
+                    WHERE status = 'active'
+                    ORDER BY class, CAST(rollNumber AS UNSIGNED)
+                ''')
+            
+            students = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            return students
+            
+        except Error as e:
+            logger.error(f"Error getting students with scores: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error getting students with scores: {e}")
+            return []
 
     # Book Management Methods
     def get_books(self, class_id=None):

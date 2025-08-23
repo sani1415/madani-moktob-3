@@ -409,6 +409,127 @@ def delete_all_education_progress():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== TEACHER LOGS API ENDPOINTS =====
+
+@app.route('/api/teacher-logs', methods=['GET'])
+def get_teacher_logs():
+    try:
+        class_name = request.args.get('class')
+        student_id = request.args.get('student_id')
+        
+        if not class_name:
+            return jsonify({'error': 'Class name is required'}), 400
+        
+        logs = db.get_teacher_logs(class_name, student_id)
+        return jsonify(logs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher-logs', methods=['POST'])
+def add_teacher_log():
+    try:
+        log_data = request.json
+        if not log_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['class_name', 'log_type', 'details']
+        for field in required_fields:
+            if field not in log_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        log_id = db.add_teacher_log(log_data)
+        if log_id:
+            return jsonify({'success': True, 'id': log_id}), 201
+        else:
+            return jsonify({'error': 'Failed to add teacher log'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher-logs/<int:log_id>', methods=['PUT'])
+def update_teacher_log(log_id):
+    try:
+        log_data = request.json
+        if not log_data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        required_fields = ['log_type', 'details']
+        for field in required_fields:
+            if field not in log_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        success = db.update_teacher_log(log_id, log_data)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update teacher log'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher-logs/<int:log_id>', methods=['DELETE'])
+def delete_teacher_log(log_id):
+    try:
+        success = db.delete_teacher_log(log_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to delete teacher log'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== STUDENT SCORES API ENDPOINTS =====
+
+@app.route('/api/student-scores/<student_id>', methods=['GET'])
+def get_student_score(student_id):
+    try:
+        score = db.get_student_score(student_id)
+        if score is not None:
+            return jsonify({'student_id': student_id, 'score': score})
+        else:
+            return jsonify({'error': 'Student not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/student-scores/<student_id>', methods=['PUT'])
+def update_student_score(student_id):
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        new_score = data.get('new_score')
+        reason = data.get('reason', '')
+        
+        if new_score is None:
+            return jsonify({'error': 'New score is required'}), 400
+        
+        if not isinstance(new_score, int) or new_score < 0 or new_score > 100:
+            return jsonify({'error': 'Score must be between 0 and 100'}), 400
+        
+        success = db.update_student_score(student_id, new_score, reason)
+        if success:
+            return jsonify({'success': True, 'message': f'Score updated to {new_score}'})
+        else:
+            return jsonify({'error': 'Failed to update student score'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/student-scores/<student_id>/history', methods=['GET'])
+def get_student_score_history(student_id):
+    try:
+        history = db.get_score_history(student_id)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students-with-scores', methods=['GET'])
+def get_students_with_scores():
+    try:
+        class_name = request.args.get('class')
+        students = db.get_students_with_scores(class_name)
+        return jsonify(students)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Class Management API Endpoints
 @app.route('/api/classes', methods=['GET'])
 def get_classes():
