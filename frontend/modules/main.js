@@ -161,6 +161,7 @@ window.updateDashboard = Dashboard.updateDashboard;
 window.updateTodayOverview = Dashboard.updateTodayOverview;
 window.updateClassWiseStats = Dashboard.updateClassWiseStats;
 window.generateAttendanceTrackingCalendar = Dashboard.generateAttendanceTrackingCalendar;
+window.updatePerformanceMetrics = Dashboard.updatePerformanceMetrics;
 
 // Make state variables globally accessible
 window.students = State.students;

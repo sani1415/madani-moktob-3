@@ -104,13 +104,48 @@
                         <h3 id="inactiveStudents">0</h3>
                         <p data-translate="inactiveStudents">Inactive Students</p>
                     </div>
+                    <div class="stat-card performance-card">
+                        <i class="fas fa-star"></i>
+                        <div class="performance-tiers">
+                            <div class="tier mustaid">
+                                <span class="tier-count" id="mustaidCount">0</span>
+                                <span class="tier-label">Mustaid</span>
+                            </div>
+                            <div class="tier mutawassit">
+                                <span class="tier-count" id="mutawassitCount">0</span>
+                                <span class="tier-label">Mutawassit</span>
+                            </div>
+                            <div class="tier mujtahid">
+                                <span class="tier-count" id="mujtahidCount">0</span>
+                                <span class="tier-label">Mujtahid</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Class-wise Stats -->
                 <div class="class-wise-stats">
                     <h3>Class-wise Information</h3>
-                    <div id="classWiseGrid" class="class-stats-grid">
-                        <!-- Class-wise statistics will be displayed here -->
+                    <div class="class-stats-table-container">
+                        <table class="class-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Total</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Rate</th>
+                                    <th>Inactive</th>
+                                    <th>Avg Score</th>
+                                    <th>Mustaid</th>
+                                    <th>Mutawassit</th>
+                                    <th>Mujtahid</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classWiseTableBody">
+                                <!-- Class-wise statistics will be displayed here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="recent-activity">

@@ -546,6 +546,53 @@ body {
     font-family: 'Noto Sans Bengali', 'SolaimanLipi', 'Kalpurush', 'Bangla Web', 'Nikosh', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Performance Card Styles */
+.performance-card {
+    height: 160px !important;
+    position: relative;
+}
+
+.performance-card .performance-tiers {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    width: 100%;
+    padding: 0 10px;
+}
+
+.performance-card .tier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+
+.performance-card .tier-count {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.performance-card .tier-label {
+    font-size: 0.7em;
+    color: #666;
+    line-height: 1.2;
+}
+
+.performance-card .tier.mustaid .tier-count {
+    color: #27ae60; /* Green for Mustaid (Excellent) */
+}
+
+.performance-card .tier.mutawassit .tier-count {
+    color: #f39c12; /* Orange for Mutawassit (Average) */
+}
+
+.performance-card .tier.mujtahid .tier-count {
+    color: #e74c3c; /* Red for Mujtahid (Needs Improvement) */
+}
+
 /* Class Dashboard Card Colors */
 #class-total-students {
     color: #2c3e50 !important; /* Dark blue for total students */
@@ -661,6 +708,100 @@ body {
     color: #27ae60;
     text-align: center;
     margin-top: 10px;
+}
+
+/* New Class Stats Table Styles */
+.class-stats-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e1e8ed;
+}
+
+.class-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 14px;
+}
+
+.class-stats-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.class-stats-table th {
+    padding: 15px 12px;
+    text-align: center;
+    font-weight: 600;
+    border: none;
+    white-space: nowrap;
+}
+
+.class-stats-table th:first-child {
+    text-align: left;
+    border-radius: 8px 0 0 0;
+}
+
+.class-stats-table th:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+.class-stats-table tbody tr {
+    border-bottom: 1px solid #e1e8ed;
+    transition: background-color 0.2s ease;
+}
+
+.class-stats-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.class-stats-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.class-stats-table td {
+    padding: 12px;
+    text-align: center;
+    border: none;
+}
+
+.class-stats-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.class-stats-table .attendance-high {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.class-stats-table .attendance-medium {
+    color: #f39c12;
+    font-weight: 600;
+}
+
+.class-stats-table .attendance-low {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.class-stats-table .score-excellent {
+    color: #27ae60 !important;
+    font-weight: 600;
+    background-color: rgba(39, 174, 96, 0.1);
+}
+
+.class-stats-table .score-average {
+    color: #f39c12 !important;
+    font-weight: 600;
+    background-color: rgba(243, 156, 18, 0.1);
+}
+
+.class-stats-table .score-poor {
+    color: #e74c3c !important;
+    font-weight: 600;
+    background-color: rgba(231, 76, 60, 0.1);
 }
 
 /* Student Detail Styles */
