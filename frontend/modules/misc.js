@@ -430,7 +430,7 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
                 
                 const attendanceRate = totalSchoolDays > 0 ? Math.round((present / (totalSchoolDays - leave)) * 100) : 0;
                 
-                return {
+        return {
                     ...student,
                     presentDays: present,
                     absentDays: absent,

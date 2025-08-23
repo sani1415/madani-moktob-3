@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Class Dashboard Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Compact Header */
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .class-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .class-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        
+        .class-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* Compact Stats Grid - Simple row and column layout */
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            max-width: 250px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s ease;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-card i {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-card p {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        /* Color coding for stats */
+        .stat-card.total i { color: #2c3e50; }
+        .stat-card.present i { color: #27ae60; }
+        .stat-card.absent i { color: #e74c3c; }
+        .stat-card.rate i { color: #9b59b6; }
+        .stat-card.inactive i { color: #f39c12; }
+        .stat-card.performance i { color: #e67e22; }
+        
+        /* Compact Alerts */
+        .alerts-section {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .alerts-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .alerts-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .alert-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+        
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Main Content Grid - Simple row and column layout */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .content-card {
+            flex: 1;
+        }
+        
+        .content-card.wide {
+            flex: 2;
+        }
+        
+        .content-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .content-card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Performance Chart - Simple row and column layout */
+        .performance-grid {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .performance-section {
+            flex: 1;
+        }
+        
+        .performance-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .performance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.85rem;
+        }
+        
+        .performance-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Teacher Logbook - Compact */
+        .logbook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .add-log-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .logbook-tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 12px;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #666;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab-btn.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .logbook-content {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.8rem;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        /* Student List - Compact */
+        .student-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .view-all-btn {
+            color: #3498db;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .student-table {
+            width: 100%;
+            font-size: 0.85rem;
+        }
+        
+        .student-table th {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .student-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .student-table tbody {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        /* Education Progress - Compact */
+        .progress-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .progress-item:last-child {
+            border-bottom: none;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .book-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            border-radius: 3px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        /* Progress Summary - Compact */
+        .progress-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .summary-item {
+            flex: 1;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .summary-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .summary-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .performance-grid {
+                flex-direction: column;
+            }
+            
+            .summary-grid {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Compact Header -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">শ্রেণী ৫ম - ড্যাশবোর্ড</h1>
+            <div class="class-selector">
+                <button class="class-btn">শ্রেণী ৩য়</button>
+                <button class="class-btn">শ্রেণী ৪র্থ</button>
+                <button class="class-btn">শ্রেণী ৫ম</button>
+                <button class="class-btn">শ্রেণী ৬ষ্ঠ</button>
+            </div>
+        </div>
+
+        <!-- Compact Stats Grid - 3x2 layout -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <i class="fas fa-users"></i>
+                <h3>২৫</h3>
+                <p>মোট ছাত্র</p>
+            </div>
+            <div class="stat-card present">
+                <i class="fas fa-user-check"></i>
+                <h3>২২</h3>
+                <p>আজ উপস্থিত</p>
+            </div>
+            <div class="stat-card absent">
+                <i class="fas fa-user-times"></i>
+                <h3>৩</h3>
+                <p>আজ অনুপস্থিত</p>
+            </div>
+            <div class="stat-card rate">
+                <i class="fas fa-percentage"></i>
+                <h3>৮৮%</h3>
+                <p>উপস্থিতির হার</p>
+            </div>
+            <div class="stat-card inactive">
+                <i class="fas fa-user-slash"></i>
+                <h3>২</h3>
+                <p>নিষ্ক্রিয় ছাত্র</p>
+            </div>
+            <div class="stat-card performance">
+                <i class="fas fa-chart-line"></i>
+                <h3>৭৮%</h3>
+                <p>সামগ্রিক অগ্রগতি</p>
+            </div>
+        </div>
+
+        <!-- Compact Alerts -->
+        <div class="alerts-section">
+            <div class="alerts-header">
+                <i class="fas fa-exclamation-triangle" style="color: #f39c12;"></i>
+                <h3>এক নজরে সতর্কতা</h3>
+            </div>
+            <div class="alerts-content">
+                <div class="alert-item">⚠️ ৩ জন ছাত্রের উপস্থিতি ৭০% এর নিচে</div>
+                <div class="alert-item">📚 ২ জন ছাত্রের বই অগ্রগতি স্থবির</div>
+                <div class="alert-item">🎯 ৫ জন ছাত্রের হুসনুল খুলুক স্কোর কম</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-content">
+            <!-- Left Column -->
+            <div class="content-card wide">
+                <h3><i class="fas fa-chart-pie"></i>শ্রেণীর সার্বিক অবস্থা</h3>
+                <div class="performance-grid">
+                    <div class="performance-section">
+                        <h4>ছাত্রদের স্তর</h4>
+                        <div class="performance-item">
+                            <span>উচ্চ স্তর</span>
+                            <span>৮ জন</span>
+                        </div>
+                        <div class="performance-item">
+                            <span>মাঝারি স্তর</span>
+                            <span>১২ জন</span>
+                        </div>
+                        <div class="performance-item">
+                            <span>নিম্ন স্তর</span>
+                            <span>৫ জন</span>
+                        </div>
+                    </div>
+                    <div class="performance-section">
+                        <h4>সাম্প্রতিক শ্রেণী লগ</h4>
+                        <div class="performance-item">
+                            <span>আজকের পাঠ</span>
+                            <span>সুরা আল-বাকারা</span>
+                        </div>
+                        <div class="performance-item">
+                            <span>গতকাল</span>
+                            <span>নামাজ শিক্ষা</span>
+                        </div>
+                        <div class="performance-item">
+                            <span>গত সপ্তাহ</span>
+                            <span>আদব শিক্ষা</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="content-card">
+                <div class="logbook-header">
+                    <h3><i class="fas fa-book"></i>শিক্ষকের লগবুক</h3>
+                    <button class="add-log-btn">
+                        <i class="fas fa-plus"></i>নতুন নোট
+                    </button>
+                </div>
+                <div class="logbook-tabs">
+                    <button class="tab-btn active">শ্রেণী লগ</button>
+                    <button class="tab-btn">ছাত্র লগ</button>
+                </div>
+                <div class="logbook-content">
+                    <div class="log-entry">
+                        <strong>আজকের পাঠ:</strong> সুরা আল-বাকারা আয়াত ১-৫
+                    </div>
+                    <div class="log-entry">
+                        <strong>বিশেষ নির্দেশনা:</strong> নামাজের সময় সঠিকভাবে দাঁড়ানো
+                    </div>
+                    <div class="log-entry">
+                        <strong>গৃহকর্ম:</strong> নতুন আয়াত মুখস্থ করা
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student List & Education Progress -->
+        <div class="main-content">
+            <!-- Student List -->
+            <div class="content-card">
+                <div class="student-list-header">
+                    <h3><i class="fas fa-list"></i>ছাত্রদের তালিকা</h3>
+                    <span class="view-all-btn">সব ছাত্র দেখুন</span>
+                </div>
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th>হুসনুল খুলুক</th>
+                            <th>রোল</th>
+                            <th>নাম</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>৮৫</td>
+                            <td>১</td>
+                            <td>আহমেদ বিন আব্দুল্লাহ</td>
+                        </tr>
+                        <tr>
+                            <td>৭৮</td>
+                            <td>২</td>
+                            <td>মুহাম্মদ বিন আলী</td>
+                        </tr>
+                        <tr>
+                            <td>৯২</td>
+                            <td>৩</td>
+                            <td>ইব্রাহীম বিন আহমেদ</td>
+                        </tr>
+                        <tr>
+                            <td>৮১</td>
+                            <td>৪</td>
+                            <td>ইসমাইল বিন ইব্রাহীম</td>
+                        </tr>
+                        <tr>
+                            <td>৮৮</td>
+                            <td>৫</td>
+                            <td>ইসহাক বিন ইব্রাহীম</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Education Progress -->
+            <div class="content-card">
+                <h3><i class="fas fa-graduation-cap"></i>শিক্ষার অগ্রগতি</h3>
+                <div class="progress-items">
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="book-name">কুরআন মাজীদ</span>
+                            <span>৭৫%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%;"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>১৫ পৃষ্ঠা</span>
+                            <span>২০ পৃষ্ঠা</span>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="book-name">হাদীস শরীফ</span>
+                            <span>৬০%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>১২ পৃষ্ঠা</span>
+                            <span>২০ পৃষ্ঠা</span>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="book-name">ফিকহ</span>
+                            <span>৪৫%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>৯ পৃষ্ঠা</span>
+                            <span>২০ পৃষ্ঠা</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Summary -->
+        <div class="progress-summary">
+            <h3><i class="fas fa-chart-line"></i>অগ্রগতির সারসংক্ষেপ</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-number">৭৮%</div>
+                    <div class="summary-label">গড় অগ্রগতি</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number">১৫</div>
+                    <div class="summary-label">সক্রিয় বই</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number">৮</div>
+                    <div class="summary-label">সম্পন্ন বই</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
