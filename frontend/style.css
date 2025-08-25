@@ -546,6 +546,231 @@ body {
     font-family: 'Noto Sans Bengali', 'SolaimanLipi', 'Kalpurush', 'Bangla Web', 'Nikosh', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Main Dashboard Alerts */
+.dashboard-alerts-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin: 20px 0;
+    padding: 20px;
+    border-left: 4px solid #f39c12;
+}
+
+.dashboard-alerts-section h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3em;
+}
+
+.dashboard-alerts-section h3 i {
+    color: #f39c12;
+}
+
+.alerts-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.alert-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-item.danger {
+    background: #fef2f2;
+    border-left-color: #ef4444;
+    color: #991b1b;
+}
+
+.alert-item.warning {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+    color: #92400e;
+}
+
+.alert-item.info {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+    color: #1e40af;
+}
+
+.alert-btn.info {
+    background: #3b82f6;
+    color: white;
+}
+
+.alert-btn.info:hover {
+    background: #2563eb;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.alert-icon {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+}
+
+.alert-text {
+    flex: 1;
+}
+
+.alert-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: 2px;
+}
+
+.alert-message {
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+.alert-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.alert-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.alert-btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.alert-btn.primary:hover {
+    background: #2563eb;
+}
+
+.alert-btn.secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.alert-btn.secondary:hover {
+    background: #e5e7eb;
+}
+
+.alert-btn.danger {
+    background: #ef4444;
+    color: white;
+}
+
+.alert-btn.danger:hover {
+    background: #dc2626;
+}
+
+/* Alert Details Styles */
+.alert-details {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+    animation: slideDown 0.3s ease-out;
+}
+
+.alert-details-content {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 15px;
+    border: 1px solid #e5e7eb;
+}
+
+.alert-students-table {
+    overflow-x: auto;
+}
+
+.alert-students-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.alert-students-table th {
+    background: #f3f4f6;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.alert-students-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.alert-students-table tr:hover {
+    background: #f9fafb;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile responsive styles for alerts */
+@media (max-width: 768px) {
+    .dashboard-alerts-section {
+        margin: 15px 0;
+        padding: 15px;
+    }
+    
+    .dashboard-alerts-section h3 {
+        font-size: 1.1em;
+    }
+    
+    .alert-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .alert-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .alert-btn {
+        padding: 8px 16px;
+        font-size: 0.85em;
+    }
+}
+
 /* Performance Card Styles */
 .performance-card {
     height: 160px !important;

@@ -162,6 +162,11 @@ window.updateTodayOverview = Dashboard.updateTodayOverview;
 window.updateClassWiseStats = Dashboard.updateClassWiseStats;
 window.generateAttendanceTrackingCalendar = Dashboard.generateAttendanceTrackingCalendar;
 window.updatePerformanceMetrics = Dashboard.updatePerformanceMetrics;
+window.updateMainDashboardAlerts = Dashboard.updateMainDashboardAlerts;
+window.showLowScoreStudents = Dashboard.showLowScoreStudents;
+window.showAbsentStudents = Dashboard.showAbsentStudents;
+window.toggleAlertDetails = Dashboard.toggleAlertDetails;
+window.renderAlertDetails = Dashboard.renderAlertDetails;
 
 // Make state variables globally accessible
 window.students = State.students;
@@ -698,3 +703,5 @@ function loadSettingsData() {
 window.loadAlertSettings = loadAlertSettings;
 window.saveAlertThreshold = saveAlertThreshold;
 window.loadSettingsData = loadSettingsData;
+window.updateMainDashboardAlerts = updateMainDashboardAlerts;
+window.showLowScoreStudents = showLowScoreStudents;
