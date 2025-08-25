@@ -149,14 +149,14 @@ async function updateDashboard() {
         }
     }
     
-    // Update today's overview
-    updateTodayOverview();
-    
     // Update class-wise information
     updateClassWiseStats();
     
     // Update performance metrics
     updatePerformanceMetrics();
+    
+    // Update main dashboard alerts
+    updateMainDashboardAlerts();
     
     // Update Hijri date display
     if (typeof updateDashboardWithHijri === 'function') {
@@ -635,4 +635,377 @@ async function updatePerformanceMetrics() {
     }
 }
 
-export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData, updatePerformanceMetrics }
+// Function to update main dashboard alerts
+async function updateMainDashboardAlerts() {
+    try {
+        console.log('🔄 Updating main dashboard alerts...');
+        
+        const alertsContainer = document.getElementById('main-dashboard-alerts');
+        const alertsContent = document.getElementById('main-alerts-content');
+        
+        if (!alertsContainer || !alertsContent) {
+            console.error('❌ Alert containers not found');
+            return;
+        }
+        
+        // Get alert configuration from localStorage (same as class dashboard)
+        const saved = localStorage.getItem('alertConfig');
+        let alertConfig = {
+            LOW_SCORE_THRESHOLD: 60,
+            CRITICAL_SCORE_THRESHOLD: 50,
+            LOW_CLASS_AVERAGE_THRESHOLD: 70
+        };
+        
+        if (saved) {
+            try {
+                const savedConfig = JSON.parse(saved);
+                alertConfig = { ...alertConfig, ...savedConfig };
+            } catch (e) {
+                console.error('Error loading alert config:', e);
+            }
+        }
+        
+        // Get all active students
+        const activeStudents = students.filter(student => student.status === 'active');
+        
+        if (activeStudents.length === 0) {
+            alertsContainer.style.display = 'none';
+            return;
+        }
+        
+        const alerts = [];
+        
+        // Check for students with low scores across all classes
+        const lowScoreStudents = [];
+        const criticalScoreStudents = [];
+        
+        // Fetch scores for all active students
+        for (const student of activeStudents) {
+            try {
+                const response = await fetch(`/api/student-scores/${student.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const score = data.score || 0;
+                    
+                    if (score > 0) {
+                        if (score < alertConfig.CRITICAL_SCORE_THRESHOLD) {
+                            criticalScoreStudents.push({ ...student, score });
+                        } else if (score < alertConfig.LOW_SCORE_THRESHOLD) {
+                            lowScoreStudents.push({ ...student, score });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Error fetching score for student ${student.id}:`, error);
+            }
+        }
+        
+        // Add critical score alert
+        if (criticalScoreStudents.length > 0) {
+            alerts.push({
+                type: 'danger',
+                icon: 'fas fa-exclamation-triangle',
+                title: 'Critical Students',
+                message: `${criticalScoreStudents.length} students have scores below ${alertConfig.CRITICAL_SCORE_THRESHOLD}`,
+                action: 'View Details',
+                students: criticalScoreStudents,
+                alertType: 'critical'
+            });
+        }
+        
+        // Add low score alert
+        if (lowScoreStudents.length > 0) {
+            alerts.push({
+                type: 'warning',
+                icon: 'fas fa-user-times',
+                title: 'Low Score Students',
+                message: `${lowScoreStudents.length} students have scores below ${alertConfig.LOW_SCORE_THRESHOLD}`,
+                action: 'View Details',
+                students: lowScoreStudents,
+                alertType: 'low'
+            });
+        }
+        
+        // Check for today's absent students
+        const today = getTodayString();
+        const todayAttendance = attendance[today] || {};
+        
+        // Get active students for today
+        const activeStudentsForToday = students.filter(student => {
+            if (student.status === 'active') {
+                return true;
+            }
+            if (student.status === 'inactive' && student.inactivationDate) {
+                const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
+                return parsedInactivationDate ? today < parsedInactivationDate : false;
+            }
+            return false;
+        });
+        
+        const absentStudents = activeStudentsForToday.filter(student => 
+            todayAttendance[student.id] && todayAttendance[student.id].status === 'absent'
+        );
+        
+        // Add absent students alert
+        if (absentStudents.length > 0) {
+            alerts.push({
+                type: 'info',
+                icon: 'fas fa-user-clock',
+                title: 'Today\'s Absent Students',
+                message: `${absentStudents.length} students are absent today`,
+                action: 'View Details',
+                students: absentStudents,
+                alertType: 'absent',
+                todayAttendance: todayAttendance
+            });
+        }
+        
+        // Render alerts
+        if (alerts.length === 0) {
+            alertsContainer.style.display = 'none';
+        } else {
+            alertsContainer.style.display = 'block';
+            alertsContent.innerHTML = alerts.map((alert, index) => `
+                <div class="alert-item ${alert.type}">
+                    <div class="alert-content">
+                        <i class="alert-icon ${alert.icon}"></i>
+                        <div class="alert-text">
+                            <div class="alert-title">${alert.title}</div>
+                            <div class="alert-message">${alert.message}</div>
+                        </div>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn primary" onclick="toggleAlertDetails(${index})">
+                            ${alert.action}
+                        </button>
+                    </div>
+                    <div class="alert-details" id="alert-details-${index}" style="display: none;">
+                        <div class="alert-details-content">
+                            ${renderAlertDetails(alert)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Store alerts data globally for access
+            window.currentAlerts = alerts;
+        }
+        
+        console.log('✅ Main dashboard alerts updated successfully');
+        
+    } catch (error) {
+        console.error('❌ Error updating main dashboard alerts:', error);
+    }
+}
+
+// Function to render alert details
+function renderAlertDetails(alert) {
+    if (alert.alertType === 'critical' || alert.alertType === 'low') {
+        const color = alert.alertType === 'critical' ? '#ef4444' : '#f59e0b';
+        return `
+            <div class="alert-students-table">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Roll</th>
+                            <th class="px-4 py-2 text-left">Name</th>
+                            <th class="px-4 py-2 text-left">Class</th>
+                            <th class="px-4 py-2 text-center">Score</th>
+                            <th class="px-4 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${alert.students.map(student => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2">${student.rollNumber || 'N/A'}</td>
+                                <td class="px-4 py-2">${student.name} বিন ${student.fatherName}</td>
+                                <td class="px-4 py-2">${student.class || 'N/A'}</td>
+                                <td class="px-4 py-2 text-center">
+                                    <span class="font-bold" style="color: ${color};">${student.score}</span>
+                                </td>
+                                <td class="px-4 py-2 text-center">
+                                    <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else if (alert.alertType === 'absent') {
+        return `
+            <div class="alert-students-table">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Roll</th>
+                            <th class="px-4 py-2 text-left">Name</th>
+                            <th class="px-4 py-2 text-left">Class</th>
+                            <th class="px-4 py-2 text-left">Reason</th>
+                            <th class="px-4 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${alert.students.map(student => {
+                            const attendance = alert.todayAttendance[student.id];
+                            const reason = attendance && attendance.reason ? attendance.reason : 'No reason provided';
+                            return `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">${student.rollNumber || 'N/A'}</td>
+                                    <td class="px-4 py-2">${student.name} বিন ${student.fatherName}</td>
+                                    <td class="px-4 py-2">${student.class || 'N/A'}</td>
+                                    <td class="px-4 py-2 text-gray-600">${reason}</td>
+                                    <td class="px-4 py-2 text-center">
+                                        <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
+                                            View Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    return '';
+}
+
+// Function to toggle alert details
+function toggleAlertDetails(index) {
+    const detailsElement = document.getElementById(`alert-details-${index}`);
+    const button = detailsElement.previousElementSibling.querySelector('.alert-btn');
+    
+    if (detailsElement.style.display === 'none') {
+        detailsElement.style.display = 'block';
+        button.textContent = 'Hide Details';
+        button.classList.remove('primary');
+        button.classList.add('secondary');
+    } else {
+        detailsElement.style.display = 'none';
+        button.textContent = 'View Details';
+        button.classList.remove('secondary');
+        button.classList.add('primary');
+    }
+}
+
+// Function to show low score students modal
+function showLowScoreStudents(students, type) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    
+    const title = type === 'critical' ? 'Critical Score Students' : 'Low Score Students';
+    const color = type === 'critical' ? '#ef4444' : '#f59e0b';
+    
+    modal.innerHTML = `
+        <div class="bg-white p-6 rounded-lg max-w-4xl mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold" style="color: ${color};">${title}</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Roll</th>
+                            <th class="px-4 py-2 text-left">Name</th>
+                            <th class="px-4 py-2 text-left">Class</th>
+                            <th class="px-4 py-2 text-center">Score</th>
+                            <th class="px-4 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map(student => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2">${student.rollNumber || 'N/A'}</td>
+                                <td class="px-4 py-2">${student.name} বিন ${student.fatherName}</td>
+                                <td class="px-4 py-2">${student.class || 'N/A'}</td>
+                                <td class="px-4 py-2 text-center">
+                                    <span class="font-bold" style="color: ${color};">${student.score}</span>
+                                </td>
+                                <td class="px-4 py-2 text-center">
+                                    <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Function to show absent students modal
+function showAbsentStudents(students, todayAttendance) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    
+    modal.innerHTML = `
+        <div class="bg-white p-6 rounded-lg max-w-4xl mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-blue-600">Today's Absent Students</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Roll</th>
+                            <th class="px-4 py-2 text-left">Name</th>
+                            <th class="px-4 py-2 text-left">Class</th>
+                            <th class="px-4 py-2 text-left">Reason</th>
+                            <th class="px-4 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map(student => {
+                            const attendance = todayAttendance[student.id];
+                            const reason = attendance && attendance.reason ? attendance.reason : 'No reason provided';
+                            return `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">${student.rollNumber || 'N/A'}</td>
+                                    <td class="px-4 py-2">${student.name} বিন ${student.fatherName}</td>
+                                    <td class="px-4 py-2">${student.class || 'N/A'}</td>
+                                    <td class="px-4 py-2 text-gray-600">${reason}</td>
+                                    <td class="px-4 py-2 text-center">
+                                        <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline">
+                                            View Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData, updatePerformanceMetrics, updateMainDashboardAlerts, showLowScoreStudents, showAbsentStudents, toggleAlertDetails, renderAlertDetails }
