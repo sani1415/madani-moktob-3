@@ -551,7 +551,9 @@
                     <button class="tab-button" onclick="openSettingsTab(event, 'books')">
                         <i class="fas fa-book"></i> Book Management
                     </button>
-
+                    <button class="tab-button" onclick="openSettingsTab(event, 'alerts')">
+                        <i class="fas fa-exclamation-triangle"></i> Alerts
+                    </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'data')">
                         <i class="fas fa-database"></i> Data Management
                     </button>
@@ -673,6 +675,43 @@
                 </div>
                 
                 
+
+                <!-- Alerts Tab -->
+                <div id="alerts" class="tab-content">
+                    <h3>Alert System Settings</h3>
+                    <div class="setting-group">
+                        <label for="lowScoreThreshold">Low Score Alert Threshold</label>
+                        <p class="help-text">Set the minimum score below which students will be flagged in the class dashboard alerts.</p>
+                        <div class="input-group">
+                            <input type="number" id="lowScoreThreshold" min="0" max="100" value="60">
+                            <button class="btn btn-primary" onclick="saveAlertThreshold()">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="criticalScoreThreshold">Critical Score Alert Threshold</label>
+                        <p class="help-text">Set the critical score below which students will be flagged with high priority alerts.</p>
+                        <div class="input-group">
+                            <input type="number" id="criticalScoreThreshold" min="0" max="100" value="50">
+                            <button class="btn btn-primary" onclick="saveAlertThreshold()">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="lowClassAverageThreshold">Low Class Average Threshold</label>
+                        <p class="help-text">Set the minimum class average score below which the entire class will be flagged.</p>
+                        <div class="input-group">
+                            <input type="number" id="lowClassAverageThreshold" min="0" max="100" value="70">
+                            <button class="btn btn-primary" onclick="saveAlertThreshold()">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Data Management Tab -->
                 <div id="data" class="tab-content">

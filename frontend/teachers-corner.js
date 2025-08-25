@@ -985,35 +985,83 @@
         }
 
         function renderDashboardAlerts(students) {
+            if (!ALERT_CONFIG) {
+                console.error('❌ Alert configuration not found');
+                return;
+            }
+            
             const alerts = [];
             
             // Check for students with low scores
             const lowScoreStudents = students.filter(s => {
                 const score = getHusnulKhulukScore(s.id);
-                return score < 60;
+                return score < ALERT_CONFIG.LOW_SCORE_THRESHOLD;
             });
             if (lowScoreStudents.length > 0) {
                 alerts.push({
                     type: 'warning',
                     icon: 'fas fa-user-times',
                     title: 'নিম্ন হুসনুল খুলুক স্কোর',
-                    message: `${lowScoreStudents.length} জন ছাত্রের স্কোর ৬০ এর নিচে।`,
-                    action: 'স্কোর দেখুন'
+                    message: `${lowScoreStudents.length} জন ছাত্রের স্কোর ${ALERT_CONFIG.LOW_SCORE_THRESHOLD} এর নিচে।`,
+                    action: 'স্কোর দেখুন',
+                    onClick: () => showScoreManagement()
                 });
             }
             
-            // Check for students with no progress
+            // Check for students with no progress based on actual progress data
             const classProgress = allEducationProgress.filter(p => p.class_name === currentClass);
             const studentsWithNoProgress = students.filter(s => {
-                return !classProgress.some(p => p.progressHistory.length > 0);
+                // Check if student has any progress records in the database
+                const hasProgress = classProgress.some(p => {
+                    return p.completed_pages > 0 || (p.notes && p.notes.trim() !== '');
+                });
+                return !hasProgress;
             });
+            
             if (studentsWithNoProgress.length > 0) {
                 alerts.push({
                     type: 'info',
                     icon: 'fas fa-book',
-                    title: 'অগ্রগতি নেই',
-                    message: `${studentsWithNoProgress.length} জন ছাত্রের শিক্ষার অগ্রগতি রেকর্ড নেই।`,
-                    action: 'অগ্রগতি দেখুন'
+                    title: 'শিক্ষার অগ্রগতি প্রয়োজন',
+                    message: `${studentsWithNoProgress.length} জন ছাত্রের শিক্ষার অগ্রগতি রেকর্ড করা হয়নি।`,
+                    action: 'অগ্রগতি দেখুন',
+                    onClick: () => showBookModal()
+                });
+            }
+            
+            // Check for students with low attendance
+            const today = new Date().toISOString().split('T')[0];
+            const todayAttendance = window.attendance && window.attendance[today] ? window.attendance[today] : {};
+            const lowAttendanceStudents = students.filter(s => {
+                if (!todayAttendance[s.id]) return false;
+                return todayAttendance[s.id].status === 'absent';
+            });
+            
+            if (lowAttendanceStudents.length > 0) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'fas fa-calendar-times',
+                    title: 'আজ অনুপস্থিত ছাত্র',
+                    message: `${lowAttendanceStudents.length} জন ছাত্র আজ অনুপস্থিত।`,
+                    action: 'উপস্থিতি দেখুন',
+                    onClick: () => showAttendanceModal()
+                });
+            }
+            
+            // Check for students with critical scores
+            const criticalScoreStudents = students.filter(s => {
+                const currentScore = getHusnulKhulukScore(s.id);
+                return currentScore < ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD;
+            });
+            
+            if (criticalScoreStudents.length > 0) {
+                alerts.push({
+                    type: 'danger',
+                    icon: 'fas fa-arrow-down',
+                    title: 'স্কোর হ্রাসের ঝুঁকি',
+                    message: `${criticalScoreStudents.length} জন ছাত্রের স্কোর খুবই কম।`,
+                    action: 'স্কোর দেখুন',
+                    onClick: () => showScoreManagement()
                 });
             }
             
@@ -1030,7 +1078,21 @@
                     icon: 'fas fa-exclamation-circle',
                     title: 'অনুসরণ প্রয়োজন',
                     message: `${importantLogs.length} টি গুরুত্বপূর্ণ নোট অনুসরণের অপেক্ষায়।`,
-                    action: 'নোট দেখুন'
+                    action: 'নোট দেখুন',
+                    onClick: () => showTeachersLogbook()
+                });
+            }
+            
+            // Check for class performance trends
+            const averageScore = students.reduce((sum, s) => sum + getHusnulKhulukScore(s.id), 0) / students.length;
+            if (averageScore < ALERT_CONFIG.LOW_CLASS_AVERAGE_THRESHOLD) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'fas fa-chart-line',
+                    title: 'শ্রেণীর গড় স্কোর কম',
+                    message: `শ্রেণীর গড় স্কোর ${Math.round(averageScore)}। উন্নতির প্রয়োজন।`,
+                    action: 'বিশ্লেষণ দেখুন',
+                    onClick: () => showClassAnalysis()
                 });
             }
             
@@ -1041,20 +1103,23 @@
             }
             
             if (alerts.length === 0) {
-                alertsContent.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">কোনো সতর্কতা নেই। সবকিছু ঠিক আছে!</p>';
+                alertsContent.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">কোনো সতর্কতা নেই। সবকিছু ঠিক আছে! 🎉</p>';
             } else {
-                alertsContent.innerHTML = alerts.map(alert => `
-                    <div class="flex items-center justify-between p-3 rounded-lg ${alert.type === 'danger' ? 'bg-red-50 border border-red-200' : alert.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50 border border-blue-200'}">
-                        <div class="flex items-center gap-3">
-                            <i class="${alert.icon} ${alert.type === 'danger' ? 'text-red-500' : alert.type === 'warning' ? 'text-yellow-500' : 'text-blue-500'}"></i>
-                            <div>
-                                <div class="font-semibold text-sm ${alert.type === 'danger' ? 'text-red-800' : alert.type === 'warning' ? 'text-yellow-800' : 'text-blue-800'}">${alert.title}</div>
-                                <div class="text-xs ${alert.type === 'danger' ? 'text-red-600' : alert.type === 'warning' ? 'text-yellow-600' : 'text-blue-600'}">${alert.message}</div>
+                alertsContent.innerHTML = alerts.map(alert => {
+                    const config = ALERT_CONFIG.ALERT_TYPES[alert.type];
+                    return `
+                        <div class="flex items-center justify-between p-3 rounded-lg ${config.bg} ${config.border}">
+                            <div class="flex items-center gap-3">
+                                <i class="${alert.icon} ${config.icon}"></i>
+                                <div>
+                                    <div class="font-semibold text-sm ${config.text}">${alert.title}</div>
+                                    <div class="text-xs ${config.text.replace('800', '600')}">${alert.message}</div>
+                                </div>
                             </div>
+                            <button onclick="${alert.onClick ? alert.onClick.toString().replace('function () {', '').replace('}', '') : 'void(0)'}" class="text-xs px-3 py-1 rounded ${config.bg.replace('50', '100')} ${config.text.replace('800', '700')} hover:${config.bg.replace('50', '200')}">${alert.action}</button>
                         </div>
-                        <button class="text-xs px-3 py-1 rounded ${alert.type === 'danger' ? 'bg-red-100 text-red-700 hover:bg-red-200' : alert.type === 'warning' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}">${alert.action}</button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
 
@@ -3143,6 +3208,90 @@
             if (!confirm('আপনি কি এই নোটটি মুছে ফেলতে নিশ্চিত?')) return;
             deleteLogFromDatabase(logId);
         }
+
+        // Helper functions for the improved alert system
+        function showScoreManagement() {
+            // Show score management modal or navigate to score section
+            console.log('📊 Opening score management...');
+            // You can implement this based on your UI needs
+            showModal('স্কোর ব্যবস্থাপনা', 'স্কোর ব্যবস্থাপনা সেকশন খোলা হচ্ছে...');
+        }
+        
+        function showAttendanceModal() {
+            // Show attendance modal
+            console.log('📅 Opening attendance modal...');
+            // You can implement this based on your UI needs
+            showModal('উপস্থিতি দেখুন', 'উপস্থিতি মডাল খোলা হচ্ছে...');
+        }
+        
+        function showClassAnalysis() {
+            // Show class performance analysis
+            console.log('📈 Opening class analysis...');
+            // You can implement this based on your UI needs
+            showModal('শ্রেণী বিশ্লেষণ', 'শ্রেণী বিশ্লেষণ সেকশন খোলা হচ্ছে...');
+        }
+        
+        function showTeachersLogbook() {
+            // Show teachers logbook
+            console.log('📔 Opening teachers logbook...');
+            // You can implement this based on your UI needs
+            showModal('শিক্ষকের লগবুক', 'শিক্ষকের লগবুক সেকশন খোলা হচ্ছে...');
+        }
+        
+        // Utility function to show modals
+        function showModal(title, message) {
+            // Create a simple modal if none exists
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white p-6 rounded-lg max-w-md mx-4">
+                    <h3 class="text-lg font-semibold mb-4">${title}</h3>
+                    <p class="text-gray-600 mb-6">${message}</p>
+                    <button onclick="this.closest('.fixed').remove()" class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                        বন্ধ করুন
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Make functions globally accessible
+        window.showScoreManagement = showScoreManagement;
+        window.showAttendanceModal = showAttendanceModal;
+        window.showClassAnalysis = showClassAnalysis;
+        window.showTeachersLogbook = showTeachersLogbook;
+        window.showModal = showModal;
+
+        // Alert System Configuration
+        const ALERT_CONFIG = {
+            // Score thresholds (can be customized in settings)
+            LOW_SCORE_THRESHOLD: 60,
+            CRITICAL_SCORE_THRESHOLD: 50,
+            LOW_CLASS_AVERAGE_THRESHOLD: 70,
+            
+            // Alert types and colors
+            ALERT_TYPES: {
+                danger: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: 'text-red-500' },
+                warning: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: 'text-yellow-500' },
+                info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-500' }
+            }
+        };
+
+        // Function to load alert settings from localStorage
+        function loadAlertSettings() {
+            const saved = localStorage.getItem('alertConfig');
+            if (saved) {
+                try {
+                    const savedConfig = JSON.parse(saved);
+                    Object.assign(ALERT_CONFIG, savedConfig);
+                } catch (e) {
+                    console.error('Error loading alert config:', e);
+                }
+            }
+        }
+        
+        // Load settings when page loads
+        loadAlertSettings();
 
 
 

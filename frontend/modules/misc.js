@@ -204,6 +204,17 @@ async function showSection(sectionId, event) {
     } else if (sectionId === 'settings') {
         console.log('🔄 Settings section selected, loading data...');
         
+        // Load alert settings
+        if (typeof loadSettingsData === 'function') {
+            console.log('✅ loadSettingsData function found, calling...');
+            loadSettingsData();
+            console.log('✅ loadSettingsData completed');
+        } else if (typeof window.loadSettingsData === 'function') {
+            console.log('✅ loadSettingsData found in window, calling...');
+            window.loadSettingsData();
+            console.log('✅ window.loadSettingsData completed');
+        }
+        
         // Access settings functions through global scope
         if (typeof displayClasses === 'function') {
             console.log('✅ displayClasses function found, calling...');
