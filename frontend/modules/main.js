@@ -634,3 +634,67 @@ document.addEventListener('click', function(event) {
 window.toggleTeachersCornerDropdown = toggleTeachersCornerDropdown;
 window.populateTeachersCornerDropdown = populateTeachersCornerDropdown;
 window.openTeachersCornerForClass = openTeachersCornerForClass;
+
+// Alert Settings Functions
+function loadAlertSettings() {
+    const saved = localStorage.getItem('alertConfig');
+    if (saved) {
+        try {
+            const config = JSON.parse(saved);
+            // Update input fields with saved values
+            const lowScoreInput = document.getElementById('lowScoreThreshold');
+            const criticalScoreInput = document.getElementById('criticalScoreThreshold');
+            const lowClassAverageInput = document.getElementById('lowClassAverageThreshold');
+            
+            if (lowScoreInput) lowScoreInput.value = config.LOW_SCORE_THRESHOLD || 60;
+            if (criticalScoreInput) criticalScoreInput.value = config.CRITICAL_SCORE_THRESHOLD || 50;
+            if (lowClassAverageInput) lowClassAverageInput.value = config.LOW_CLASS_AVERAGE_THRESHOLD || 70;
+        } catch (e) {
+            console.error('Error loading alert config:', e);
+        }
+    }
+}
+
+function saveAlertThreshold() {
+    const lowScoreThreshold = parseInt(document.getElementById('lowScoreThreshold').value) || 60;
+    const criticalScoreThreshold = parseInt(document.getElementById('criticalScoreThreshold').value) || 50;
+    const lowClassAverageThreshold = parseInt(document.getElementById('lowClassAverageThreshold').value) || 70;
+    
+    // Get existing config or create new one
+    const saved = localStorage.getItem('alertConfig');
+    let config = saved ? JSON.parse(saved) : {};
+    
+    // Update thresholds
+    config.LOW_SCORE_THRESHOLD = lowScoreThreshold;
+    config.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
+    config.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+    
+    // Save to localStorage
+    localStorage.setItem('alertConfig', JSON.stringify(config));
+    
+    // Update global ALERT_CONFIG if it exists
+    if (window.ALERT_CONFIG) {
+        window.ALERT_CONFIG.LOW_SCORE_THRESHOLD = lowScoreThreshold;
+        window.ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
+        window.ALERT_CONFIG.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+    }
+    
+    // Show success message
+    showNotification('Alert thresholds saved successfully!', 'success');
+    
+    // Refresh alerts if dashboard is open
+    if (typeof window.renderDashboardAlerts === 'function' && window.currentClass) {
+        const activeStudents = window.getActiveStudentsForClass ? window.getActiveStudentsForClass(window.currentClass) : [];
+        window.renderDashboardAlerts(activeStudents);
+    }
+}
+
+// Load alert settings when settings tab is opened
+function loadSettingsData() {
+    loadAlertSettings();
+}
+
+// Make functions globally accessible
+window.loadAlertSettings = loadAlertSettings;
+window.saveAlertThreshold = saveAlertThreshold;
+window.loadSettingsData = loadSettingsData;
