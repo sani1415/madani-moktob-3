@@ -20,6 +20,10 @@ setup_input.txt
 .env.production
 local_env.txt
 
-# Flask-Session files (server-side session storage)
+# Flask session files (SECURITY: Never commit session data!)
 flask_session/
-backend/flask_session/
+*/flask_session/
+**/flask_session/
+temp_sessions/
+*/temp_sessions/
+**/temp_sessions/

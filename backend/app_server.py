@@ -6,11 +6,10 @@ Server that automatically uses SQLite for local development and Cloud SQL for pr
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from flask_session import Session
 import json
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -104,25 +103,29 @@ except Exception as e:
 # Session management for authentication
 from flask import session
 import secrets
+import os
 
-# Import security configuration
-from security_config import security_config
-
-# Configure Flask-Session for better session management
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)  # 60 minutes
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# Initialize Flask-Session
-Session(app)
-
+# Configure session settings for security
 app.secret_key = secrets.token_hex(16)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(os.path.dirname(__file__), 'temp_sessions')
+app.config['SESSION_FILE_THRESHOLD'] = 500  # Maximum number of sessions to store
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour session timeout
+
+# Create session directory if it doesn't exist
+if not os.path.exists(app.config['SESSION_FILE_DIR']):
+    os.makedirs(app.config['SESSION_FILE_DIR'])
 
 # ✅ Serve frontend files with correct path
 @app.route('/')
 def serve_index():
+    logger.info(f"🔍 Root route accessed - Session: {dict(session)}")
+    # Check if user is authenticated before serving the main application
+    if 'user_id' not in session:
+        logger.info("🔒 User not authenticated, serving login page")
+        return send_from_directory(FRONTEND_PATH, 'login.html')
+    
+    logger.info(f"✅ User authenticated, serving main application")
     logger.info(f"🔍 Serving index.html from: {FRONTEND_PATH}")
     logger.info(f"🔍 FRONTEND_PATH exists: {os.path.exists(FRONTEND_PATH)}")
     logger.info(f"🔍 index.html exists: {os.path.exists(os.path.join(FRONTEND_PATH, 'index.html'))}")
@@ -134,6 +137,12 @@ def serve_index():
 
 @app.route('/login.html')
 def serve_login():
+    logger.info(f"🔍 Login route accessed - Session: {dict(session)}")
+    # If user is already authenticated, redirect to main app
+    if 'user_id' in session:
+        logger.info("🔒 User already authenticated, serving main app")
+        return send_from_directory(FRONTEND_PATH, 'index.html')
+    
     logger.info(f"🔍 Serving login.html from: {FRONTEND_PATH}")
     try:
         return send_from_directory(FRONTEND_PATH, 'login.html')
@@ -141,14 +150,18 @@ def serve_login():
         logger.error(f"❌ Error serving login.html: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/security-dashboard.html')
-def serve_security_dashboard():
-    """Serve security dashboard for admins"""
-    logger.info(f"🔍 Serving security-dashboard.html from: {FRONTEND_PATH}")
+@app.route('/app')
+def serve_main_app():
+    # Check if user is authenticated before serving the main application
+    if 'user_id' not in session:
+        logger.info("🔒 User not authenticated, redirecting to login")
+        return send_from_directory(FRONTEND_PATH, 'login.html')
+    
+    logger.info(f"🔍 Serving main app from: {FRONTEND_PATH}")
     try:
-        return send_from_directory(FRONTEND_PATH, 'security-dashboard.html')
+        return send_from_directory(FRONTEND_PATH, 'index.html')
     except Exception as e:
-        logger.error(f"❌ Error serving security-dashboard.html: {e}")
+        logger.error(f"❌ Error serving main app: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/test-books')
@@ -159,69 +172,33 @@ def test_books():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
-        # Get client IP address
-        client_ip = request.remote_addr
-        
-        # Clean up old security entries
-        security_config.cleanup_old_entries()
-        
-        # Check if IP is currently locked out
-        is_locked, remaining_time = security_config.is_ip_locked(client_ip)
-        if is_locked:
-            minutes = remaining_time // 60
-            seconds = remaining_time % 60
-            return jsonify({
-                'error': f'Too many failed login attempts. Please try again in {minutes}m {seconds}s.',
-                'locked': True,
-                'remaining_time': remaining_time
-            }), 429
-        
+        logger.info("🔍 Login API called")
         data = request.json
         username = data.get('username')
         password = data.get('password')
         
         if not username or not password:
+            logger.warning("❌ Login attempt without username or password")
             return jsonify({'error': 'Username and password are required'}), 400
         
         # Authenticate user
         user = db.authenticate_user(username, password)
         
         if user:
-            # Record successful login and reset failed attempts
-            security_config.record_successful_login(client_ip)
-            
             # Store user info in session
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
-            session['login_time'] = datetime.now().isoformat()
             
-            # Log successful login
-            logger.info(f"Successful login for user '{username}' from IP {client_ip}")
-            
+            logger.info(f"✅ User {username} logged in successfully")
             return jsonify({
                 'success': True,
                 'user': user,
                 'message': 'Login successful'
             })
         else:
-            # Record failed login attempt
-            is_locked, remaining_time = security_config.record_failed_attempt(client_ip)
-            
-            if is_locked:
-                minutes = remaining_time // 60
-                seconds = remaining_time % 60
-                return jsonify({
-                    'error': f'Too many failed login attempts. Please try again in {minutes}m {seconds}s.',
-                    'locked': True,
-                    'remaining_time': remaining_time
-                }), 429
-            else:
-                attempts_remaining = 5 - security_config.failed_attempts[client_ip]['count']
-                return jsonify({
-                    'error': f'Invalid username or password. {attempts_remaining} attempts remaining.',
-                    'attempts_remaining': attempts_remaining
-                }), 401
+            logger.warning(f"❌ Failed login attempt for username: {username}")
+            return jsonify({'error': 'Invalid username or password'}), 401
             
     except Exception as e:
         logger.error(f"Login error: {e}")
@@ -271,66 +248,11 @@ def get_current_user():
         if 'user_id' not in session:
             return jsonify({'error': 'Not authenticated'}), 401
         
-        # Check session timeout
-        if 'login_time' in session:
-            login_time = datetime.fromisoformat(session['login_time'])
-            current_time = datetime.now()
-            time_diff = current_time - login_time
-            
-            if time_diff.total_seconds() > security_config.SESSION_TIMEOUT:
-                # Session expired, clear it
-                session.clear()
-                logger.info(f"Session expired for user {session.get('username', 'unknown')}")
-                return jsonify({'error': 'Session expired. Please login again.'}), 401
-        
         user = db.get_user_by_id(session['user_id'])
         return jsonify(user)
         
     except Exception as e:
         logger.error(f"Get user error: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/auth/security-stats', methods=['GET'])
-def get_security_stats():
-    """Get security statistics (admin only)"""
-    try:
-        if 'user_id' not in session:
-            return jsonify({'error': 'Not authenticated'}), 401
-        
-        # Check if user is admin (you can customize this logic)
-        user = db.get_user_by_id(session['user_id'])
-        if user.get('role') != 'admin':
-            return jsonify({'error': 'Admin access required'}), 403
-        
-        stats = security_config.get_security_stats()
-        return jsonify(stats)
-        
-    except Exception as e:
-        logger.error(f"Security stats error: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/debug/force-create-users-table', methods=['POST'])
-def force_create_users_table():
-    """Force create users_new table (for debugging/deployment issues)"""
-    try:
-        # This endpoint doesn't require authentication for emergency use
-        # but you can add authentication if needed
-        
-        success = db.force_create_users_table()
-        if success:
-            return jsonify({
-                'success': True, 
-                'message': 'Users table created successfully',
-                'default_admin': {
-                    'username': 'admin',
-                    'password': 'admin123'
-                }
-            })
-        else:
-            return jsonify({'error': 'Failed to create users table'}), 500
-            
-    except Exception as e:
-        logger.error(f"Force create users table error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # API Routes

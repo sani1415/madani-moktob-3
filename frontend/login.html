@@ -197,7 +197,7 @@
                     
                     // Redirect to main application after a short delay
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/app';
                     }, 1000);
                 } else {
                     // Show error message
@@ -222,7 +222,7 @@
                 const response = await fetch('/api/auth/user');
                 if (response.ok) {
                     // User is already logged in, redirect to main app
-                    window.location.href = '/';
+                    window.location.href = '/app';
                 }
             } catch (error) {
                 // User is not logged in, stay on login page
