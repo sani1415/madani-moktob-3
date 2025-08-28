@@ -358,6 +358,19 @@ body {
     gap: 20px;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .header-text {
     text-align: center;
     flex: 1;

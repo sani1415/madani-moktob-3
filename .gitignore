@@ -19,3 +19,7 @@ setup_input.txt
 .env.local
 .env.production
 local_env.txt
+
+# Flask-Session files (server-side session storage)
+flask_session/
+backend/flask_session/

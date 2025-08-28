@@ -6,10 +6,11 @@ Server that automatically uses SQLite for local development and Cloud SQL for pr
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_session import Session
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -92,10 +93,32 @@ def get_database():
 # Initialize database
 try:
     db = get_database()
+    # Initialize database tables
+    db._initialize_database()
+    logger.info("✅ Database and tables initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize database: {e}")
     logger.error("❌ Server cannot start without database")
     raise e
+
+# Session management for authentication
+from flask import session
+import secrets
+
+# Import security configuration
+from security_config import security_config
+
+# Configure Flask-Session for better session management
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)  # 60 minutes
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Initialize Flask-Session
+Session(app)
+
+app.secret_key = secrets.token_hex(16)
 
 # ✅ Serve frontend files with correct path
 @app.route('/')
@@ -109,9 +132,182 @@ def serve_index():
         logger.error(f"❌ Error serving index.html: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/login.html')
+def serve_login():
+    logger.info(f"🔍 Serving login.html from: {FRONTEND_PATH}")
+    try:
+        return send_from_directory(FRONTEND_PATH, 'login.html')
+    except Exception as e:
+        logger.error(f"❌ Error serving login.html: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/security-dashboard.html')
+def serve_security_dashboard():
+    """Serve security dashboard for admins"""
+    logger.info(f"🔍 Serving security-dashboard.html from: {FRONTEND_PATH}")
+    try:
+        return send_from_directory(FRONTEND_PATH, 'security-dashboard.html')
+    except Exception as e:
+        logger.error(f"❌ Error serving security-dashboard.html: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/test-books')
 def test_books():
     return send_from_directory('.', 'test_frontend.html')
+
+# Authentication Routes
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        # Get client IP address
+        client_ip = request.remote_addr
+        
+        # Clean up old security entries
+        security_config.cleanup_old_entries()
+        
+        # Check if IP is currently locked out
+        is_locked, remaining_time = security_config.is_ip_locked(client_ip)
+        if is_locked:
+            minutes = remaining_time // 60
+            seconds = remaining_time % 60
+            return jsonify({
+                'error': f'Too many failed login attempts. Please try again in {minutes}m {seconds}s.',
+                'locked': True,
+                'remaining_time': remaining_time
+            }), 429
+        
+        data = request.json
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        # Authenticate user
+        user = db.authenticate_user(username, password)
+        
+        if user:
+            # Record successful login and reset failed attempts
+            security_config.record_successful_login(client_ip)
+            
+            # Store user info in session
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['role'] = user['role']
+            session['login_time'] = datetime.now().isoformat()
+            
+            # Log successful login
+            logger.info(f"Successful login for user '{username}' from IP {client_ip}")
+            
+            return jsonify({
+                'success': True,
+                'user': user,
+                'message': 'Login successful'
+            })
+        else:
+            # Record failed login attempt
+            is_locked, remaining_time = security_config.record_failed_attempt(client_ip)
+            
+            if is_locked:
+                minutes = remaining_time // 60
+                seconds = remaining_time % 60
+                return jsonify({
+                    'error': f'Too many failed login attempts. Please try again in {minutes}m {seconds}s.',
+                    'locked': True,
+                    'remaining_time': remaining_time
+                }), 429
+            else:
+                attempts_remaining = 5 - security_config.failed_attempts[client_ip]['count']
+                return jsonify({
+                    'error': f'Invalid username or password. {attempts_remaining} attempts remaining.',
+                    'attempts_remaining': attempts_remaining
+                }), 401
+            
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    try:
+        # Clear session
+        session.clear()
+        return jsonify({'success': True, 'message': 'Logout successful'})
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/change-password', methods=['POST'])
+def change_password():
+    try:
+        # Check if user is logged in
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        data = request.json
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+        
+        if not current_password or not new_password:
+            return jsonify({'error': 'Current password and new password are required'}), 400
+        
+        # Verify current password
+        user = db.authenticate_user(session['username'], current_password)
+        if not user:
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        
+        # Change password
+        db.change_user_password(session['user_id'], new_password)
+        
+        return jsonify({'success': True, 'message': 'Password changed successfully'})
+        
+    except Exception as e:
+        logger.error(f"Change password error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/user', methods=['GET'])
+def get_current_user():
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        # Check session timeout
+        if 'login_time' in session:
+            login_time = datetime.fromisoformat(session['login_time'])
+            current_time = datetime.now()
+            time_diff = current_time - login_time
+            
+            if time_diff.total_seconds() > security_config.SESSION_TIMEOUT:
+                # Session expired, clear it
+                session.clear()
+                logger.info(f"Session expired for user {session.get('username', 'unknown')}")
+                return jsonify({'error': 'Session expired. Please login again.'}), 401
+        
+        user = db.get_user_by_id(session['user_id'])
+        return jsonify(user)
+        
+    except Exception as e:
+        logger.error(f"Get user error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/security-stats', methods=['GET'])
+def get_security_stats():
+    """Get security statistics (admin only)"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        # Check if user is admin (you can customize this logic)
+        user = db.get_user_by_id(session['user_id'])
+        if user.get('role') != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        stats = security_config.get_security_stats()
+        return jsonify(stats)
+        
+    except Exception as e:
+        logger.error(f"Security stats error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # API Routes
 @app.route('/api/students/bulk-import', methods=['POST'])

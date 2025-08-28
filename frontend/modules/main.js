@@ -273,6 +273,7 @@ async function initializeApp() {
             // Update the global window variables directly
             window.classes = classesData; // This will be an array of objects like [{id: 1, name: '...'}, ...]
             console.log(`✅ Loaded ${classesData.length} classes from database`);
+            console.log('🔍 Classes in order:', classesData.map(cls => ({ id: cls.id, name: cls.name })));
         }
         
         // Load education progress and books from database
@@ -361,8 +362,27 @@ async function initializeApp() {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+// Initialize when DOM is loaded and authentication is confirmed
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for authentication to complete before initializing the app
+    const checkAuthAndInit = async () => {
+        try {
+            const response = await fetch('/api/auth/user');
+            if (response.ok) {
+                // User is authenticated, initialize the app
+                await initializeApp();
+            } else {
+                // User is not authenticated, don't initialize
+                console.log('User not authenticated, skipping app initialization');
+            }
+        } catch (error) {
+            // Network error, don't initialize
+            console.log('Network error during auth check, skipping app initialization');
+        }
+    };
+    
+    checkAuthAndInit();
+});
 
 // Teachers Corner Dropdown Functions
 function toggleTeachersCornerDropdown() {
@@ -387,6 +407,7 @@ function populateTeachersCornerDropdown() {
     }
     
     // Create class options
+    console.log('🔍 Classes in order for Teachers Corner dropdown:', classes.map(cls => ({ id: cls.id, name: cls.name })));
     const classOptions = classes.map(cls => `
         <a href="#" onclick="openTeachersCornerForClass('${cls.name}')">
             <i class="fas fa-graduation-cap"></i> ${cls.name}
@@ -639,6 +660,15 @@ document.addEventListener('click', function(event) {
 window.toggleTeachersCornerDropdown = toggleTeachersCornerDropdown;
 window.populateTeachersCornerDropdown = populateTeachersCornerDropdown;
 window.openTeachersCornerForClass = openTeachersCornerForClass;
+
+// Function to initialize app when authentication is confirmed
+window.initializeAppAfterAuth = async function() {
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error('Error initializing app after authentication:', error);
+    }
+};
 
 // Alert Settings Functions
 function loadAlertSettings() {

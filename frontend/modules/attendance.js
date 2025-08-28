@@ -84,10 +84,12 @@ async function loadAttendanceForDate() {
     console.log('Filtered students:', filteredStudents.length);
     console.log('Students data:', students);
     
-    // Sort students by class and then roll number
+    // Sort students by class ID (from database) and then roll number
     filteredStudents.sort((a, b) => {
-        const classA = getClassNumber(a.class);
-        const classB = getClassNumber(b.class);
+        // Get class ID from window.classes instead of parsing class name
+        const classA = window.classes ? window.classes.find(cls => cls.name === a.class)?.id || 0 : 0;
+        const classB = window.classes ? window.classes.find(cls => cls.name === b.class)?.id || 0 : 0;
+        
         if (classA !== classB) return classA - classB;
         return parseRollNumber(a.rollNumber) - parseRollNumber(b.rollNumber);
     });
@@ -1104,6 +1106,7 @@ function populateAttendanceClassFilter() {
         console.log('✅ Populating attendance class filter with classes:', window.classes);
         console.log('✅ Class names to add:', window.classes.map(cls => cls.name));
         
+        console.log('🔍 Classes in order for attendance filter:', window.classes.map(cls => ({ id: cls.id, name: cls.name })));
         window.classes.forEach((cls, index) => {
             console.log(`🔄 Processing class ${index + 1}:`, cls);
             const option = document.createElement('option');

@@ -385,13 +385,8 @@ async function updateClassWiseStats() {
         console.error('❌ Error fetching batch scores:', error);
     }
     
-    // Sort classes by name for consistent display
-    const sortedClasses = Object.keys(classSummary).sort((a, b) => {
-        const classA = getClassNumber(a);
-        const classB = getClassNumber(b);
-        if (classA !== classB) return classA - classB;
-        return a.localeCompare(b);
-    });
+    // Use classes in the order they come from database (sorted by ID)
+    const sortedClasses = Object.keys(classSummary);
     
         // Show table and hide loading indicator
         const loadingIndicator = document.getElementById('classStatsLoading');
