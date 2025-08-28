@@ -37,7 +37,7 @@ window.hideBulkImport = Registration.hideBulkImport;
 window.downloadAllStudentsCSV = Registration.downloadAllStudentsCSV;
 window.processExcelFile = Registration.processExcelFile;
 window.hideStudentRegistrationForm = Registration.hideStudentRegistrationForm;
-window.displayStudentsList = Registration.displayStudentsList;
+window.displayStudentsList = async () => await Registration.displayStudentsList();
 window.showStudentRegistrationForm = Registration.showStudentRegistrationForm;
 window.showBulkImport = Registration.showBulkImport;
 window.deleteAllStudents = Registration.deleteAllStudents;
@@ -225,37 +225,13 @@ async function initializeApp() {
     try {
         console.log('🔄 Initializing application data...');
         
-        // Load students from database
-        const studentsResponse = await fetch('/api/students');
-        if (studentsResponse.ok) {
-            const studentsData = await studentsResponse.json();
-            // Update the global window variables directly
-            window.students = studentsData;
-            console.log(`✅ Loaded ${studentsData.length} students from database`);
-        }
+        // Load students and attendance data only when needed (lazy loading)
+        console.log('✅ Essential data loaded. Students and attendance will be loaded on demand.');
         
-        // Load attendance from database
-        const attendanceResponse = await fetch('/api/attendance');
-        if (attendanceResponse.ok) {
-            const attendanceData = await attendanceResponse.json();
-            // Update the global window variables directly
-            window.attendance = attendanceData;
-            
-            // Populate savedAttendanceDates with dates that have attendance data
-            if (attendanceData && typeof attendanceData === 'object') {
-                const savedDates = Object.keys(attendanceData).filter(date => {
-                    const dateAttendance = attendanceData[date];
-                    return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
-                });
-                
-                // Clear and populate the savedAttendanceDates Set
-                window.savedAttendanceDates.clear();
-                savedDates.forEach(date => window.savedAttendanceDates.add(date));
-                
-                console.log(`✅ Loaded attendance data from database`);
-                console.log(`✅ Populated savedAttendanceDates with ${savedDates.length} dates:`, savedDates);
-            }
-        }
+        // Initialize empty arrays for lazy loading
+        window.students = [];
+        window.attendance = {};
+        window.savedAttendanceDates = new Set();
         
         // Load holidays from database
         const holidaysResponse = await fetch('/api/holidays');
@@ -734,4 +710,749 @@ window.loadAlertSettings = loadAlertSettings;
 window.saveAlertThreshold = saveAlertThreshold;
 window.loadSettingsData = loadSettingsData;
 window.updateMainDashboardAlerts = updateMainDashboardAlerts;
+window.showLowScoreStudents = showLowScoreStudents;
+
+// Load dashboard data only when needed
+async function initializeDashboardData() {
+    try {
+        console.log('🔄 Loading dashboard data on demand...');
+        
+        // Load students data
+        const studentsResponse = await fetch('/api/students');
+        if (studentsResponse.ok) {
+            const studentsData = await studentsResponse.json();
+            window.students = studentsData;
+            console.log(`✅ Loaded ${studentsData.length} students for dashboard`);
+        }
+        
+        // Load attendance data
+        const attendanceResponse = await fetch('/api/attendance');
+        if (attendanceResponse.ok) {
+            const attendanceData = await attendanceResponse.json();
+            window.attendance = attendanceData;
+            
+            // Populate savedAttendanceDates with dates that have attendance data
+            if (attendanceData && typeof attendanceData === 'object') {
+                const savedDates = Object.keys(attendanceData).filter(date => {
+                    const dateAttendance = attendanceData[date];
+                    return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
+                });
+                
+                window.savedAttendanceDates.clear();
+                savedDates.forEach(date => window.savedAttendanceDates.add(date));
+                console.log(`✅ Loaded attendance data with ${savedDates.length} dates`);
+            }
+        }
+        
+        console.log('✅ Dashboard data loaded successfully');
+        
+    } catch (error) {
+        console.error('❌ Error loading dashboard data:', error);
+    }
+}
+
+// Make dashboard data loading function globally accessible
+window.initializeDashboardData = initializeDashboardData;
+                console.log('User not authenticated, skipping app initialization');
+            }
+        } catch (error) {
+            // Network error, don't initialize
+            console.log('Network error during auth check, skipping app initialization');
+        }
+    };
+    
+    checkAuthAndInit();
+});
+
+
+// Teachers Corner Dropdown Functions
+
+function toggleTeachersCornerDropdown() {
+
+    const dropdown = document.getElementById('teachersCornerDropdown');
+
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+
+        dropdown.style.display = 'block';
+
+        populateTeachersCornerDropdown();
+
+    } else {
+
+        dropdown.style.display = 'none';
+
+    }
+
+}
+
+
+
+function populateTeachersCornerDropdown() {
+
+    const dropdown = document.getElementById('teachersCornerDropdown');
+
+    
+
+    // Get classes from your existing class data
+
+    const classes = window.classes || [];
+
+    
+
+    if (classes.length === 0) {
+
+        dropdown.innerHTML = '<a href="#" style="color: #6c757d; font-style: italic;">No classes available</a>';
+
+        return;
+
+    }
+
+    
+
+    // Create class options
+
+    console.log('🔍 Classes in order for Teachers Corner dropdown:', classes.map(cls => ({ id: cls.id, name: cls.name })));
+    const classOptions = classes.map(cls => `
+
+        <a href="#" onclick="openTeachersCornerForClass('${cls.name}')">
+
+            <i class="fas fa-graduation-cap"></i> ${cls.name}
+
+        </a>
+
+    `).join('');
+
+    
+
+    dropdown.innerHTML = classOptions;
+
+}
+
+
+
+async function openTeachersCornerForClass(className) {
+
+    console.log(`🚀 Opening Teachers Corner for class: ${className}`);
+
+    
+
+    // Check if showSection is available
+
+    if (typeof showSection !== 'function') {
+
+        console.error('❌ showSection function is not available!');
+
+        console.log('🔍 Available global functions:', Object.keys(window).filter(key => 
+
+            typeof window[key] === 'function' && key.includes('show')
+
+        ));
+
+        console.log('🔍 typeof showSection:', typeof showSection);
+
+        console.log('🔍 window.showSection:', window.showSection);
+
+        
+
+        // Try to wait for it to be available
+
+        let attempts = 0;
+
+        const maxAttempts = 10;
+
+        while (typeof showSection !== 'function' && attempts < maxAttempts) {
+
+            console.log(`⏳ Waiting for showSection to be available... (attempt ${attempts + 1}/${maxAttempts})`);
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            attempts++;
+
+        }
+
+        
+
+        if (typeof showSection !== 'function') {
+
+            console.error('❌ showSection still not available after waiting');
+
+            return;
+
+        }
+
+    }
+
+    
+
+    console.log('🔍 showSection function details:', {
+
+        name: showSection.name,
+
+        toString: showSection.toString().substring(0, 100) + '...',
+
+        isAsync: showSection.constructor.name === 'AsyncFunction'
+
+    });
+
+    
+
+    // Show integrated Teachers Corner section
+
+    try {
+
+        console.log('✅ Calling showSection...');
+
+        console.log('🔍 Before showSection - teachers-corner-section element:', document.getElementById('teachers-corner-section'));
+
+        console.log('🔍 Before showSection - all sections:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, hasActive: s.classList.contains('active'), display: window.getComputedStyle(s).display })));
+
+        
+
+        await showSection('teachers-corner-section');
+
+        console.log('✅ Teachers Corner section should now be visible');
+
+        
+
+        // Verify the section is actually visible
+
+        const teachersCornerSection = document.getElementById('teachers-corner-section');
+
+        if (teachersCornerSection) {
+
+            console.log('🔍 Section visibility check:', {
+
+                hasActiveClass: teachersCornerSection.classList.contains('active'),
+
+                computedDisplay: window.getComputedStyle(teachersCornerSection).display,
+
+                classes: teachersCornerSection.className,
+
+                styleDisplay: teachersCornerSection.style.display
+
+            });
+
+            
+
+            // Force the section to be visible if it's not
+
+            if (!teachersCornerSection.classList.contains('active')) {
+
+                console.warn('⚠️ Section not active after showSection, forcing activation...');
+
+                teachersCornerSection.classList.add('active');
+
+            }
+
+            
+
+            // Also force display if CSS is not working
+
+            const computedDisplay = window.getComputedStyle(teachersCornerSection).display;
+
+            if (computedDisplay === 'none') {
+
+                console.warn('⚠️ CSS display is still none after showSection, forcing display...');
+
+                teachersCornerSection.style.display = 'block';
+
+            }
+
+        }
+
+        
+
+        // Check all sections after showSection
+
+        console.log('🔍 After showSection - all sections:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, hasActive: s.classList.contains('active'), display: window.getComputedStyle(s).display })));
+
+        
+
+    } catch (error) {
+
+        console.error('❌ Error showing teachers corner section:', error);
+
+    }
+
+    
+
+    // Function to check if we can proceed
+
+    const canProceed = () => {
+
+        const requiredElements = [
+
+            'class-dashboard-title',
+
+            'class-student-list',
+
+            'class-education-progress',
+
+            'performance-chart',
+
+            'logbook-display'
+
+        ];
+
+        
+
+        // Add comprehensive DOM debugging
+
+        console.log('🔍 DOM Debugging Information:');
+
+        console.log('🔍 document.readyState:', document.readyState);
+
+        console.log('🔍 document.body.children.length:', document.body.children.length);
+
+        console.log('🔍 All sections found:', Array.from(document.querySelectorAll('.section')).map(s => ({ id: s.id, classes: s.className })));
+
+        console.log('🔍 teachers-corner-section element:', document.getElementById('teachers-corner-section'));
+
+        
+
+        // Check if the teachers corner section exists and what's inside it
+
+        const teachersCornerSection = document.getElementById('teachers-corner-section');
+
+        if (teachersCornerSection) {
+
+            console.log('🔍 Teachers corner section content:', {
+
+                innerHTML: teachersCornerSection.innerHTML.substring(0, 200) + '...',
+
+                children: Array.from(teachersCornerSection.children).map(child => ({ 
+
+                    id: child.id, 
+
+                    tagName: child.tagName, 
+
+                    className: child.className 
+
+                }))
+
+            });
+
+            
+
+            // Also check for elements by searching within the section
+
+            console.log('🔍 Searching for elements within teachers corner section:');
+
+            requiredElements.forEach(id => {
+
+                const elementInSection = teachersCornerSection.querySelector(`#${id}`);
+
+                console.log(`  🔍 ${id} in section: ${elementInSection ? 'FOUND' : 'MISSING'}`);
+
+                if (elementInSection) {
+
+                    console.log(`    ✅ Found ${id} within section:`, {
+
+                        tagName: elementInSection.tagName,
+
+                        className: elementInSection.className,
+
+                        textContent: elementInSection.textContent.substring(0, 50) + '...'
+
+                    });
+
+                }
+
+            });
+
+            
+
+            // Check if the section has any content at all
+
+            console.log('🔍 Section content analysis:', {
+
+                hasChildren: teachersCornerSection.children.length > 0,
+
+                childrenCount: teachersCornerSection.children.length,
+
+                textContent: teachersCornerSection.textContent.substring(0, 100) + '...',
+
+                innerHTMLLength: teachersCornerSection.innerHTML.length
+
+            });
+
+        }
+
+        
+
+        const missingElements = requiredElements.filter(id => !document.getElementById(id));
+
+        
+
+        if (missingElements.length > 0) {
+
+            console.warn('⚠️ Some required elements not found:', missingElements);
+
+            
+
+            // Add detailed debugging for each required element
+
+            console.log('🔍 Detailed element status:');
+
+            requiredElements.forEach(id => {
+
+                const element = document.getElementById(id);
+
+                if (element) {
+
+                    console.log(`  ✅ ${id}: FOUND`, {
+
+                        classes: element.className,
+
+                        computedDisplay: window.getComputedStyle(element).display,
+
+                        styleDisplay: element.style.display,
+
+                        offsetParent: element.offsetParent,
+
+                        clientHeight: element.clientHeight,
+
+                        clientWidth: element.clientWidth
+
+                    });
+
+                } else {
+
+                    console.log(`  ❌ ${id}: MISSING`);
+
+                    
+
+                    // Try to find it by other means
+
+                    const byQuerySelector = document.querySelector(`#${id}`);
+
+                    const byClassName = document.querySelector(`.${id}`);
+
+                    const byTagName = document.querySelector(id);
+
+                    
+
+                    console.log(`    🔍 Search attempts for ${id}:`, {
+
+                        byQuerySelector: !!byQuerySelector,
+
+                        byClassName: !!byClassName,
+
+                        byTagName: !!byTagName
+
+                    });
+
+                }
+
+            });
+
+            
+
+            // Check if the teachers corner section itself is visible
+
+            if (teachersCornerSection) {
+
+                console.log('🔍 Teachers corner section status:', {
+
+                    classes: teachersCornerSection.className,
+
+                    computedDisplay: window.getComputedStyle(teachersCornerSection).display,
+
+                    styleDisplay: teachersCornerSection.style.display,
+
+                    offsetParent: teachersCornerSection.offsetParent,
+
+                    clientHeight: teachersCornerSection.clientHeight,
+
+                    clientWidth: teachersCornerSection.clientWidth
+
+                });
+
+            }
+
+            
+
+            return false;
+
+        }
+
+        
+
+        if (typeof window.showClassDashboard !== 'function') {
+
+            console.warn('⚠️ showClassDashboard function not available yet');
+
+            return false;
+
+        }
+
+        
+
+        console.log('✅ All required elements and functions found');
+
+        return true;
+
+    };
+
+    
+
+    // Function to attempt loading dashboard
+
+    const attemptLoadDashboard = (attempt = 1, maxAttempts = 5) => {
+
+        console.log(`🔄 Attempt ${attempt} to load dashboard for class: ${className}`);
+
+        
+
+        if (canProceed()) {
+
+            try {
+
+                console.log('✅ Proceeding with dashboard loading...');
+
+                window.showClassDashboard(className);
+
+                return;
+
+            } catch (error) {
+
+                console.error('❌ Error calling showClassDashboard:', error);
+
+            }
+
+        }
+
+        
+
+        if (attempt < maxAttempts) {
+
+            const delay = Math.min(200 * attempt, 1000); // Progressive delay: 200ms, 400ms, 600ms, 800ms, 1000ms
+
+            console.log(`⏳ Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxAttempts})`);
+
+            setTimeout(() => attemptLoadDashboard(attempt + 1, maxAttempts), delay);
+
+        } else {
+
+            console.error('❌ Failed to load dashboard after maximum attempts');
+
+            // Show user-friendly error message
+
+            const dashboardTitle = document.getElementById('class-dashboard-title');
+
+            if (dashboardTitle) {
+
+                dashboardTitle.innerHTML = `
+
+                    <div class="text-center p-8">
+
+                        <h2 class="text-2xl font-bold mb-4 text-red-600">লোডিং সমস্যা</h2>
+
+                        <p class="text-gray-600 mb-4">ড্যাশবোর্ড লোড করতে সমস্যা হয়েছে।</p>
+
+                        <button onclick="openTeachersCornerForClass('${className}')" class="btn-primary text-white px-4 py-2 rounded-md">
+
+                            আবার চেষ্টা করুন
+
+                        </button>
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+
+    };
+
+    
+
+    // Start the loading process with initial delay
+
+    setTimeout(() => attemptLoadDashboard(1), 100);
+
+    
+
+    // Close the dropdown
+
+    const dropdown = document.getElementById('teachersCornerDropdown');
+
+    if (dropdown) {
+
+        dropdown.style.display = 'none';
+
+    }
+
+}
+
+
+
+// Close dropdown when clicking outside
+
+document.addEventListener('click', function(event) {
+
+    const dropdown = document.getElementById('teachersCornerDropdown');
+
+    const dropdownToggle = document.querySelector('.dropdown-toggle');
+
+    
+
+    if (dropdown && !dropdown.contains(event.target) && !dropdownToggle.contains(event.target)) {
+
+        dropdown.style.display = 'none';
+
+    }
+
+});
+
+
+
+// Expose Teachers Corner functions globally
+
+window.toggleTeachersCornerDropdown = toggleTeachersCornerDropdown;
+
+window.populateTeachersCornerDropdown = populateTeachersCornerDropdown;
+
+window.openTeachersCornerForClass = openTeachersCornerForClass;
+
+
+// Function to initialize app when authentication is confirmed
+window.initializeAppAfterAuth = async function() {
+    try {
+        await initializeApp();
+    } catch (error) {
+        console.error('Error initializing app after authentication:', error);
+    }
+};
+
+
+// Alert Settings Functions
+
+function loadAlertSettings() {
+
+    const saved = localStorage.getItem('alertConfig');
+
+    if (saved) {
+
+        try {
+
+            const config = JSON.parse(saved);
+
+            // Update input fields with saved values
+
+            const lowScoreInput = document.getElementById('lowScoreThreshold');
+
+            const criticalScoreInput = document.getElementById('criticalScoreThreshold');
+
+            const lowClassAverageInput = document.getElementById('lowClassAverageThreshold');
+
+            
+
+            if (lowScoreInput) lowScoreInput.value = config.LOW_SCORE_THRESHOLD || 60;
+
+            if (criticalScoreInput) criticalScoreInput.value = config.CRITICAL_SCORE_THRESHOLD || 50;
+
+            if (lowClassAverageInput) lowClassAverageInput.value = config.LOW_CLASS_AVERAGE_THRESHOLD || 70;
+
+        } catch (e) {
+
+            console.error('Error loading alert config:', e);
+
+        }
+
+    }
+
+}
+
+
+
+function saveAlertThreshold() {
+
+    const lowScoreThreshold = parseInt(document.getElementById('lowScoreThreshold').value) || 60;
+
+    const criticalScoreThreshold = parseInt(document.getElementById('criticalScoreThreshold').value) || 50;
+
+    const lowClassAverageThreshold = parseInt(document.getElementById('lowClassAverageThreshold').value) || 70;
+
+    
+
+    // Get existing config or create new one
+
+    const saved = localStorage.getItem('alertConfig');
+
+    let config = saved ? JSON.parse(saved) : {};
+
+    
+
+    // Update thresholds
+
+    config.LOW_SCORE_THRESHOLD = lowScoreThreshold;
+
+    config.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
+
+    config.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+
+    
+
+    // Save to localStorage
+
+    localStorage.setItem('alertConfig', JSON.stringify(config));
+
+    
+
+    // Update global ALERT_CONFIG if it exists
+
+    if (window.ALERT_CONFIG) {
+
+        window.ALERT_CONFIG.LOW_SCORE_THRESHOLD = lowScoreThreshold;
+
+        window.ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
+
+        window.ALERT_CONFIG.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+
+    }
+
+    
+
+    // Show success message
+
+    showNotification('Alert thresholds saved successfully!', 'success');
+
+    
+
+    // Refresh alerts if dashboard is open
+
+    if (typeof window.renderDashboardAlerts === 'function' && window.currentClass) {
+
+        const activeStudents = window.getActiveStudentsForClass ? window.getActiveStudentsForClass(window.currentClass) : [];
+
+        window.renderDashboardAlerts(activeStudents);
+
+    }
+
+}
+
+
+
+// Load alert settings when settings tab is opened
+
+function loadSettingsData() {
+
+    loadAlertSettings();
+
+}
+
+
+
+// Make functions globally accessible
+
+window.loadAlertSettings = loadAlertSettings;
+
+window.saveAlertThreshold = saveAlertThreshold;
+
+window.loadSettingsData = loadSettingsData;
+
+window.updateMainDashboardAlerts = updateMainDashboardAlerts;
+
 window.showLowScoreStudents = showLowScoreStudents;

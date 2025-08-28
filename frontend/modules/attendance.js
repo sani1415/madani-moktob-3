@@ -38,6 +38,15 @@ function updateDateInputMax() {
 
 async function loadAttendanceForDate() {
     console.log('=== loadAttendanceForDate called ===');
+    
+    // Load dashboard data if not already loaded
+    if (!window.students || window.students.length === 0) {
+        console.log('🔄 Attendance data not loaded, loading now...');
+        if (typeof window.initializeDashboardData === 'function') {
+            await window.initializeDashboardData();
+        }
+    }
+    
     let selectedDate = document.getElementById('attendanceDate').value;
     const attendanceList = document.getElementById('attendanceList');
     
