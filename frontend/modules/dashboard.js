@@ -4,14 +4,6 @@ async function updateDashboard() {
     // Use local date methods to avoid timezone issues (same as attendance module)
     const today = getTodayString();
     
-    // Load dashboard data if not already loaded
-    if (!window.students || window.students.length === 0) {
-        console.log('🔄 Dashboard data not loaded, loading now...');
-        if (typeof window.initializeDashboardData === 'function') {
-            await window.initializeDashboardData();
-        }
-    }
-    
     // NEW: Fetch counts from the health endpoint for accuracy
     try {
         const response = await fetch('/api/health');
