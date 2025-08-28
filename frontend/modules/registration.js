@@ -119,10 +119,12 @@ function displayStudentsList() {
         return;
     }
     
-    // Sort students by class and roll number
+    // Sort students by class ID (from database) and roll number
     const sortedStudents = [...students].sort((a, b) => {
-        const classA = getClassNumber(a.class);
-        const classB = getClassNumber(b.class);
+        // Get class ID from window.classes instead of parsing class name
+        const classA = window.classes ? window.classes.find(cls => cls.name === a.class)?.id || 0 : 0;
+        const classB = window.classes ? window.classes.find(cls => cls.name === b.class)?.id || 0 : 0;
+        
         if (classA !== classB) return classA - classB;
         
         const rollA = parseRollNumber(a.rollNumber);
@@ -455,10 +457,12 @@ function updateStudentTableBody() {
         return;
     }
     
-    // Sort students by class and roll number
+    // Sort students by class ID (from database) and roll number
     const sortedStudents = [...students].sort((a, b) => {
-        const classA = getClassNumber(a.class);
-        const classB = getClassNumber(b.class);
+        // Get class ID from window.classes instead of parsing class name
+        const classA = window.classes ? window.classes.find(cls => cls.name === a.class)?.id || 0 : 0;
+        const classB = window.classes ? window.classes.find(cls => cls.name === b.class)?.id || 0 : 0;
+        
         if (classA !== classB) return classA - classB;
         
         const rollA = parseRollNumber(a.rollNumber);

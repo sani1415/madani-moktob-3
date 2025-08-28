@@ -147,6 +147,50 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create users table for authentication
+            logger.info("🔍 MySQLDatabase: Creating users_new table...")
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) NOT NULL DEFAULT 'admin',
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_login TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            logger.info("✅ MySQLDatabase: Users_new table created/verified")
+            
+            # Force commit to ensure table is created
+            conn.commit()
+            logger.info("✅ MySQLDatabase: Users_new table committed to database")
+            
+            # Now that the table exists, check if admin user exists and create if needed
+            try:
+                logger.info("🔍 MySQLDatabase: Checking if admin user exists...")
+                cursor.execute("SELECT COUNT(*) FROM users_new WHERE username = 'admin'")
+                admin_count = cursor.fetchone()[0]
+                logger.info(f"🔍 MySQLDatabase: Found {admin_count} admin users")
+                
+                if admin_count == 0:
+                    logger.info("🔍 MySQLDatabase: Creating default admin user...")
+                    # Default password: admin123 (will be hashed)
+                    import hashlib
+                    default_password = "admin123"
+                    password_hash = hashlib.sha256(default_password.encode()).hexdigest()
+                    cursor.execute('''
+                        INSERT INTO users_new (username, password_hash, role) 
+                        VALUES ('admin', %s, 'admin')
+                    ''', (password_hash,))
+                    logger.info("✅ MySQLDatabase: Default admin user created (username: admin, password: admin123)")
+                else:
+                    logger.info("✅ MySQLDatabase: Admin user already exists")
+            except Error as e:
+                logger.error(f"❌ MySQLDatabase: Error with admin user: {e}")
+                # Continue with other table creation even if admin user creation fails
+            
             # Add total_pages column to existing books table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM books LIKE 'total_pages'")
@@ -332,6 +376,16 @@ class MySQLDatabase:
         except Exception as e:
             logger.error(f"Unexpected error getting students: {e}")
             return []
+
+    def _initialize_database(self):
+        """Initialize database tables - called once during startup"""
+        try:
+            logger.info("🔍 MySQLDatabase: Initializing database tables...")
+            self._ensure_tables_exist()
+            logger.info("✅ MySQLDatabase: Database initialization completed")
+        except Exception as e:
+            logger.error(f"❌ MySQLDatabase: Database initialization failed: {e}")
+            raise
     
     def save_students(self, students):
         """Save multiple students (used for bulk operations)"""
@@ -761,7 +815,7 @@ class MySQLDatabase:
         try:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute('SELECT * FROM classes ORDER BY name')
+            cursor.execute('SELECT * FROM classes ORDER BY id')
             classes = cursor.fetchall()
             cursor.close()
             conn.close()
@@ -1371,4 +1425,84 @@ class MySQLDatabase:
             
         except Error as e:
             print(f"Error getting book by ID: {e}")
+            raise
+
+    # User Authentication Methods
+    def authenticate_user(self, username, password):
+        """Authenticate a user with username and password"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get user by username
+            cursor.execute('SELECT * FROM users_new WHERE username = %s AND is_active = TRUE', (username,))
+            user = cursor.fetchone()
+            
+            if user:
+                # Hash the provided password and compare
+                import hashlib
+                password_hash = hashlib.sha256(password.encode()).hexdigest()
+                
+                if user['password_hash'] == password_hash:
+                    # Update last login time
+                    cursor.execute('UPDATE users_new SET last_login = CURRENT_TIMESTAMP WHERE id = %s', (user['id'],))
+                    conn.commit()
+                    
+                    # Return user info without password
+                    user_info = {
+                        'id': user['id'],
+                        'username': user['username'],
+                        'role': user['role'],
+                        'last_login': user['last_login']
+                    }
+                    
+                    cursor.close()
+                    conn.close()
+                    return user_info
+            
+            cursor.close()
+            conn.close()
+            return None
+            
+        except Error as e:
+            logger.error(f"Error authenticating user: {e}")
+            raise
+
+    def change_user_password(self, user_id, new_password):
+        """Change user password"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Hash the new password
+            import hashlib
+            password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+            
+            # Update password
+            cursor.execute('UPDATE users_new SET password_hash = %s WHERE id = %s', (password_hash, user_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            logger.error(f"Error changing password: {e}")
+            raise
+
+    def get_user_by_id(self, user_id):
+        """Get user information by ID"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('SELECT id, username, role, last_login, created_at FROM users_new WHERE id = %s', (user_id,))
+            user = cursor.fetchone()
+            
+            cursor.close()
+            conn.close()
+            return user
+            
+        except Error as e:
+            logger.error(f"Error getting user by ID: {e}")
             raise

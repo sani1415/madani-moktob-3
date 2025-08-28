@@ -37,6 +37,7 @@ function updateClassDropdowns() {
             const firstOption = dropdown.options[0] ? dropdown.options[0].outerHTML : '';
             dropdown.innerHTML = firstOption;
 
+            console.log(`🔍 Adding classes to dropdown ${id} in order:`, window.classes.map(cls => ({ id: cls.id, name: cls.name })));
             window.classes.forEach(cls => {
                 // Use cls.id for value and cls.name for display text
                 dropdown.options.add(new Option(cls.name, cls.id));

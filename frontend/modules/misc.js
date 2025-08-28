@@ -449,8 +449,9 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
                     attendanceRate: isNaN(attendanceRate) ? 0 : attendanceRate
                 };
             }).sort((a, b) => {
-                const classA = getClassNumber(a.class);
-                const classB = getClassNumber(b.class);
+                // Get class ID from window.classes instead of parsing class name
+                const classA = window.classes ? window.classes.find(cls => cls.name === a.class)?.id || 0 : 0;
+                const classB = window.classes ? window.classes.find(cls => cls.name === b.class)?.id || 0 : 0;
                 if (classA !== classB) return classA - classB;
                 return parseRollNumber(a.rollNumber) - parseRollNumber(b.rollNumber);
             });
