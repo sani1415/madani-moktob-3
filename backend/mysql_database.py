@@ -439,8 +439,6 @@ class MySQLDatabase:
     
     def _verify_critical_tables(self):
         """Verify that critical tables exist and are accessible"""
-        conn = None
-        cursor = None
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -451,8 +449,6 @@ class MySQLDatabase:
             for table in critical_tables:
                 try:
                     cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
-                    # Consume the result to prevent "unread result" errors
-                    cursor.fetchall()
                     logger.info(f"✅ Table '{table}' verified and accessible")
                 except Exception as e:
                     missing_tables.append(table)
@@ -473,25 +469,14 @@ class MySQLDatabase:
             else:
                 logger.info("✅ All critical tables verified successfully")
             
+            cursor.close()
+            conn.close()
+            
         except Exception as e:
             logger.error(f"❌ Error during table verification: {e}")
-        finally:
-            # Always close cursor and connection properly
-            if cursor:
-                try:
-                    cursor.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing cursor: {e}")
-            if conn:
-                try:
-                    conn.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing connection: {e}")
     
     def _log_database_status(self):
         """Log current database status for debugging"""
-        conn = None
-        cursor = None
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -506,28 +491,17 @@ class MySQLDatabase:
             grants = cursor.fetchall()
             logger.info(f"🔐 Database user permissions: {grants[:3]}...")  # Log first 3 grants
             
+            cursor.close()
+            conn.close()
+            
         except Exception as e:
             logger.error(f"❌ Could not log database status: {e}")
-        finally:
-            # Always close cursor and connection properly
-            if cursor:
-                try:
-                    cursor.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing cursor: {e}")
-            if conn:
-                try:
-                    conn.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing connection: {e}")
     
     def _create_users_table_alternative(self, cursor, conn):
         """Alternative method to create users_new table with minimal requirements"""
         try:
             logger.info("🔧 Alternative: Dropping existing table if exists...")
             cursor.execute("DROP TABLE IF EXISTS users_new")
-            # Consume any result
-            cursor.fetchall()
             
             logger.info("🔧 Alternative: Creating table with minimal schema...")
             cursor.execute('''
@@ -541,8 +515,6 @@ class MySQLDatabase:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            # Consume any result
-            cursor.fetchall()
             
             conn.commit()
             logger.info("✅ Alternative table creation successful")
@@ -561,8 +533,6 @@ class MySQLDatabase:
     
     def force_create_users_table(self):
         """Force create the users_new table if it's missing (for manual recovery)"""
-        conn = None
-        cursor = None
         try:
             logger.info("🔧 Force creating users_new table...")
             conn = self.get_connection()
@@ -570,8 +540,6 @@ class MySQLDatabase:
             
             # Drop table if it exists (to ensure clean creation)
             cursor.execute("DROP TABLE IF EXISTS users_new")
-            # Consume any result
-            cursor.fetchall()
             
             # Create the table
             cursor.execute('''
@@ -584,10 +552,8 @@ class MySQLDatabase:
                     last_login TIMESTAMP NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                )
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
-            # Consume any result
-            cursor.fetchall()
             
             # Create admin user
             import hashlib
@@ -599,6 +565,9 @@ class MySQLDatabase:
             ''', (password_hash,))
             
             conn.commit()
+            cursor.close()
+            conn.close()
+            
             logger.info("✅ Users_new table force-created successfully")
             logger.info("✅ Default admin user created (username: admin, password: admin123)")
             return True
@@ -606,18 +575,6 @@ class MySQLDatabase:
         except Exception as e:
             logger.error(f"❌ Failed to force create users_new table: {e}")
             return False
-        finally:
-            # Always close cursor and connection properly
-            if cursor:
-                try:
-                    cursor.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing cursor: {e}")
-            if conn:
-                try:
-                    conn.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ Error closing connection: {e}")
     
     def save_students(self, students):
         """Save multiple students (used for bulk operations)"""

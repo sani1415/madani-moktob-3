@@ -83,17 +83,9 @@ async function registerStudent() {
     }
 }
 
-async function displayStudentsList() {
+function displayStudentsList() {
     const studentsListContainer = document.getElementById('studentsListContainer');
     if (!studentsListContainer) return;
-    
-    // Load dashboard data if not already loaded
-    if (!window.students || window.students.length === 0) {
-        console.log('🔄 Registration data not loaded, loading now...');
-        if (typeof window.initializeDashboardData === 'function') {
-            await window.initializeDashboardData();
-        }
-    }
     
     // Update class dropdowns to ensure they're populated
     if (typeof updateClassDropdowns === 'function') {
