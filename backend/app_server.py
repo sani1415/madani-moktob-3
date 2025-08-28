@@ -309,6 +309,30 @@ def get_security_stats():
         logger.error(f"Security stats error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/debug/force-create-users-table', methods=['POST'])
+def force_create_users_table():
+    """Force create users_new table (for debugging/deployment issues)"""
+    try:
+        # This endpoint doesn't require authentication for emergency use
+        # but you can add authentication if needed
+        
+        success = db.force_create_users_table()
+        if success:
+            return jsonify({
+                'success': True, 
+                'message': 'Users table created successfully',
+                'default_admin': {
+                    'username': 'admin',
+                    'password': 'admin123'
+                }
+            })
+        else:
+            return jsonify({'error': 'Failed to create users table'}), 500
+            
+    except Exception as e:
+        logger.error(f"Force create users table error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # API Routes
 @app.route('/api/students/bulk-import', methods=['POST'])
 def bulk_import_students():
