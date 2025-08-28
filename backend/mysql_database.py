@@ -23,8 +23,10 @@ class MySQLDatabase:
             'user': os.getenv('DB_USER', 'root'),
             'password': os.getenv('DB_PASSWORD', ''),
             'database': os.getenv('DB_NAME', 'madani_moktob'),
-            'port': int(os.getenv('DB_PORT', 3306))
-            # Removed problematic charset and collation settings
+            'port': int(os.getenv('DB_PORT', 3306)),
+            'charset': 'utf8mb4',
+            'collation': 'utf8mb4_unicode_ci',
+            'use_unicode': True
         }
         
         logger.info("🔍 MySQLDatabase: Configuration loaded:")
@@ -39,38 +41,21 @@ class MySQLDatabase:
     def get_connection(self):
         """Get a database connection"""
         logger.info("🔍 MySQLDatabase: Attempting to connect to MySQL...")
-        max_retries = 3
-        retry_delay = 2
-        
-        for attempt in range(max_retries):
-            try:
-                # Add connection timeout to prevent hanging
-                config = self.db_config.copy()
-                config['connect_timeout'] = 15  # Increased timeout for cPanel
-                config['autocommit'] = True
-                # Let MySQL use default charset for maximum compatibility
-                
-                conn = mysql.connector.connect(**config)
-                logger.info("✅ MySQLDatabase: Successfully connected to MySQL")
-                return conn
-            except Error as e:
-                logger.error(f"❌ MySQLDatabase: Error connecting to MySQL (attempt {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    logger.info(f"🔄 Retrying in {retry_delay} seconds...")
-                    import time
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                else:
-                    raise
-            except Exception as e:
-                logger.error(f"❌ MySQLDatabase: Unexpected error connecting to MySQL (attempt {attempt + 1}/{max_retries}): {e}")
-                if attempt < max_retries - 1:
-                    logger.info(f"🔄 Retrying in {retry_delay} seconds...")
-                    import time
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                else:
-                    raise
+        try:
+            # Add connection timeout to prevent hanging
+            config = self.db_config.copy()
+            config['connect_timeout'] = 10  # 10 seconds timeout
+            config['autocommit'] = True
+            
+            conn = mysql.connector.connect(**config)
+            logger.info("✅ MySQLDatabase: Successfully connected to MySQL")
+            return conn
+        except Error as e:
+            logger.error(f"❌ MySQLDatabase: Error connecting to MySQL: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ MySQLDatabase: Unexpected error connecting to MySQL: {e}")
+            raise
     
     def _ensure_tables_exist(self):
         """Initialize database tables if they don't exist"""
@@ -164,52 +149,23 @@ class MySQLDatabase:
             
             # Create users table for authentication
             logger.info("🔍 MySQLDatabase: Creating users_new table...")
-            try:
-                # First, try with simpler character set for cPanel compatibility
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS users_new (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        username VARCHAR(50) UNIQUE NOT NULL,
-                        password_hash VARCHAR(255) NOT NULL,
-                        role VARCHAR(20) NOT NULL DEFAULT 'admin',
-                        is_active BOOLEAN DEFAULT TRUE,
-                        last_login TIMESTAMP NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                    )
-                ''')
-                logger.info("✅ MySQLDatabase: Users_new table created/verified")
-                
-                # Force commit to ensure table is created
-                conn.commit()
-                logger.info("✅ MySQLDatabase: Users_new table committed to database")
-                
-                # Verify the table was actually created
-                cursor.execute("SHOW TABLES LIKE 'users_new'")
-                if cursor.fetchone():
-                    logger.info("✅ Users_new table verification successful")
-                else:
-                    logger.error("❌ Users_new table was not created despite no errors")
-                    # Try alternative creation method
-                    logger.info("🔧 Attempting alternative table creation method...")
-                    self._create_users_table_alternative(cursor, conn)
-                    
-            except Exception as e:
-                logger.error(f"❌ MySQLDatabase: Failed to create users_new table: {e}")
-                # Try alternative creation method
-                try:
-                    logger.info("🔧 Attempting alternative table creation method...")
-                    self._create_users_table_alternative(cursor, conn)
-                except Exception as alt_e:
-                    logger.error(f"❌ Alternative method also failed: {alt_e}")
-                    # Try to provide more context
-                    try:
-                        cursor.execute("SHOW TABLES")
-                        existing_tables = [table[0] for table in cursor.fetchall()]
-                        logger.info(f"📋 Current tables in database: {existing_tables}")
-                    except:
-                        pass
-                    raise Exception(f"Failed to create users_new table: {e}")
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) NOT NULL DEFAULT 'admin',
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_login TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            logger.info("✅ MySQLDatabase: Users_new table created/verified")
+            
+            # Force commit to ensure table is created
+            conn.commit()
+            logger.info("✅ MySQLDatabase: Users_new table committed to database")
             
             # Now that the table exists, check if admin user exists and create if needed
             try:
@@ -426,155 +382,10 @@ class MySQLDatabase:
         try:
             logger.info("🔍 MySQLDatabase: Initializing database tables...")
             self._ensure_tables_exist()
-            
-            # Verify that critical tables were created
-            self._verify_critical_tables()
-            
             logger.info("✅ MySQLDatabase: Database initialization completed")
         except Exception as e:
             logger.error(f"❌ MySQLDatabase: Database initialization failed: {e}")
-            # Try to provide more helpful error information
-            self._log_database_status()
             raise
-    
-    def _verify_critical_tables(self):
-        """Verify that critical tables exist and are accessible"""
-        try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            critical_tables = ['students', 'classes', 'users_new', 'attendance']
-            missing_tables = []
-            
-            for table in critical_tables:
-                try:
-                    cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
-                    logger.info(f"✅ Table '{table}' verified and accessible")
-                except Exception as e:
-                    missing_tables.append(table)
-                    logger.error(f"❌ Table '{table}' is missing or inaccessible: {e}")
-                    
-                    # Try to create missing critical tables
-                    if table == 'users_new':
-                        logger.info("🔧 Attempting to create missing users_new table...")
-                        try:
-                            self._create_users_table_alternative(cursor, conn)
-                            logger.info("✅ Successfully created missing users_new table")
-                        except Exception as create_e:
-                            logger.error(f"❌ Failed to create missing users_new table: {create_e}")
-            
-            if missing_tables:
-                logger.error(f"❌ Critical tables missing: {missing_tables}")
-                logger.error("❌ Database initialization may have failed")
-            else:
-                logger.info("✅ All critical tables verified successfully")
-            
-            cursor.close()
-            conn.close()
-            
-        except Exception as e:
-            logger.error(f"❌ Error during table verification: {e}")
-    
-    def _log_database_status(self):
-        """Log current database status for debugging"""
-        try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            # Check what tables exist
-            cursor.execute("SHOW TABLES")
-            existing_tables = [table[0] for table in cursor.fetchall()]
-            logger.info(f"📋 Existing tables in database: {existing_tables}")
-            
-            # Check database user permissions
-            cursor.execute("SHOW GRANTS")
-            grants = cursor.fetchall()
-            logger.info(f"🔐 Database user permissions: {grants[:3]}...")  # Log first 3 grants
-            
-            cursor.close()
-            conn.close()
-            
-        except Exception as e:
-            logger.error(f"❌ Could not log database status: {e}")
-    
-    def _create_users_table_alternative(self, cursor, conn):
-        """Alternative method to create users_new table with minimal requirements"""
-        try:
-            logger.info("🔧 Alternative: Dropping existing table if exists...")
-            cursor.execute("DROP TABLE IF EXISTS users_new")
-            
-            logger.info("🔧 Alternative: Creating table with minimal schema...")
-            cursor.execute('''
-                CREATE TABLE users_new (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(50) UNIQUE NOT NULL,
-                    password_hash VARCHAR(255) NOT NULL,
-                    role VARCHAR(20) NOT NULL DEFAULT 'admin',
-                    is_active BOOLEAN DEFAULT TRUE,
-                    last_login TIMESTAMP NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            
-            conn.commit()
-            logger.info("✅ Alternative table creation successful")
-            
-            # Verify creation
-            cursor.execute("SHOW TABLES LIKE 'users_new'")
-            if cursor.fetchone():
-                logger.info("✅ Alternative table verification successful")
-                return True
-            else:
-                raise Exception("Alternative table creation failed verification")
-                
-        except Exception as e:
-            logger.error(f"❌ Alternative table creation failed: {e}")
-            raise
-    
-    def force_create_users_table(self):
-        """Force create the users_new table if it's missing (for manual recovery)"""
-        try:
-            logger.info("🔧 Force creating users_new table...")
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            # Drop table if it exists (to ensure clean creation)
-            cursor.execute("DROP TABLE IF EXISTS users_new")
-            
-            # Create the table
-            cursor.execute('''
-                CREATE TABLE users_new (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(50) UNIQUE NOT NULL,
-                    password_hash VARCHAR(255) NOT NULL,
-                    role VARCHAR(20) NOT NULL DEFAULT 'admin',
-                    is_active BOOLEAN DEFAULT TRUE,
-                    last_login TIMESTAMP NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-            ''')
-            
-            # Create admin user
-            import hashlib
-            default_password = "admin123"
-            password_hash = hashlib.sha256(default_password.encode()).hexdigest()
-            cursor.execute('''
-                INSERT INTO users_new (username, password_hash, role) 
-                VALUES ('admin', %s, 'admin')
-            ''', (password_hash,))
-            
-            conn.commit()
-            cursor.close()
-            conn.close()
-            
-            logger.info("✅ Users_new table force-created successfully")
-            logger.info("✅ Default admin user created (username: admin, password: admin123)")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to force create users_new table: {e}")
-            return False
     
     def save_students(self, students):
         """Save multiple students (used for bulk operations)"""
@@ -1004,7 +815,7 @@ class MySQLDatabase:
         try:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute('SELECT * FROM classes ORDER BY id')
+            cursor.execute('SELECT * FROM classes ORDER BY name')
             classes = cursor.fetchall()
             cursor.close()
             conn.close()

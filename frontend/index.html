@@ -6,7 +6,7 @@
     <title>Madani Maktab - Student Attendance Management</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.3.0/tailwind.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -15,522 +15,474 @@
         .loading {
             animation: spin 1s linear infinite;
         }
-        
-        /* Authentication loading styles */
-        .auth-loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        
-        .auth-loading-content {
-            text-align: center;
-            color: white;
-        }
-        
-        .auth-loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 20px;
-        }
-        
-        .main-app {
-            display: none;
-        }
-        
-        .main-app.authenticated {
-            display: block;
-        }
     </style>
 </head>
 <body>
-    <!-- Authentication Loading Screen -->
-    <div id="authLoading" class="auth-loading">
-        <div class="auth-loading-content">
-            <div class="auth-loading-spinner"></div>
-            <h2>Authenticating...</h2>
-            <p>Please wait while we verify your credentials.</p>
-        </div>
-    </div>
-
-    <!-- Main Application (Hidden until authenticated) -->
-    <div id="mainApp" class="main-app">
-        <!-- Header -->
-        <header class="header">
-            <div class="container">
-                <div class="header-content">
-                    <div class="header-text">
-                        <h1 onclick="showSection('dashboard')" style="cursor: pointer;" title="Go to Dashboard">
-                            <i class="fas fa-graduation-cap"></i> Madani Maktab
-                        </h1>
-                        <p>Student Attendance Management System</p>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-text">
+                    <h1 onclick="showSection('dashboard')" style="cursor: pointer;" title="Go to Dashboard">
+                        <i class="fas fa-graduation-cap"></i> Madani Maktab
+                    </h1>
+                    <p>Student Attendance Management System</p>
+                </div>
+                <div class="header-controls">
+                    <div class="language-selector">
+                        <label for="languageSelector"><i class="fas fa-globe"></i></label>
+                        <select id="languageSelector" onchange="changeLanguage(this.value)">
+                            <option value="en">English</option>
+                            <option value="bn">বাংলা</option>
+                        </select>
                     </div>
-                    <div class="header-controls">
-                        <div class="language-selector">
-                            <label for="languageSelector"><i class="fas fa-globe"></i></label>
-                            <select id="languageSelector" onchange="changeLanguage(this.value)">
-                                <option value="en">English</option>
-                                <option value="bn">বাংলা</option>
-                            </select>
+                    <div class="user-info">
+                        <span id="currentUser" style="margin-right: 15px; color: #fff; font-weight: 500;"></span>
+                        <button onclick="logout()" class="logout-btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="#" onclick="showSection('dashboard', event)" class="nav-link active">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a></li>
+                    <li><a href="#" onclick="showSection('registration', event)" class="nav-link">
+                        <i class="fas fa-user-plus"></i> Register Student
+                    </a></li>
+                    <li><a href="#" onclick="showSection('attendance', event)" class="nav-link">
+                        <i class="fas fa-check-circle"></i> Daily Attendance
+                    </a></li>
+                    <li><a href="#" onclick="showSection('reports', event)" class="nav-link">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a></li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" onclick="toggleTeachersCornerDropdown()">
+                            <i class="fas fa-chalkboard-teacher"></i> Teachers Corner <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <div id="teachersCornerDropdown" class="dropdown-menu" style="display: none;">
+                            <!-- Class options will be populated dynamically -->
                         </div>
-                        <div class="user-info">
-                            <span id="currentUser" style="margin-right: 15px; color: #fff; font-weight: 500;"></span>
-                            <button onclick="logout()" class="logout-btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;">
-                                <i class="fas fa-sign-out-alt"></i> Logout
+                    </li>
+                    <li><a href="#" onclick="showSection('settings', event)" class="nav-link">
+                        <i class="fas fa-cog"></i> Settings
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <h2>Dashboard</h2>
+                
+                <!-- Holiday Notice -->
+                <div id="holidayNotice" style="display: none;">
+                    <!-- Holiday notice will be displayed here -->
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3 id="totalStudents">0</h3>
+                        <p data-translate="totalStudents">Total Students</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check"></i>
+                        <h3 id="presentToday">0</h3>
+                        <p data-translate="presentToday">Present Today</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-times"></i>
+                        <h3 id="absentToday">0</h3>
+                        <p data-translate="absentToday">Absent Today</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-percentage"></i>
+                        <h3 id="attendanceRate">100%</h3>
+                        <p data-translate="attendanceRate">Attendance Rate</p>
+                    </div>
+                    <div class="stat-card" onclick="showInactiveStudentsList()" style="cursor: pointer;">
+                        <i class="fas fa-user-slash"></i>
+                        <h3 id="inactiveStudents">0</h3>
+                        <p data-translate="inactiveStudents">Inactive Students</p>
+                    </div>
+                    <div class="stat-card performance-card">
+                        <i class="fas fa-star"></i>
+                        <div class="performance-tiers">
+                            <div class="tier mustaid">
+                                <span class="tier-count" id="mustaidCount">0</span>
+                                <span class="tier-label">Mustaid</span>
+                            </div>
+                            <div class="tier mutawassit">
+                                <span class="tier-count" id="mutawassitCount">0</span>
+                                <span class="tier-label">Mutawassit</span>
+                            </div>
+                            <div class="tier mujtahid">
+                                <span class="tier-count" id="mujtahidCount">0</span>
+                                <span class="tier-label">Mujtahid</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main Dashboard Alerts -->
+                <div id="main-dashboard-alerts" class="dashboard-alerts-section" style="display: none;">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Institution Alerts</h3>
+                    <div id="main-alerts-content" class="alerts-content">
+                        <!-- Alerts will be rendered here -->
+                    </div>
+                </div>
+                
+                <!-- Class-wise Stats -->
+                <div class="class-wise-stats">
+                    <h3>Class-wise Information</h3>
+                    <div class="class-stats-table-container">
+                        <div id="classStatsLoading" class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading class statistics...</span>
+                        </div>
+                        <table class="class-stats-table" id="classStatsTable" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Total</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Rate</th>
+                                    <th>Inactive</th>
+                                    <th>Avg Score</th>
+                                    <th>Mustaid</th>
+                                    <th>Mutawassit</th>
+                                    <th>Mujtahid</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classWiseTableBody">
+                                <!-- Class-wise statistics will be displayed here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Student Registration Section -->
+            <section id="registration" class="section">
+                <h2>Student Management</h2>
+                
+                <!-- Bulk Import Section (Hidden by default) -->
+                <div id="bulkImportSection" class="bulk-import-section" style="display:none;">
+                    <div class="bulk-import-header">
+                        <h3>📊 Bulk Import Students from CSV</h3>
+                        <button onclick="hideBulkImport()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </button>
+                    </div>
+                    
+                    <div class="bulk-import-instructions">
+                        <h4>📋 File Format Required:</h4>
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
+                            <p style="margin: 0; color: #1565c0; font-weight: 600;">
+                                💡 <strong>Important for Bengali/Unicode text:</strong> Save as <strong>CSV UTF-8</strong> format
+                            </p>
+                            <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
+                                <strong>Excel:</strong> File → Save As → Choose <strong>"CSV UTF-8 (Comma delimited) (*.csv)"</strong>
+                            </p>
+                            <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
+                                <strong>Google Sheets:</strong> File → Download → Comma-separated values (.csv)
+                            </p>
+                        </div>
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                            <p style="margin: 0; color: #856404; font-weight: 600;">
+                                🔤 <strong>Bengali/Unicode Support:</strong> Your Bengali text will display correctly if saved as CSV UTF-8
+                            </p>
+                            <p style="margin: 8px 0 0 0; color: #856404; font-size: 0.9em;">
+                                <strong>Example:</strong> Name should look like "মোহাম্মদ আলী" not "à¦®à§‹à¦¹à¦¾à¦®à§à¦®à¦¦ à¦†à¦²à§€"
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <button onclick="downloadAllStudentsCSV()" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> Download All Students Data
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Navigation -->
-        <nav class="nav">
-            <div class="container">
-                <div class="nav-container">
-                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <ul class="nav-list" id="navList">
-                        <li><a href="#" onclick="showSection('dashboard', event)" class="nav-link active">
-                            <i class="fas fa-home"></i> Dashboard
-                        </a></li>
-                        <li><a href="#" onclick="showSection('registration', event)" class="nav-link">
-                            <i class="fas fa-user-plus"></i> Register Student
-                        </a></li>
-                        <li><a href="#" onclick="showSection('attendance', event)" class="nav-link">
-                            <i class="fas fa-check-circle"></i> Daily Attendance
-                        </a></li>
-                        <li><a href="#" onclick="showSection('reports', event)" class="nav-link">
-                            <i class="fas fa-chart-bar"></i> Reports
-                        </a></li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" onclick="toggleTeachersCornerDropdown()">
-                                <i class="fas fa-chalkboard-teacher"></i> Teachers Corner <i class="fas fa-chevron-down"></i>
-                            </a>
-                            <div id="teachersCornerDropdown" class="dropdown-menu" style="display: none;">
-                                <!-- Class options will be populated dynamically -->
-                            </div>
-                        </li>
-                        <li><a href="#" onclick="showSection('settings', event)" class="nav-link">
-                            <i class="fas fa-cog"></i> Settings
-                        </a></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main">
-            <div class="container">
-                <!-- Dashboard Section -->
-                <section id="dashboard" class="section active">
-                    <h2>Dashboard</h2>
-                    
-                    <!-- Holiday Notice -->
-                    <div id="holidayNotice" style="display: none;">
-                        <!-- Holiday notice will be displayed here -->
-                    </div>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <i class="fas fa-users"></i>
-                            <h3 id="totalStudents">0</h3>
-                            <p data-translate="totalStudents">Total Students</p>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-check"></i>
-                            <h3 id="presentToday">0</h3>
-                            <p data-translate="presentToday">Present Today</p>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-times"></i>
-                            <h3 id="absentToday">0</h3>
-                            <p data-translate="absentToday">Absent Today</p>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-percentage"></i>
-                            <h3 id="attendanceRate">100%</h3>
-                            <p data-translate="attendanceRate">Attendance Rate</p>
-                        </div>
-                        <div class="stat-card" onclick="showInactiveStudentsList()" style="cursor: pointer;">
-                            <i class="fas fa-user-slash"></i>
-                            <h3 id="inactiveStudents">0</h3>
-                            <p data-translate="inactiveStudents">Inactive Students</p>
-                        </div>
-                        <div class="stat-card performance-card">
-                            <i class="fas fa-star"></i>
-                            <div class="performance-tiers">
-                                <div class="tier mustaid">
-                                    <span class="tier-count" id="mustaidCount">0</span>
-                                    <span class="tier-label">Mustaid</span>
-                                </div>
-                                <div class="tier mutawassit">
-                                    <span class="tier-count" id="mutawassitCount">0</span>
-                                    <span class="tier-label">Mutawassit</span>
-                                </div>
-                                <div class="tier mujtahid">
-                                    <span class="tier-count" id="mujtahidCount">0</span>
-                                    <span class="tier-label">Mujtahid</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Main Dashboard Alerts -->
-                    <div id="main-dashboard-alerts" class="dashboard-alerts-section" style="display: none;">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Institution Alerts</h3>
-                        <div id="main-alerts-content" class="alerts-content">
-                            <!-- Alerts will be rendered here -->
-                        </div>
-                    </div>
-                    
-                    <!-- Class-wise Stats -->
-                    <div class="class-wise-stats">
-                        <h3>Class-wise Information</h3>
-                        <div class="class-stats-table-container">
-                            <div id="classStatsLoading" class="loading-indicator">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>Loading class statistics...</span>
-                            </div>
-                            <table class="class-stats-table" id="classStatsTable" style="display: none;">
+                        <div class="format-table">
+                            <table>
                                 <thead>
                                     <tr>
-                                        <th>Class</th>
-                                        <th>Total</th>
-                                        <th>Present</th>
-                                        <th>Absent</th>
-                                        <th>Rate</th>
-                                        <th>Inactive</th>
-                                        <th>Avg Score</th>
-                                        <th>Mustaid</th>
-                                        <th>Mutawassit</th>
-                                        <th>Mujtahid</th>
+                                        <th>id</th>
+                                        <th>name</th>
+                                        <th>fatherName</th>
+                                        <th>rollNumber</th>
+                                        <th>mobileNumber</th>
+                                        <th>district</th>
+                                        <th>upazila</th>
+                                        <th>class</th>
+                                        <th>registrationDate</th>
                                     </tr>
                                 </thead>
-                                <tbody id="classWiseTableBody">
-                                    <!-- Class-wise statistics will be displayed here -->
+                                <tbody>
+                                    <tr>
+                                        <td>ST001</td>
+                                        <td>Abdullah Rahman</td>
+                                        <td>Rahman Ahmed</td>
+                                        <td>101</td>
+                                        <td>01711234567</td>
+                                        <td>Dhaka</td>
+                                        <td>Dhanmondi</td>
+                                        <td>প্রথম শ্রেণি</td>
+                                        <td>2025-01-01</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ST002</td>
+                                        <td>Fatima Khatun</td>
+                                        <td>Karim Uddin</td>
+                                        <td>102</td>
+                                        <td>01811234567</td>
+                                        <td>Dhaka</td>
+                                        <td>Gulshan</td>
+                                        <td>দ্বিতীয় শ্রেণি</td>
+                                        <td>2025-01-02</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </section>
-
-                <!-- Student Registration Section -->
-                <section id="registration" class="section">
-                    <h2>Student Management</h2>
-                    
-                    <!-- Bulk Import Section (Hidden by default) -->
-                    <div id="bulkImportSection" class="bulk-import-section" style="display:none;">
-                        <div class="bulk-import-header">
-                            <h3>📊 Bulk Import Students from CSV</h3>
-                            <button onclick="hideBulkImport()" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to List
-                            </button>
-                        </div>
-                        
-                        <div class="bulk-import-instructions">
-                            <h4>📋 File Format Required:</h4>
-                            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2196f3;">
-                                <p style="margin: 0; color: #1565c0; font-weight: 600;">
-                                    💡 <strong>Important for Bengali/Unicode text:</strong> Save as <strong>CSV UTF-8</strong> format
-                                </p>
-                                <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
-                                    <strong>Excel:</strong> File → Save As → Choose <strong>"CSV UTF-8 (Comma delimited) (*.csv)"</strong>
-                                </p>
-                                <p style="margin: 5px 0 0 0; color: #1565c0; font-size: 0.9em;">
-                                    <strong>Google Sheets:</strong> File → Download → Comma-separated values (.csv)
-                                </p>
-                            </div>
-                            <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
-                                <p style="margin: 0; color: #856404; font-weight: 600;">
-                                    🔤 <strong>Bengali/Unicode Support:</strong> Your Bengali text will display correctly if saved as CSV UTF-8
-                                </p>
-                                <p style="margin: 8px 0 0 0; color: #856404; font-size: 0.9em;">
-                                    <strong>Example:</strong> Name should look like "মোহাম্মদ আলী" not "à¦®à§‹à¦¹à¦¾à¦®à§à¦®à¦¦ à¦†à¦²à§€"
-                                </p>
-                            </div>
-                            
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <button onclick="downloadAllStudentsCSV()" class="btn btn-secondary">
-                                    <i class="fas fa-download"></i> Download All Students Data
-                                </button>
-                            </div>
-                            <div class="format-table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>id</th>
-                                            <th>name</th>
-                                            <th>fatherName</th>
-                                            <th>rollNumber</th>
-                                            <th>mobileNumber</th>
-                                            <th>district</th>
-                                            <th>upazila</th>
-                                            <th>class</th>
-                                            <th>registrationDate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>ST001</td>
-                                            <td>Abdullah Rahman</td>
-                                            <td>Rahman Ahmed</td>
-                                            <td>101</td>
-                                            <td>01711234567</td>
-                                            <td>Dhaka</td>
-                                            <td>Dhanmondi</td>
-                                            <td>প্রথম শ্রেণি</td>
-                                            <td>2025-01-01</td>
-                                        </tr>
-                                        <tr>
-                                            <td>ST002</td>
-                                            <td>Fatima Khatun</td>
-                                            <td>Karim Uddin</td>
-                                            <td>102</td>
-                                            <td>01811234567</td>
-                                            <td>Dhaka</td>
-                                            <td>Gulshan</td>
-                                            <td>দ্বিতীয় শ্রেণি</td>
-                                            <td>2025-01-02</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="import-notes">
-                                <p><strong>⚠️ Important:</strong></p>
-                                <ul>
-                                    <li>First row must be headers (exactly as shown above)</li>
-                                    <li>All fields are required - no empty cells</li>
-                                    <li>Students with same ID will be replaced/updated</li>
-                                    <li>Roll numbers must be unique (except for updates)</li>
-                                    <li>Class names must match your existing classes</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="bulk-import-upload">
-                            <div class="upload-area">
-                                <input type="file" id="excelFile" accept=".csv" style="display:none;">
-                                <div class="upload-drop-zone" onclick="document.getElementById('excelFile').click()">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <p>Click to select CSV file</p>
-                                    <p class="file-types">Supports .csv files (Excel saved as CSV)</p>
-                                </div>
-                            </div>
-                            <div class="upload-actions">
-                                <button onclick="processExcelFile()" class="btn btn-primary" id="uploadBtn" disabled>
-                                    <i class="fas fa-upload"></i> Upload & Import Students
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="importResults" class="import-results" style="display:none;">
-                            <!-- Import results will be shown here -->
+                        <div class="import-notes">
+                            <p><strong>⚠️ Important:</strong></p>
+                            <ul>
+                                <li>First row must be headers (exactly as shown above)</li>
+                                <li>All fields are required - no empty cells</li>
+                                <li>Students with same ID will be replaced/updated</li>
+                                <li>Roll numbers must be unique (except for updates)</li>
+                                <li>Class names must match your existing classes</li>
+                            </ul>
                         </div>
                     </div>
                     
-                    <!-- Students List Container -->
-                    <div id="studentsListContainer" class="students-management">
-                        <!-- Student list will be populated here by JavaScript -->
-                    </div>
-                    
-                    <!-- Student Registration Form (Hidden by default) -->
-                    <div id="studentRegistrationForm" class="student-form-container" style="display: none;">
-                        <div class="form-header">
-                            <h3>Register New Student</h3>
-                            <button type="button" onclick="hideStudentRegistrationForm()" class="btn btn-secondary btn-small">
-                                <i class="fas fa-arrow-left"></i> Back to List
-                            </button>
+                    <div class="bulk-import-upload">
+                        <div class="upload-area">
+                            <input type="file" id="excelFile" accept=".csv" style="display:none;">
+                            <div class="upload-drop-zone" onclick="document.getElementById('excelFile').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to select CSV file</p>
+                                <p class="file-types">Supports .csv files (Excel saved as CSV)</p>
+                            </div>
                         </div>
-                        
-                        <form id="studentForm" class="form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="studentName">Student Name *</label>
-                                    <input type="text" id="studentName" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="fatherName">Father's Name *</label>
-                                    <input type="text" id="fatherName" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="rollNumber">Roll Number *</label>
-                                    <input type="text" id="rollNumber" required placeholder="Enter roll number (e.g., 101, 201)">
-                                    <small style="color: #666; font-size: 0.8em;">Each roll number must be unique</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="studentClass">Class *</label>
-                                    <select id="studentClass" required>
-                                        <option value="">Select Class</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="district">District *</label>
-                                    <input type="text" id="district" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="upazila">Sub-district (Upazila) *</label>
-                                    <input type="text" id="upazila" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="mobile">Mobile Number *</label>
-                                    <input type="tel" id="mobile" required>
-                                </div>
-                                <div class="form-group">
-                                    <!-- Empty space for form balance -->
-                                </div>
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Register Student
-                                </button>
-                                <button type="button" onclick="hideStudentRegistrationForm()" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- Daily Attendance Section -->
-                <section id="attendance" class="section">
-                    <div class="attendance-header">
-                        <h2><i class="fas fa-check-circle"></i> Daily Attendance</h2>
-                        <div class="attendance-date-selector">
-                            <input type="date" id="attendanceDate" max="">
-                        </div>
-                    </div>
-
-                    <div class="attendance-controls">
-                        <div class="class-filter">
-                            <label for="classFilter">Class:</label>
-                            <select id="classFilter">
-                                <option value="">All Classes</option>
-                            </select>
-                            <button onclick="resetAttendanceClassFilter()" class="btn btn-sm btn-secondary" title="Reset to All Classes" style="margin-left: 5px; padding: 2px 8px; font-size: 0.8rem;">
-                                <i class="fas fa-undo"></i>
-                            </button>
-                            <span class="student-count">(<span id="filteredStudentCount">0</span> students)</span>
-                        </div>
-                        <div class="bulk-actions">
-                            <button onclick="markAllPresent()" class="btn btn-success">
-                                <i class="fas fa-check-double"></i> Mark All Present
-                            </button>
-                            <button onclick="showMarkAllAbsentModal()" class="btn btn-danger">
-                                <i class="fas fa-user-slash"></i> Mark All Absent
-                            </button>
-                            <button onclick="markAllNeutral()" class="btn btn-warning">
-                                <i class="fas fa-eraser"></i> <span data-translate="markAllNeutral">Clear All</span>
-                            </button>
-                            <button onclick="copyPreviousDayAttendance()" class="btn btn-secondary">
-                                <i class="fas fa-copy"></i> Copy Previous Day
+                        <div class="upload-actions">
+                            <button onclick="processExcelFile()" class="btn btn-primary" id="uploadBtn" disabled>
+                                <i class="fas fa-upload"></i> Upload & Import Students
                             </button>
                         </div>
                     </div>
                     
-                    <div id="attendanceList" class="attendance-list">
-                        <!-- Student attendance rows will be populated here -->
+                    <div id="importResults" class="import-results" style="display:none;">
+                        <!-- Import results will be shown here -->
                     </div>
-                    
-                    <div class="attendance-save-section">
-                        <button onclick="saveAttendance()" class="btn btn-success btn-save-attendance">
-                            <i class="fas fa-save"></i> Save Attendance
+                </div>
+                
+                <!-- Students List Container -->
+                <div id="studentsListContainer" class="students-management">
+                    <!-- Student list will be populated here by JavaScript -->
+                </div>
+                
+                <!-- Student Registration Form (Hidden by default) -->
+                <div id="studentRegistrationForm" class="student-form-container" style="display: none;">
+                    <div class="form-header">
+                        <h3>Register New Student</h3>
+                        <button type="button" onclick="hideStudentRegistrationForm()" class="btn btn-secondary btn-small">
+                            <i class="fas fa-arrow-left"></i> Back to List
                         </button>
-                        <p class="save-note" data-translate="rememberToSaveAttendance">Remember to save attendance after making changes!</p>
-                    </div>
-                </section>
-
-                <!-- Reports Section -->
-                <section id="reports" class="section">
-                    <h2>Attendance Reports</h2>
-                    
-                    <!-- Attendance Tracking Calendar Button -->
-                    <div class="calendar-toggle" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
-                        <button onclick="showAttendanceCalendar()" class="btn btn-info" style="margin-bottom: 10px;">
-                            📅 <span data-translate="showAttendanceTrackingCalendar">Show Attendance Tracking Calendar</span>
-                        </button>
-                        <p style="font-size: 0.9rem; color: #666; margin: 0;">
-                            <em>📊 <span data-translate="viewAttendanceStatistics">View which days attendance was taken vs missed this month with summary statistics</span></em>
-                        </p>
                     </div>
                     
-                    <div class="report-controls">
-                        <div id="dateRestrictionNotice" class="date-restriction-notice" style="display: none;">
-                            <i class="fas fa-info-circle"></i>
-                            <span data-translate="dateRestrictionNotice">Date selection is restricted to academic year period</span>
+                    <form id="studentForm" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentName">Student Name *</label>
+                                <input type="text" id="studentName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="fatherName">Father's Name *</label>
+                                <input type="text" id="fatherName" required>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="reportStartDate">From Date:</label>
-                                <input type="date" id="reportStartDate">
+                                <label for="rollNumber">Roll Number *</label>
+                                <input type="text" id="rollNumber" required placeholder="Enter roll number (e.g., 101, 201)">
+                                <small style="color: #666; font-size: 0.8em;">Each roll number must be unique</small>
                             </div>
                             <div class="form-group">
-                                <label for="reportEndDate">To Date:</label>
-                                <input type="date" id="reportEndDate">
+                                <label for="studentClass">Class *</label>
+                                <select id="studentClass" required>
+                                    <option value="">Select Class</option>
+                                </select>
                             </div>
                         </div>
-                        <button onclick="generateReport()" class="btn btn-primary">
-                            <i class="fas fa-chart-bar"></i> Generate Report
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="district">District *</label>
+                                <input type="text" id="district" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="upazila">Sub-district (Upazila) *</label>
+                                <input type="text" id="upazila" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="mobile">Mobile Number *</label>
+                                <input type="tel" id="mobile" required>
+                            </div>
+                            <div class="form-group">
+                                <!-- Empty space for form balance -->
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Register Student
+                            </button>
+                            <button type="button" onclick="hideStudentRegistrationForm()" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Daily Attendance Section -->
+            <section id="attendance" class="section">
+                <div class="attendance-header">
+                    <h2><i class="fas fa-check-circle"></i> Daily Attendance</h2>
+                    <div class="attendance-date-selector">
+                        <input type="date" id="attendanceDate" max="">
+                    </div>
+                </div>
+
+                <div class="attendance-controls">
+                    <div class="class-filter">
+                        <label for="classFilter">Class:</label>
+                        <select id="classFilter">
+                            <option value="">All Classes</option>
+                        </select>
+                        <button onclick="resetAttendanceClassFilter()" class="btn btn-sm btn-secondary" title="Reset to All Classes" style="margin-left: 5px; padding: 2px 8px; font-size: 0.8rem;">
+                            <i class="fas fa-undo"></i>
                         </button>
-                        <button onclick="generateFromBeginningReport()" class="btn btn-success" style="margin-left: 10px;">
-                            <i class="fas fa-calendar-alt"></i> From Beginning Report
+                        <span class="student-count">(<span id="filteredStudentCount">0</span> students)</span>
+                    </div>
+                    <div class="bulk-actions">
+                        <button onclick="markAllPresent()" class="btn btn-success">
+                            <i class="fas fa-check-double"></i> Mark All Present
+                        </button>
+                        <button onclick="showMarkAllAbsentModal()" class="btn btn-danger">
+                            <i class="fas fa-user-slash"></i> Mark All Absent
+                        </button>
+                        <button onclick="markAllNeutral()" class="btn btn-warning">
+                            <i class="fas fa-eraser"></i> <span data-translate="markAllNeutral">Clear All</span>
+                        </button>
+                        <button onclick="copyPreviousDayAttendance()" class="btn btn-secondary">
+                            <i class="fas fa-copy"></i> Copy Previous Day
                         </button>
                     </div>
-                    <div id="reportResults" class="report-results">
-                        <p data-translate="selectDateRangeToGenerate">Select date range and click "Generate Report" to view attendance data.</p>
+                </div>
+                
+                <div id="attendanceList" class="attendance-list">
+                    <!-- Student attendance rows will be populated here -->
+                </div>
+                
+                <div class="attendance-save-section">
+                    <button onclick="saveAttendance()" class="btn btn-success btn-save-attendance">
+                        <i class="fas fa-save"></i> Save Attendance
+                    </button>
+                    <p class="save-note" data-translate="rememberToSaveAttendance">Remember to save attendance after making changes!</p>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="section">
+                <h2>Attendance Reports</h2>
+                
+                <!-- Attendance Tracking Calendar Button -->
+                <div class="calendar-toggle" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db;">
+                    <button onclick="showAttendanceCalendar()" class="btn btn-info" style="margin-bottom: 10px;">
+                        📅 <span data-translate="showAttendanceTrackingCalendar">Show Attendance Tracking Calendar</span>
+                    </button>
+                    <p style="font-size: 0.9rem; color: #666; margin: 0;">
+                        <em>📊 <span data-translate="viewAttendanceStatistics">View which days attendance was taken vs missed this month with summary statistics</span></em>
+                    </p>
+                </div>
+                
+                <div class="report-controls">
+                    <div id="dateRestrictionNotice" class="date-restriction-notice" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-translate="dateRestrictionNotice">Date selection is restricted to academic year period</span>
                     </div>
-                </section>
-
-
-
-                <!-- Teachers Corner Section -->
-                <section id="teachers-corner-section" class="section">
-                    <h2 id="class-dashboard-title" class="text-2xl font-bold mb-6 pb-2"></h2>
-        
-                    <!-- Today's Summary -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                        <div class="stat-card"><i class="fas fa-users text-4xl text-blue-500 mb-4"></i><h3 id="class-total-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">মোট ছাত্র</p></div>
-                        <div class="stat-card"><i class="fas fa-user-check text-4xl text-green-500 mb-4"></i><h3 id="class-present-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ উপস্থিত</p></div>
-                        <div class="stat-card"><i class="fas fa-user-times text-4xl text-red-500 mb-4"></i><h3 id="class-absent-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ অনুপস্থিত</p></div>
-                        <div class="stat-card"><i class="fas fa-percentage text-4xl text-purple-500 mb-4"></i><h3 id="class-attendance-rate" class="text-4xl font-bold text-gray-800">0%</h3><p class="text-gray-500">উপস্থিতির হার</p></div>
-                        <div class="stat-card" onclick="showInactiveStudentsModal()" style="cursor: pointer;"><i class="fas fa-user-slash text-4xl text-orange-500 mb-4"></i><h3 id="class-inactive-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">নিষ্ক্রিয় ছাত্র</p></div>
-                    </div>
-        
-                    <!-- Dashboard Alerts -->
-                    <div id="dashboard-alerts" class="mb-8 bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
-                            <i class="fas fa-exclamation-triangle text-yellow-500"></i>
-                            এক নজরে সতর্কতা
-                        </h3>
-                        <div id="alerts-content" class="space-y-3">
-                            <!-- Alerts will be rendered here -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reportStartDate">From Date:</label>
+                            <input type="date" id="reportStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="reportEndDate">To Date:</label>
+                            <input type="date" id="reportEndDate">
                         </div>
                     </div>
-        
-                    <!-- Class Overview & Teacher's Logbook -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                             <h3 class="text-xl font-semibold mb-4 text-gray-700">শ্রেণীর সার্বিক অবস্থা</h3>
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                           <div>
+                    <button onclick="generateReport()" class="btn btn-primary">
+                        <i class="fas fa-chart-bar"></i> Generate Report
+                    </button>
+                    <button onclick="generateFromBeginningReport()" class="btn btn-success" style="margin-left: 10px;">
+                        <i class="fas fa-calendar-alt"></i> From Beginning Report
+                    </button>
+                </div>
+                <div id="reportResults" class="report-results">
+                    <p data-translate="selectDateRangeToGenerate">Select date range and click "Generate Report" to view attendance data.</p>
+                </div>
+            </section>
+
+
+
+            <!-- Teachers Corner Section -->
+            <section id="teachers-corner-section" class="section">
+                <h2 id="class-dashboard-title" class="text-2xl font-bold mb-6 pb-2"></h2>
+    
+                <!-- Today's Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                    <div class="stat-card"><i class="fas fa-users text-4xl text-blue-500 mb-4"></i><h3 id="class-total-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">মোট ছাত্র</p></div>
+                    <div class="stat-card"><i class="fas fa-user-check text-4xl text-green-500 mb-4"></i><h3 id="class-present-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ উপস্থিত</p></div>
+                    <div class="stat-card"><i class="fas fa-user-times text-4xl text-red-500 mb-4"></i><h3 id="class-absent-today" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">আজ অনুপস্থিত</p></div>
+                    <div class="stat-card"><i class="fas fa-percentage text-4xl text-purple-500 mb-4"></i><h3 id="class-attendance-rate" class="text-4xl font-bold text-gray-800">0%</h3><p class="text-gray-500">উপস্থিতির হার</p></div>
+                    <div class="stat-card" onclick="showInactiveStudentsModal()" style="cursor: pointer;"><i class="fas fa-user-slash text-4xl text-orange-500 mb-4"></i><h3 id="class-inactive-students" class="text-4xl font-bold text-gray-800">0</h3><p class="text-gray-500">নিষ্ক্রিয় ছাত্র</p></div>
+                </div>
+    
+                <!-- Dashboard Alerts -->
+                <div id="dashboard-alerts" class="mb-8 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                        এক নজরে সতর্কতা
+                    </h3>
+                    <div id="alerts-content" class="space-y-3">
+                        <!-- Alerts will be rendered here -->
+                    </div>
+                </div>
+    
+                <!-- Class Overview & Teacher's Logbook -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                         <h3 class="text-xl font-semibold mb-4 text-gray-700">শ্রেণীর সার্বিক অবস্থা</h3>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                       <div>
                                   <h4 class="font-semibold text-gray-600 text-sm mb-2">ছাত্রদের স্তর</h4>
                                   <div id="performance-chart" class="space-y-3">
                                       <!-- Performance categories will be rendered here -->
@@ -556,7 +508,7 @@
                         <div id="logbook-display" class="space-y-4 max-h-[200px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
-        
+    
                 <!-- Student List & Education Progress -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
@@ -1082,21 +1034,13 @@
                 if (response.ok) {
                     currentUser = await response.json();
                     document.getElementById('currentUser').textContent = `Welcome, ${currentUser.username}`;
-                    // Hide loading screen and show main app
-                    document.getElementById('authLoading').style.display = 'none';
-                    document.getElementById('mainApp').classList.add('authenticated');
-                    
-                    // Initialize the application after authentication is confirmed
-                    if (typeof window.initializeAppAfterAuth === 'function') {
-                        await window.initializeAppAfterAuth();
-                    }
                 } else {
                     // Not authenticated, redirect to login
-                    window.location.href = '/login.html';
+                    window.location.href = '/';
                 }
             } catch (error) {
                 // Network error, redirect to login
-                window.location.href = '/login.html';
+                window.location.href = '/';
             }
         }
         
@@ -1112,7 +1056,7 @@
                 
                 if (response.ok) {
                     // Redirect to login page
-                    window.location.href = '/login.html';
+                    window.location.href = '/';
                 } else {
                     alert('Logout failed. Please try again.');
                 }
