@@ -1883,284 +1883,465 @@
                     <title>Student Detail - ${student.name}</title>
                     <style>
                         @media print {
-                            body { margin: 0; padding: 10px; }
+                            body { 
+                                margin: 0; 
+                                padding: 8px; 
+                                width: 100%;
+                                max-width: none;
+                            }
                             .no-print { display: none !important; }
+                            .page-break { page-break-before: always; }
+                            
+                            /* Force grid layout in print */
+                            .main-content {
+                                display: grid !important;
+                                grid-template-columns: repeat(4, 1fr) !important;
+                                gap: 6px !important;
+                                width: 100% !important;
+                            }
+                            
+                            .info-card {
+                                width: auto !important;
+                                max-width: none !important;
+                                float: none !important;
+                                display: block !important;
+                            }
                         }
                         
                         .print-button {
                             position: fixed;
                             top: 20px;
                             right: 20px;
-                            padding: 10px 20px;
+                            padding: 12px 24px;
                             background: #2c5aa0;
                             color: white;
                             border: none;
-                            border-radius: 5px;
+                            border-radius: 6px;
                             cursor: pointer;
                             font-size: 16px;
                             z-index: 1000;
-                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
                         }
                         
                         .print-button:hover {
                             background: #1e3a5f;
+                            transform: translateY(-1px);
                         }
                         
                         body {
                             font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
                             line-height: 1.2;
-                            color: #333;
+                            color: #2c3e50;
                             background: white;
                             margin: 0;
-                            padding: 15px;
-                            font-size: 11px;
+                            padding: 10px;
+                            font-size: 9px;
                         }
                         
+                        /* Header Section */
                         .header {
                             text-align: center;
                             border-bottom: 2px solid #2c5aa0;
-                            padding-bottom: 8px;
-                            margin-bottom: 15px;
+                            padding-bottom: 5px;
+                            margin-bottom: 8px;
+                            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                            padding: 8px;
+                            border-radius: 6px;
                         }
                         
                         .school-name {
-                            font-size: 20px;
+                            font-size: 18px;
                             font-weight: bold;
                             color: #2c5aa0;
                             margin: 0;
+                            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
                         }
                         
                         .school-subtitle {
-                            font-size: 12px;
-                            color: #666;
+                            font-size: 10px;
+                            color: #495057;
                             margin: 2px 0 0 0;
+                            font-weight: 500;
                         }
                         
                         .student-title {
-                            font-size: 18px;
+                            font-size: 14px;
                             font-weight: bold;
                             text-align: center;
-                            color: #2c5aa0;
-                            margin: 10px 0;
+                            color: #2c3e50;
+                            margin: 5px 0;
                             padding: 5px;
+                            background: #e3f2fd;
+                            border-radius: 6px;
+                            border: 1px solid #2196f3;
                         }
                         
-                        .info-grid {
+                        /* Main Content Grid */
+                        .main-content {
                             display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 15px;
-                            margin-bottom: 15px;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 6px;
+                            margin-bottom: 8px;
+                            width: 100%;
                         }
                         
-                        .info-section {
-                            background: #f8f9fa;
-                            padding: 8px;
+                        /* Fallback for older browsers */
+                        @supports not (display: grid) {
+                            .main-content {
+                                display: flex;
+                                flex-wrap: wrap;
+                                gap: 6px;
+                            }
+                            
+                            .info-card {
+                                flex: 1 1 calc(25% - 6px);
+                                min-width: 200px;
+                            }
+                        }
+                        
+                        /* Info Cards */
+                        .info-card {
+                            background: #ffffff;
+                            padding: 4px;
                             border-radius: 4px;
-                            border-left: 3px solid #2c5aa0;
+                            border: 1px solid #e9ecef;
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+                            width: 100%;
+                            box-sizing: border-box;
                         }
                         
-                        .section-title {
-                            font-size: 12px;
+                        .card-header {
+                            font-size: 9px;
                             font-weight: bold;
                             color: #2c5aa0;
-                            margin: 0 0 5px 0;
-                            border-bottom: 1px solid #ddd;
-                            padding-bottom: 3px;
+                            margin: 0 0 2px 0;
+                            padding-bottom: 1px;
+                            border-bottom: 1px solid #2c5aa0;
+                            display: flex;
+                            align-items: center;
+                            gap: 3px;
+                        }
+                        
+                        .card-header i {
+                            font-size: 10px;
                         }
                         
                         .info-row {
                             display: flex;
                             justify-content: space-between;
-                            margin-bottom: 3px;
-                            font-size: 10px;
+                            margin-bottom: 1px;
+                            padding: 1px 0;
+                            border-bottom: 1px solid #f1f3f4;
                         }
                         
                         .info-label {
                             font-weight: 600;
-                            color: #555;
+                            color: #495057;
+                            min-width: 60px;
+                            font-size: 7px;
                         }
                         
                         .info-value {
-                            color: #333;
+                            color: #2c3e50;
+                            text-align: right;
+                            font-weight: 500;
+                            font-size: 7px;
+                        }
+                        
+                        /* Statistics Grid */
+                        .stats-container {
+                            margin-bottom: 8px;
                         }
                         
                         .stats-grid {
                             display: grid;
                             grid-template-columns: repeat(4, 1fr);
-                            gap: 8px;
-                            margin-bottom: 15px;
+                            gap: 4px;
+                            margin-bottom: 8px;
                         }
                         
-                        .stat-item {
+                        .stat-card {
                             text-align: center;
-                            background: #f8f9fa;
-                            padding: 6px;
-                            border-radius: 4px;
-                            border: 1px solid #e9ecef;
+                            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                            padding: 6px 4px;
+                            border-radius: 6px;
+                            border: 1px solid #dee2e6;
                         }
                         
                         .stat-number {
                             font-size: 14px;
                             font-weight: bold;
                             color: #2c5aa0;
+                            margin-bottom: 2px;
                         }
                         
                         .stat-label {
-                            font-size: 9px;
-                            color: #666;
-                            margin-top: 2px;
+                            font-size: 7px;
+                            color: #6c757d;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.3px;
                         }
                         
-                        .table-section {
+                        /* Detailed Sections */
+                        .detail-section {
                             margin-bottom: 15px;
+                            page-break-inside: avoid;
                         }
                         
-                        .table-title {
-                            font-size: 12px;
+                        .section-header {
+                            font-size: 11px;
                             font-weight: bold;
                             color: #2c5aa0;
-                            margin: 0 0 5px 0;
-                            border-bottom: 1px solid #ddd;
-                            padding-bottom: 3px;
+                            margin: 0 0 6px 0;
+                            padding: 6px 10px;
+                            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+                            border-radius: 6px;
+                            border-left: 3px solid #2196f3;
                         }
                         
-                        .compact-table {
+                        /* Tables */
+                        .data-table {
                             width: 100%;
                             border-collapse: collapse;
-                            font-size: 9px;
+                            font-size: 8px;
+                            background: white;
+                            border-radius: 6px;
+                            overflow: hidden;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
                         }
                         
-                        .compact-table th {
-                            background: #e9ecef;
-                            padding: 4px 6px;
+                        .data-table th {
+                            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a5f 100%);
+                            color: white;
+                            padding: 6px 4px;
                             text-align: left;
-                            border: 1px solid #dee2e6;
                             font-weight: 600;
+                            font-size: 8px;
                         }
                         
-                        .compact-table td {
-                            padding: 3px 6px;
-                            border: 1px solid #dee2e6;
+                        .data-table td {
+                            padding: 4px 4px;
+                            border-bottom: 1px solid #e9ecef;
                             vertical-align: top;
                         }
                         
-                        .compact-table tr:nth-child(even) {
+                        .data-table tr:nth-child(even) {
                             background: #f8f9fa;
                         }
                         
+                        .data-table tr:hover {
+                            background: #e3f2fd;
+                        }
+                        
+                        /* Score Changes */
                         .score-change {
                             font-weight: 600;
+                            padding: 2px 4px;
+                            border-radius: 3px;
+                            font-size: 7px;
                         }
                         
                         .score-increase {
-                            color: #28a745;
+                            background: #d4edda;
+                            color: #155724;
+                            border: 1px solid #c3e6cb;
                         }
                         
                         .score-decrease {
-                            color: #dc3545;
+                            background: #f8d7da;
+                            color: #721c24;
+                            border: 1px solid #f5c6cb;
                         }
                         
-                        .footer {
-                            text-align: center;
-                            font-size: 9px;
-                            color: #666;
-                            margin-top: 15px;
-                            padding-top: 8px;
-                            border-top: 1px solid #ddd;
-                        }
-                        
-                        .two-column {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 15px;
-                        }
-                        
-                        .attendance-summary {
-                            background: #f8f9fa;
-                            padding: 8px;
-                            border-radius: 4px;
-                            border: 1px solid #e9ecef;
-                        }
-                        
-                        .monthly-stats {
-                            display: grid;
-                            grid-template-columns: repeat(3, 1fr);
-                            gap: 5px;
-                            margin-top: 5px;
-                        }
-                        
-                        .month-stat {
-                            text-align: center;
-                            font-size: 9px;
-                        }
-                        
-                        .month-name {
-                            font-weight: 600;
-                            color: #555;
-                        }
-                        
-                        .month-rate {
-                            color: #2c5aa0;
-                            font-weight: bold;
+                        /* Log Entries */
+                        .log-container {
+                            max-height: 120px;
+                            overflow-y: auto;
                         }
                         
                         .log-entry {
                             background: #f8f9fa;
                             padding: 6px;
                             margin-bottom: 4px;
-                            border-radius: 3px;
+                            border-radius: 4px;
                             border-left: 3px solid #17a2b8;
-                            font-size: 9px;
+                            font-size: 8px;
                         }
                         
                         .log-header {
                             display: flex;
                             justify-content: space-between;
-                            margin-bottom: 2px;
-                            font-size: 8px;
+                            margin-bottom: 3px;
+                            font-size: 7px;
                         }
                         
                         .log-type {
                             font-weight: bold;
                             color: #17a2b8;
+                            background: #e3f2fd;
+                            padding: 1px 3px;
+                            border-radius: 3px;
                         }
                         
                         .log-date {
-                            color: #666;
+                            color: #6c757d;
+                            font-weight: 500;
                         }
                         
                         .log-details {
-                            color: #333;
-                            line-height: 1.3;
+                            color: #2c3e50;
+                            line-height: 1.2;
                         }
                         
+                        /* Book Progress */
                         .book-progress {
                             background: #f8f9fa;
                             padding: 6px;
                             margin-bottom: 4px;
-                            border-radius: 3px;
+                            border-radius: 4px;
                             border-left: 3px solid #28a745;
-                            font-size: 9px;
+                            font-size: 8px;
                         }
                         
                         .book-name {
                             font-weight: bold;
                             color: #28a745;
-                            margin-bottom: 2px;
+                            margin-bottom: 3px;
+                            font-size: 9px;
+                        }
+                        
+                        .progress-bar {
+                            width: 100%;
+                            height: 6px;
+                            background: #e9ecef;
+                            border-radius: 3px;
+                            overflow: hidden;
+                            margin: 3px 0;
+                        }
+                        
+                        .progress-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+                            border-radius: 3px;
+                            transition: width 0.3s ease;
                         }
                         
                         .progress-info {
                             display: flex;
                             justify-content: space-between;
-                            font-size: 8px;
-                            color: #666;
+                            font-size: 7px;
+                            color: #6c757d;
+                            margin-top: 2px;
                         }
                         
                         .progress-notes {
-                            font-size: 8px;
-                            color: #333;
-                            margin-top: 2px;
+                            font-size: 7px;
+                            color: #495057;
+                            margin-top: 3px;
                             font-style: italic;
+                            background: #e9ecef;
+                            padding: 2px 4px;
+                            border-radius: 3px;
+                        }
+                        
+                        /* Footer */
+                        .footer {
+                            text-align: center;
+                            font-size: 8px;
+                            color: #6c757d;
+                            margin-top: 15px;
+                            padding: 10px;
+                            border-top: 1px solid #e9ecef;
+                            background: #f8f9fa;
+                            border-radius: 6px;
+                        }
+                        
+                        .footer p {
+                            margin: 2px 0;
+                        }
+                        
+                        /* Responsive Design */
+                        @media (max-width: 768px) {
+                            .main-content {
+                                grid-template-columns: 1fr;
+                            }
+                            
+                            .stats-grid {
+                                grid-template-columns: repeat(2, 1fr);
+                            }
+                        }
+                        
+                        /* Print Optimizations */
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 8px;
+                                font-size: 9px;
+                                line-height: 1.2;
+                            }
+                            
+                            .main-content {
+                                display: grid !important;
+                                grid-template-columns: repeat(4, 1fr) !important;
+                                gap: 6px !important;
+                                margin-bottom: 8px !important;
+                            }
+                            
+                            .info-card {
+                                display: block !important;
+                                break-inside: avoid;
+                                box-shadow: none;
+                                border: 1px solid #dee2e6 !important;
+                                padding: 4px !important;
+                                margin: 0 !important;
+                                page-break-inside: avoid;
+                            }
+                            
+                            .card-header {
+                                font-size: 9px !important;
+                                margin: 0 0 2px 0 !important;
+                                padding-bottom: 1px !important;
+                                border-bottom: 1px solid #2c5aa0 !important;
+                            }
+                            
+                            .info-row {
+                                display: flex !important;
+                                justify-content: space-between !important;
+                                margin-bottom: 1px !important;
+                                padding: 1px 0 !important;
+                                border-bottom: 1px solid #f1f3f4 !important;
+                            }
+                            
+                            .info-label {
+                                font-size: 7px !important;
+                                min-width: 60px !important;
+                            }
+                            
+                            .info-value {
+                                font-size: 7px !important;
+                            }
+                            
+                            .stat-card {
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                            }
+                            
+                            .detail-section {
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                            }
+                            
+                            .stats-grid {
+                                display: grid !important;
+                                grid-template-columns: repeat(4, 1fr) !important;
+                                gap: 4px !important;
+                            }
+                            
+                            .header, .student-title, .stats-container, .detail-section, .footer {
+                                page-break-inside: avoid;
+                            }
                         }
                     </style>
                 </head>
@@ -2176,24 +2357,49 @@
                     <div class="header">
                         <h1 class="school-name">মাদানি মক্তব</h1>
                         <p class="school-subtitle">ইসলামিক স্কুল অ্যাটেনডেন্স ম্যানেজমেন্ট সিস্টেম</p>
-                        <p class="school-subtitle">Student Detail Report</p>
+                        <p class="school-subtitle">Student Detail Report - ছাত্রের বিস্তারিত প্রতিবেদন</p>
                     </div>
                     
                     <!-- Student Title -->
                     <div class="student-title">
-                        ${student.name} বিন ${student.fatherName} - ${student.class} শ্রেণী (রোল: ${student.rollNumber || 'N/A'})
+                        📚 ${student.name} বিন ${student.fatherName} - ${student.class} শ্রেণী (রোল: ${student.rollNumber || 'N/A'})
                     </div>
                     
-                    <!-- Basic Info Grid -->
-                    <div class="info-grid">
-                        <div class="info-section">
-                            <h3 class="section-title">ব্যক্তিগত তথ্য</h3>
+                    <!-- Statistics Overview -->
+                    <div class="stats-container">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${attendanceStats.attendanceRate}%</div>
+                                <div class="stat-label">উপস্থিতি হার</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${getHusnulKhulukScore(student.id)}</div>
+                                <div class="stat-label">হুসনুল খুলুক</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${studentLogs.length}</div>
+                                <div class="stat-label">শিক্ষকের নোট</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${attendanceStats.totalBooks || 0}</div>
+                                <div class="stat-label">পঠিত বই</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Content Grid -->
+                    <div class="main-content">
+                        <!-- Personal Information -->
+                        <div class="info-card">
+                            <h3 class="card-header">
+                                👤 ব্যক্তিগত তথ্য
+                            </h3>
                             <div class="info-row">
                                 <span class="info-label">নাম:</span>
                                 <span class="info-value">${student.name} বিন ${student.fatherName}</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">রোল নম্বর:</span>
+                                <span class="info-label">রোল:</span>
                                 <span class="info-value">${student.rollNumber || 'N/A'}</span>
                             </div>
                             <div class="info-row">
@@ -2204,138 +2410,163 @@
                                 <span class="info-label">মোবাইল:</span>
                                 <span class="info-value">${student.mobileNumber || student.mobile || 'N/A'}</span>
                             </div>
+                        </div>
+                        
+                        <!-- Contact & Address -->
+                        <div class="info-card">
+                            <h3 class="card-header">
+                                📍 যোগাযোগ ও ঠিকানা
+                            </h3>
                             <div class="info-row">
-                                <span class="info-label">ঠিকানা:</span>
-                                <span class="info-value">${student.upazila || ''}, ${student.district || ''}</span>
+                                <span class="info-label">জেলা:</span>
+                                <span class="info-value">${student.district || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">উপজেলা:</span>
+                                <span class="info-value">${student.upazila || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">নিবন্ধন:</span>
+                                <span class="info-value">${student.registrationDate || 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">অবস্থা:</span>
+                                <span class="info-value" style="color: ${student.status === 'inactive' ? '#dc3545' : '#28a745'}; font-weight: bold;">
+                                    ${student.status === 'inactive' ? '❌ নিষ্ক্রিয়' : '✅ সক্রিয়'}
+                                </span>
                             </div>
                         </div>
                         
-                        <div class="info-section">
-                            <h3 class="section-title">উপস্থিতি তথ্য</h3>
+                        <!-- Attendance Summary -->
+                        <div class="info-card">
+                            <h3 class="card-header">
+                                📊 উপস্থিতি সারসংক্ষেপ
+                            </h3>
                             <div class="info-row">
-                                <span class="info-label">আজকের অবস্থা:</span>
-                                <span class="info-value">${attendanceStats.todayStatus || 'N/A'}</span>
+                                <span class="info-label">উপস্থিত:</span>
+                                <span class="info-value" style="color: #28a745; font-weight: bold;">${attendanceStats.present} দিন</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">গতকাল:</span>
-                                <span class="info-value">${attendanceStats.yesterdayStatus || 'N/A'}</span>
+                                <span class="info-label">অনুপস্থিত:</span>
+                                <span class="info-value" style="color: #dc3545; font-weight: bold;">${attendanceStats.absent} দিন</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">গত সপ্তাহে:</span>
-                                <span class="info-value">${attendanceStats.weekStatus || 'N/A'}</span>
+                                <span class="info-label">ছুটি:</span>
+                                <span class="info-value" style="color: #ffc107; font-weight: bold;">${attendanceStats.leave} দিন</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">মাসিক হার:</span>
-                                <span class="info-value">${attendanceStats.attendanceRate}%</span>
+                                <span class="info-label">হার:</span>
+                                <span class="info-value" style="color: #2c5aa0; font-weight: bold;">${attendanceStats.attendanceRate}%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="info-card">
+                            <h3 class="card-header">
+                                ⚡ দ্রুত পরিসংখ্যান
+                            </h3>
+                            <div class="info-row">
+                                <span class="info-label">সর্বোচ্চ:</span>
+                                <span class="info-value">${Math.max(...scoreHistory.map(s => s.newScore), getHusnulKhulukScore(student.id))}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">সর্বনিম্ন:</span>
+                                <span class="info-value">${Math.min(...scoreHistory.map(s => s.oldScore), getHusnulKhulukScore(student.id))}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">পরিবর্তন:</span>
+                                <span class="info-value">${scoreHistory.length} বার</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">নোট:</span>
+                                <span class="info-value">${studentLogs.length} টি</span>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Statistics Grid -->
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-number">${attendanceStats.attendanceRate}%</div>
-                            <div class="stat-label">উপস্থিতি</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${getHusnulKhulukScore(student.id)}</div>
-                            <div class="stat-label">হুসনুল খুলুক</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${studentLogs.length}</div>
-                            <div class="stat-label">শিক্ষকের নোট</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${attendanceStats.totalBooks || 0}</div>
-                            <div class="stat-label">পঠিত বই</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Two Column Layout -->
-                    <div class="two-column">
-                        <!-- Left Column -->
-                        <div>
-                            <!-- Score History -->
-                            <div class="table-section">
-                                <h3 class="table-title">হুসনুল খুলুক স্কোর ইতিহাস</h3>
-                                <table class="compact-table">
-                                    <thead>
+                    <!-- Detailed Sections -->
+                    <!-- Score History Section -->
+                    <div class="detail-section">
+                        <h3 class="section-header">
+                            📊 হুসনুল খুলুক স্কোর ইতিহাস
+                        </h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>তারিখ</th>
+                                    <th>স্কোর পরিবর্তন</th>
+                                    <th>কারণ</th>
+                                    <th>পরিবর্তনের ধরন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${scoreHistory.length > 0 ? scoreHistory.map(score => {
+                                    const isIncrease = score.newScore > score.oldScore;
+                                    const changeType = isIncrease ? 'উন্নতি' : 'অবনতি';
+                                    const changeClass = isIncrease ? 'score-increase' : 'score-decrease';
+                                    return `
                                         <tr>
-                                            <th>তারিখ</th>
-                                            <th>পরিবর্তন</th>
-                                            <th>কারণ</th>
+                                            <td>${new Date(score.date).toLocaleDateString('bn-BD')}</td>
+                                            <td class="${changeClass}">${score.oldScore} → ${score.newScore}</td>
+                                            <td>${score.reason || 'কোনো কারণ উল্লেখ নেই'}</td>
+                                            <td>${changeType}</td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${scoreHistory.length > 0 ? scoreHistory.map(score => `
-                                            <tr>
-                                                <td>${new Date(score.date).toLocaleDateString('bn-BD')}</td>
-                                                <td class="score-change ${score.newScore > score.oldScore ? 'score-increase' : 'score-decrease'}">${score.oldScore} → ${score.newScore}</td>
-                                                <td>${score.reason}</td>
-                                            </tr>
-                                        `).join('') : '<tr><td colspan="3" class="text-center text-gray-500">কোনো স্কোর পরিবর্তনের ইতিহাস নেই</td></tr>'}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <!-- Teacher Logs -->
-                            <div class="table-section">
-                                <h3 class="table-title">শিক্ষকের নোট</h3>
-                                ${studentLogs.map(log => `
-                                    <div class="log-entry">
-                                        <div class="log-header">
-                                            <span class="log-type">${log.log_type || log.type || 'সাধারণ'}</span>
-                                            <span class="log-date">${new Date(log.date).toLocaleDateString('bn-BD')}</span>
-                                        </div>
-                                        <div class="log-details">${log.details}</div>
+                                    `;
+                                }).join('') : '<tr><td colspan="4" style="text-align: center; color: #6c757d; padding: 20px;">কোনো স্কোর পরিবর্তনের ইতিহাস নেই</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Teacher Logs Section -->
+                    <div class="detail-section">
+                        <h3 class="section-header">
+                            📝 শিক্ষকের নোট ও পর্যবেক্ষণ
+                        </h3>
+                        <div class="log-container">
+                            ${studentLogs.length > 0 ? studentLogs.map(log => `
+                                <div class="log-entry">
+                                    <div class="log-header">
+                                        <span class="log-type">${log.log_type || log.type || 'সাধারণ নোট'}</span>
+                                        <span class="log-date">${new Date(log.date).toLocaleDateString('bn-BD')}</span>
                                     </div>
-                                `).join('')}
-                            </div>
+                                    <div class="log-details">${log.details}</div>
+                                </div>
+                            `).join('') : '<p style="text-align: center; color: #6c757d; padding: 20px; background: #f8f9fa; border-radius: 6px;">এই ছাত্রের জন্য কোনো নোট নেই।</p>'}
                         </div>
-                        
-                        <!-- Right Column -->
-                        <div>
-                            <!-- Education Progress -->
-                            <div class="table-section">
-                                <h3 class="table-title">শিক্ষার অগ্রগতি</h3>
-                                ${attendanceStats.booksProgress ? attendanceStats.booksProgress.map(book => `
+                    </div>
+                    
+                    <!-- Education Progress Section -->
+                    <div class="detail-section">
+                        <h3 class="section-header">
+                            📚 শিক্ষার অগ্রগতি ও বই পড়ার অবস্থা
+                        </h3>
+                        ${attendanceStats.booksProgress && attendanceStats.booksProgress.length > 0 ? 
+                            attendanceStats.booksProgress.map(book => {
+                                const progressPercentage = book.total_pages > 0 ? Math.round((book.completed_pages || 0) / book.total_pages * 100) : 0;
+                                return `
                                     <div class="book-progress">
-                                        <div class="book-name">${book.book_name}</div>
+                                        <div class="book-name">📖 ${book.book_name}</div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                                        </div>
                                         <div class="progress-info">
                                             <span>অগ্রগতি: ${book.completed_pages || 0}/${book.total_pages || 0} পৃষ্ঠা</span>
-                                            <span>${book.total_pages > 0 ? Math.round((book.completed_pages || 0) / book.total_pages * 100) : 0}% সম্পন্ন</span>
+                                            <span>${progressPercentage}% সম্পন্ন</span>
                                         </div>
-                                        ${book.notes ? `<div class="progress-notes">${book.notes}</div>` : ''}
+                                        ${book.notes ? `<div class="progress-notes">💭 ${book.notes}</div>` : ''}
                                     </div>
-                                `).join('') : '<p class="text-sm text-gray-500 text-center p-4">কোনো বই অগ্রগতি নেই</p>'}
-                            </div>
-                            
-                            <!-- Attendance Summary -->
-                            <div class="attendance-summary">
-                                <h3 class="table-title">উপস্থিতি সারসংক্ষেপ</h3>
-                                <div class="monthly-stats">
-                                    <div class="month-stat">
-                                        <div class="month-name">মোট উপস্থিত</div>
-                                        <div class="month-rate">${attendanceStats.present} দিন</div>
-                                    </div>
-                                    <div class="month-stat">
-                                        <div class="month-name">মোট অনুপস্থিত</div>
-                                        <div class="month-rate">${attendanceStats.absent} দিন</div>
-                                    </div>
-                                    <div class="month-stat">
-                                        <div class="month-name">ছুটির দিন</div>
-                                        <div class="month-rate">${attendanceStats.leave} দিন</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                `;
+                            }).join('') : 
+                            '<p style="text-align: center; color: #6c757d; padding: 20px; background: #f8f9fa; border-radius: 6px;">কোনো বই অগ্রগতি নেই।</p>'
+                        }
                     </div>
                     
                     <!-- Footer -->
                     <div class="footer">
-                        <p>এই রিপোর্টটি মাদানি মক্তব সিস্টেম থেকে তৈরি করা হয়েছে</p>
-                        <p>তারিখ: ${currentDate} | সময়: ${currentTime}</p>
-                        <p>প্রতিবেদন তৈরি করেছেন: সিস্টেম অ্যাডমিন</p>
+                        <p><strong>এই রিপোর্টটি মাদানি মক্তব সিস্টেম থেকে তৈরি করা হয়েছে</strong></p>
+                        <p>📅 তারিখ: ${currentDate} | 🕐 সময়: ${currentTime}</p>
+                        <p>👨‍💼 প্রতিবেদন তৈরি করেছেন: সিস্টেম অ্যাডমিন</p>
+                        <p>📱 সিস্টেম: ইসলামিক স্কুল অ্যাটেনডেন্স ম্যানেজমেন্ট সিস্টেম</p>
                     </div>
                 </body>
                 </html>
