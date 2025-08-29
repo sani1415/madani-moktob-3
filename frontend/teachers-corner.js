@@ -2012,7 +2012,7 @@
                         }
                         
                         .card-header {
-                            font-size: 9px;
+                            font-size: 10px;
                             font-weight: bold;
                             color: #2c5aa0;
                             margin: 0 0 2px 0;
@@ -2039,14 +2039,14 @@
                             font-weight: 600;
                             color: #495057;
                             min-width: 60px;
-                            font-size: 7px;
+                            font-size: 9px;
                         }
                         
                         .info-value {
                             color: #2c3e50;
                             text-align: right;
                             font-weight: 500;
-                            font-size: 7px;
+                            font-size: 9px;
                         }
                         
                         /* Statistics Grid */
@@ -2300,7 +2300,7 @@
                             }
                             
                             .card-header {
-                                font-size: 9px !important;
+                                font-size: 10px !important;
                                 margin: 0 0 2px 0 !important;
                                 padding-bottom: 1px !important;
                                 border-bottom: 1px solid #2c5aa0 !important;
@@ -2315,12 +2315,12 @@
                             }
                             
                             .info-label {
-                                font-size: 7px !important;
+                                font-size: 9px !important;
                                 min-width: 60px !important;
                             }
                             
                             .info-value {
-                                font-size: 7px !important;
+                                font-size: 9px !important;
                             }
                             
                             .stat-card {
