@@ -965,5 +965,11 @@ function updateSectionContent(sectionId) {
     }
 }
 
+// Make functions globally accessible
+window.t = t;
+window.changeLanguage = changeLanguage;
+window.initializeLanguage = initializeLanguage;
+window.updateAllTexts = updateAllTexts;
+
 // Export the translation function
 export { t, changeLanguage, initializeLanguage, updateAllTexts };

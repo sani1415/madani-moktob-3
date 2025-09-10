@@ -655,6 +655,366 @@ async function updateBookDropdownForClass(classId) {
 }
 
 // Academic year functions
+async function fetchAcademicYears() {
+    try {
+        const [yearsRes, currentRes] = await Promise.all([
+            fetch('/api/academic-years'),
+            fetch('/api/academic-years/current')
+        ]);
+        const years = yearsRes.ok ? await yearsRes.json() : [];
+        const current = currentRes.ok ? await currentRes.json() : null;
+        window.academicYears = Array.isArray(years) ? years : [];
+        window.currentAcademicYear = current && current.id ? current : null;
+        renderAcademicYears();
+    } catch (e) {
+        console.error('Failed to fetch academic years', e);
+    }
+}
+// Year Close Wizard wiring
+async function yearClosePreview() {
+    try {
+        const nextName = document.getElementById('ycName')?.value?.trim();
+        const nextStart = document.getElementById('ycStart')?.value;
+        const nextEnd = document.getElementById('ycEnd')?.value;
+        
+        // Validate required fields
+        if (!nextName || !nextStart || !nextEnd) {
+            showModal('Error', 'Please fill in all fields: Year Name, Start Date, and End Date');
+            return;
+        }
+        
+        // Validate date range
+        if (new Date(nextStart) >= new Date(nextEnd)) {
+            showModal('Error', 'Start date must be before end date');
+            return;
+        }
+        
+        const rules = collectPromotionRules();
+        const leavers = collectLeavers();
+        const res = await fetch('/api/year-close/preview', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ next_year: { name: nextName, start_date: nextStart, end_date: nextEnd }, promotion_rules: rules, leavers })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Preview failed');
+        renderYearClosePreview(data);
+    } catch (e) {
+        showModal('Error', e.message || 'Preview failed');
+    }
+}
+
+async function yearCloseConfirm() {
+    try {
+        const nextName = document.getElementById('ycName')?.value?.trim();
+        const nextStart = document.getElementById('ycStart')?.value;
+        const nextEnd = document.getElementById('ycEnd')?.value;
+        
+        // Validate required fields
+        if (!nextName || !nextStart || !nextEnd) {
+            showModal('Error', 'Please fill in all fields: Year Name, Start Date, and End Date');
+            return;
+        }
+        
+        // Validate date range
+        if (new Date(nextStart) >= new Date(nextEnd)) {
+            showModal('Error', 'Start date must be before end date');
+            return;
+        }
+        
+        const rules = collectPromotionRules();
+        const leavers = collectLeavers();
+        const res = await fetch('/api/year-close/confirm', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ next_year: { name: nextName, start_date: nextStart, end_date: nextEnd }, promotion_rules: rules, leavers })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Confirm failed');
+        showModal('Success', `Next Year ID: ${data.next_year_id}. Promotions: ${data.promotions_created}. Leavers updated: ${data.leavers_updated}.`);
+        await fetchAcademicYears();
+    } catch (e) {
+        showModal('Error', e.message || 'Confirm failed');
+    }
+}
+
+function collectPromotionRules() {
+    const rows = document.querySelectorAll('.yc-rule-row');
+    const rules = [];
+    rows.forEach(r => {
+        const fromAttr = r.getAttribute('data-from');
+        const fromId = fromAttr ? parseInt(fromAttr) : parseInt(r.querySelector('.yc-from')?.value || '');
+        const toId = parseInt(r.querySelector('.yc-to')?.value || '');
+        if (fromId && toId) rules.push({ from_class_id: fromId, to_class_id: toId });
+    });
+    return rules;
+}
+
+function collectLeavers() {
+    if (Array.isArray(window.ycLeavers)) {
+        return window.ycLeavers.map(x=>({ student_id: x.student_id, status: x.status, end_date: x.end_date }));
+    }
+    return [];
+}
+
+function renderYearCloseUI() {
+    const container = document.getElementById('yearCloseContent');
+    if (!container) return;
+    container.innerHTML = `
+      <div class="wizard">
+        <div id="yc-step-1" class="yc-step">
+          <h4>Step 1: Select Leavers</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2" style="margin-bottom:8px;">
+            <label>Class</label>
+            <select id="yc-class-select"></select>
+            <button class="btn btn-secondary" id="yc-load-roster">Load Students</button>
+          </div>
+          <div id="yc-roster"></div>
+          <div class="wizard-nav">
+            <button class="btn btn-primary" id="yc-next-1">Next</button>
+          </div>
+        </div>
+        <div id="yc-step-2" class="yc-step" style="display:none;">
+          <h4>Step 2: Choose Promotions</h4>
+          <div id="yc-rules"></div>
+          <div class="wizard-nav">
+            <button class="btn" id="yc-back-2">Back</button>
+            <button class="btn btn-primary" id="yc-next-2">Next</button>
+          </div>
+        </div>
+        <div id="yc-step-3" class="yc-step" style="display:none;">
+          <h4>Step 3: Preview Next Year</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2" style="margin-bottom:8px;">
+            <input id="ycName" placeholder="e.g., 2026-2027">
+            <input id="ycStart" type="date">
+            <input id="ycEnd" type="date">
+          </div>
+          <button class="btn btn-secondary" id="yc-generate-preview">Generate Preview</button>
+          <div id="yearClosePreview" class="p-2" style="margin-top:8px;"></div>
+          <div class="wizard-nav">
+            <button class="btn" id="yc-back-3">Back</button>
+            <button class="btn btn-primary" id="yc-next-3">Next</button>
+          </div>
+        </div>
+        <div id="yc-step-4" class="yc-step" style="display:none;">
+          <h4>Step 4: Confirm Year Close</h4>
+          <p>Please confirm to create new enrollments and update leavers.</p>
+          <div class="wizard-nav">
+            <button class="btn" id="yc-back-4">Back</button>
+            <button class="btn btn-primary" id="yc-confirm">Confirm</button>
+          </div>
+        </div>
+      </div>`;
+
+    populateYcClassDropdown();
+    const loadBtn = document.getElementById('yc-load-roster');
+    if (loadBtn) loadBtn.onclick = loadYcRoster;
+    const n1 = document.getElementById('yc-next-1');
+    if (n1) n1.onclick = () => showYcStep(2);
+    const b2 = document.getElementById('yc-back-2');
+    if (b2) b2.onclick = () => showYcStep(1);
+    const n2 = document.getElementById('yc-next-2');
+    if (n2) n2.onclick = () => showYcStep(3);
+    const b3 = document.getElementById('yc-back-3');
+    if (b3) b3.onclick = () => showYcStep(2);
+    const gen = document.getElementById('yc-generate-preview');
+    if (gen) gen.onclick = yearClosePreview;
+    const n3 = document.getElementById('yc-next-3');
+    if (n3) n3.onclick = () => showYcStep(4);
+    const b4 = document.getElementById('yc-back-4');
+    if (b4) b4.onclick = () => showYcStep(3);
+    const c4 = document.getElementById('yc-confirm');
+    if (c4) c4.onclick = yearCloseConfirm;
+
+    renderPromotionRulesUI();
+}
+
+function showYcStep(n){
+    ['yc-step-1','yc-step-2','yc-step-3','yc-step-4'].forEach((id,idx)=>{
+        const el = document.getElementById(id);
+        if (el) el.style.display = (idx === (n-1)) ? 'block' : 'none';
+    });
+}
+
+function populateYcClassDropdown(){
+    const sel = document.getElementById('yc-class-select');
+    if (!sel) return;
+    const classes = (window.classes && window.classes.length ? window.classes : []);
+    sel.innerHTML = '<option value="">Select Class</option>' + classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+async function loadYcRoster(){
+    const sel = document.getElementById('yc-class-select');
+    const classId = sel ? sel.value : '';
+    const rosterEl = document.getElementById('yc-roster');
+    if (!classId || !rosterEl) return;
+    rosterEl.innerHTML = '<div class="help-text">Loading...</div>';
+    try {
+        const res = await fetch(`/api/academic-years/current/classes/${classId}/students`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load students');
+        renderYcRosterTable(data);
+    } catch (e) {
+        rosterEl.innerHTML = `<div class="error-text">${e.message}</div>`;
+    }
+}
+
+function renderYcRosterTable(rows){
+    const rosterEl = document.getElementById('yc-roster');
+    if (!rosterEl) return;
+    if (!rows || rows.length === 0){
+        rosterEl.innerHTML = '<p class="help-text">No students found for this class.</p>';
+        return;
+    }
+    const thead = `<tr><th>Leave?</th><th>Student</th><th>Class</th><th>Roll</th><th>Status</th></tr>`;
+    const tbody = rows.map(r=>{
+        return `<tr>
+            <td><input type="checkbox" data-enroll-id="${r.enrollment_id}" data-student-id="${r.student_id}" class="yc-leaver-chk"></td>
+            <td>${r.student_name}</td>
+            <td>${r.class_name}</td>
+            <td>${r.roll_number || ''}</td>
+            <td>${r.status}</td>
+        </tr>`;
+    }).join('');
+    rosterEl.innerHTML = `<table class="table">${thead}${tbody}</table>
+      <div style="margin-top:8px;">
+        <label>Leaver Status:</label>
+        <select id="yc-leaver-status"><option value="transferred">Transferred</option><option value="graduated">Graduated</option></select>
+        <input id="yc-leaver-end" type="date" placeholder="End Date">
+        <button class="btn" onclick="applyLeaversSelection()">Apply to Selected</button>
+      </div>`;
+}
+
+function applyLeaversSelection(){
+    const statusSel = document.getElementById('yc-leaver-status');
+    const endInput = document.getElementById('yc-leaver-end');
+    const status = statusSel ? statusSel.value : '';
+    const endDate = endInput ? endInput.value : '';
+    const checks = Array.from(document.querySelectorAll('.yc-leaver-chk'));
+    const marked = checks.filter(c=>c.checked).map(c=>({ enrollment_id: parseInt(c.getAttribute('data-enroll-id')), student_id: c.getAttribute('data-student-id') }));
+    window.ycLeavers = (window.ycLeavers || []).filter(x=>!marked.some(m=>m.enrollment_id===x.enrollment_id));
+    marked.forEach(m=>window.ycLeavers.push({ enrollment_id: m.enrollment_id, student_id: m.student_id, status, end_date: endDate }));
+    showModal('Success', `Marked ${marked.length} students as ${status}.`);
+}
+
+function renderPromotionRulesUI(){
+    const rulesEl = document.getElementById('yc-rules');
+    if (!rulesEl) return;
+    const classes = window.classes || [];
+    const options = classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    rulesEl.innerHTML = classes.map(c=>`<div class="yc-rule-row" data-from="${c.id}" style="margin-bottom:6px;">
+        <span>${c.name}</span>
+        <span style=\"margin:0 6px;\">→</span>
+        <select class="yc-to"><option value="${c.id}">${c.name} (Stay)</option>${options}</select>
+    </div>`).join('');
+}
+
+function renderYearClosePreview(data){
+    const el = document.getElementById('yearClosePreview');
+    if (!el) return;
+    const rows = Array.isArray(data.promotions) ? data.promotions : [];
+    const table = rows.length ? `<table class="table"><tr><th>Student</th><th>Old Class</th><th>New Class</th><th>Roll No</th></tr>${rows.map(r=>`<tr><td>${r.student_name || r.student_id}</td><td>${r.old_class_name || r.old_class_id}</td><td>${r.new_class_name || r.new_class_id}</td><td>${r.roll_number || ''}</td></tr>`).join('')}</table>` : '<div class="help-text">No promotions based on current rules.</div>';
+    el.innerHTML = `<div class="bg-white border rounded p-3 text-sm">
+      <div><strong>Current Year:</strong> ${data.current_year ? data.current_year.name : '-'}</div>
+      <div><strong>Overlaps:</strong> ${data.overlaps && data.overlaps.length ? data.overlaps.map(o=>o.name).join(', ') : 'None'}</div>
+      <div><strong>Counts:</strong> Enrolled: ${data.counts.enrolled_now}, Leavers: ${data.counts.leavers}, Promotions: ${data.counts.promotions}</div>
+      <div style="margin-top:8px;">${table}</div>
+    </div>`;
+}
+
+function renderAcademicYears() {
+    const list = document.getElementById('academicYearsList');
+    const badge = document.getElementById('currentYearBadge');
+    const badgeText = document.getElementById('currentYearName');
+
+    if (badge) {
+        if (window.currentAcademicYear && window.currentAcademicYear.name) {
+            badge.style.display = 'block';
+            badgeText.textContent = window.currentAcademicYear.name;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    if (!list) return;
+
+    const years = window.academicYears || [];
+    if (years.length === 0) {
+        list.innerHTML = '<p>No academic years added yet.</p>';
+        return;
+    }
+
+    list.innerHTML = years.map(y => {
+        const isCurrent = !!y.is_current;
+        return `
+            <div class="list-item">
+                <div class="list-item-info">
+                    <strong>${y.name}</strong>
+                    <span>${y.start_date} → ${y.end_date}</span>
+                    ${isCurrent ? '<span class="badge" style="margin-left:8px;background:#e8f5e8;color:#27ae60;padding:2px 6px;border-radius:4px;">Current</span>' : ''}
+                </div>
+                <div>
+                    ${isCurrent ? '' : `<button class="btn btn-secondary btn-small" onclick="setCurrentAcademicYear(${y.id})"><i class="fas fa-flag"></i> Set as Current</button>`}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function createAcademicYear() {
+    const nameInput = document.getElementById('ayName');
+    const startInput = document.getElementById('ayStart');
+    const endInput = document.getElementById('ayEnd');
+    const isCurrentInput = document.getElementById('ayIsCurrent');
+
+    const name = (nameInput?.value || '').trim();
+    const start_date = startInput?.value || '';
+    const end_date = endInput?.value || '';
+    const is_current = !!(isCurrentInput && isCurrentInput.checked);
+
+    if (!name || !start_date || !end_date) {
+        showModal('Error', 'Please provide name, start and end dates');
+        return;
+    }
+    if (new Date(start_date) > new Date(end_date)) {
+        showModal('Error', 'Start date cannot be after end date');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/academic-years', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, start_date, end_date, is_current })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create academic year');
+        // Clear inputs
+        if (nameInput) nameInput.value = '';
+        if (startInput) startInput.value = '';
+        if (endInput) endInput.value = '';
+        if (isCurrentInput) isCurrentInput.checked = false;
+        await fetchAcademicYears();
+        showModal('Success', 'Academic year created');
+    } catch (e) {
+        console.error(e);
+        showModal('Error', e.message || 'Failed to create academic year');
+    }
+}
+
+async function setCurrentAcademicYear(id) {
+    try {
+        const res = await fetch(`/api/academic-years/${id}/set-current`, { method: 'PUT' });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to set current year');
+        }
+        await fetchAcademicYears();
+        showModal('Success', 'Set as current academic year');
+    } catch (e) {
+        console.error(e);
+        showModal('Error', e.message || 'Failed to set current year');
+    }
+}
+
 function saveAcademicYearStart() {
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     const startDate = academicYearStartInput.value;
@@ -839,6 +1199,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Note: Old Education Progress form elements were removed
     // Book management is now handled through the Settings Book Management tab
+    // Load academic years
+    fetchAcademicYears();
+    // Render Year Close Wizard UI immediately (will update class options later)
+    try { renderYearCloseUI(); } catch (e) { /* ignore */ }
 });
 
 // Helper to refresh classes from the server and update the UI
@@ -889,4 +1253,17 @@ export {
     saveAppName,
     loadBooks,
     refreshClasses
+    , fetchAcademicYears
+    , renderAcademicYears
+    , createAcademicYear
+    , setCurrentAcademicYear
+    , applyLeaversSelection
+    , showYcStep
+    , populateYcClassDropdown
+    , loadYcRoster
+    , renderYcRosterTable
+    , renderPromotionRulesUI
+    , renderYearCloseUI
+    , yearClosePreview
+    , yearCloseConfirm
 }

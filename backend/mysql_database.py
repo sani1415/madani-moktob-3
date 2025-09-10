@@ -109,10 +109,12 @@ class MySQLDatabase:
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     student_id VARCHAR(50) NOT NULL,
                     date VARCHAR(20) NOT NULL,
+                    academic_year_id INT NULL,
                     status VARCHAR(20) NOT NULL,
                     reason TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+                    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE SET NULL,
                     UNIQUE KEY unique_student_date (student_id, date)
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
@@ -133,6 +135,41 @@ class MySQLDatabase:
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) UNIQUE NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
+            # Create academic_years table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS academic_years (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    is_current BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uniq_academic_year_name (name)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
+            # Create student_enrollments table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS student_enrollments (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    student_id VARCHAR(50) NOT NULL,
+                    academic_year_id INT NOT NULL,
+                    class_id INT NOT NULL,
+                    roll_number VARCHAR(20) DEFAULT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'enrolled',
+                    start_date DATE NOT NULL,
+                    end_date DATE DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uniq_student_year (student_id, academic_year_id),
+                    INDEX idx_enrollment_student (student_id),
+                    INDEX idx_enrollment_year (academic_year_id),
+                    INDEX idx_enrollment_class (class_id),
+                    CONSTRAINT fk_enroll_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_enroll_year FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_enroll_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE RESTRICT
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
@@ -200,6 +237,21 @@ class MySQLDatabase:
                     logger.info("✅ MySQLDatabase: total_pages column added successfully")
             except Error as e:
                 logger.warning(f"⚠️ MySQLDatabase: Could not check/add total_pages column: {e}")
+
+            # Add academic_year_id column to attendance if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM attendance LIKE 'academic_year_id'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding academic_year_id column to attendance table...")
+                    cursor.execute('ALTER TABLE attendance ADD COLUMN academic_year_id INT NULL AFTER date')
+                    # Optional FK to academic_years (nullable)
+                    try:
+                        cursor.execute('ALTER TABLE attendance ADD CONSTRAINT fk_attendance_year FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE SET NULL')
+                    except Error as e:
+                        logger.warning(f"⚠️ MySQLDatabase: Could not add FK on attendance.academic_year_id: {e}")
+                    logger.info("✅ MySQLDatabase: academic_year_id column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add academic_year_id on attendance: {e}")
             
             # Create education progress table
             cursor.execute('''
@@ -283,6 +335,43 @@ class MySQLDatabase:
         except Exception as e:
             logger.error(f"❌ Unexpected error initializing database: {e}")
             raise
+
+    def get_schema_status(self):
+        """Return JSON-like dict indicating existence of new tables/columns."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            def table_exists(table_name):
+                cursor.execute("SHOW TABLES LIKE %s", (table_name,))
+                return cursor.fetchone() is not None
+
+            def column_exists(table_name, column_name):
+                try:
+                    cursor.execute(f"SHOW COLUMNS FROM {table_name} LIKE %s", (column_name,))
+                    return cursor.fetchone() is not None
+                except Error:
+                    return False
+
+            status = {
+                'tables': {
+                    'academic_years': table_exists('academic_years'),
+                    'student_enrollments': table_exists('student_enrollments'),
+                    'attendance': table_exists('attendance')
+                },
+                'columns': {
+                    'attendance.academic_year_id': column_exists('attendance', 'academic_year_id')
+                }
+            }
+
+            cursor.close()
+            conn.close()
+            return status
+        except Error as e:
+            logger.error(f"Error checking schema status: {e}")
+            return {
+                'error': str(e)
+            }
     
     def get_class_number(self, class_name):
         """Extract class number from class name (e.g., 'প্রথম শ্রেণি' -> 1)"""
@@ -348,8 +437,8 @@ class MySQLDatabase:
             return base_number + 1
     
     # Students methods
-    def get_students(self):
-        """Get all students"""
+    def get_students(self, academic_year_id=None, active_only=False, include_enrollments=False):
+        """Get all students with optional filtering by academic year and status"""
         try:
             # Initialize database tables if they don't exist
             self._ensure_tables_exist()
@@ -357,7 +446,31 @@ class MySQLDatabase:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
-            cursor.execute('SELECT * FROM students ORDER BY CAST(rollNumber AS UNSIGNED)')
+            if include_enrollments and academic_year_id:
+                # Get students with their enrollment information for specific academic year
+                cursor.execute('''
+                    SELECT s.*, se.class_id as enrolled_class_id, se.roll_number as enrolled_roll_number,
+                           se.status as enrollment_status, c.name as enrolled_class_name
+                    FROM students s
+                    LEFT JOIN student_enrollments se ON s.id = se.student_id AND se.academic_year_id = %s
+                    LEFT JOIN classes c ON se.class_id = c.id
+                    WHERE (%s = FALSE OR s.status = 'active')
+                    ORDER BY CAST(COALESCE(se.roll_number, s.rollNumber) AS UNSIGNED)
+                ''', (academic_year_id, active_only))
+            else:
+                # Get all students with basic filtering
+                where_clause = "WHERE TRUE"
+                params = []
+                
+                if active_only:
+                    where_clause += " AND s.status = 'active'"
+                
+                cursor.execute(f'''
+                    SELECT s.* FROM students s 
+                    {where_clause}
+                    ORDER BY CAST(s.rollNumber AS UNSIGNED)
+                ''', params)
+            
             students = []
             for row in cursor.fetchall():
                 student = dict(row)
@@ -375,6 +488,60 @@ class MySQLDatabase:
             return []
         except Exception as e:
             logger.error(f"Unexpected error getting students: {e}")
+            return []
+
+    def get_students_for_date(self, date_str, class_name=None):
+        """Get students who were active on a specific date, optionally filtered by class"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Base query to get students who were active on the specified date
+            base_query = '''
+                SELECT s.*, 
+                       CASE 
+                           WHEN s.status = 'active' THEN 'active'
+                           WHEN s.status = 'inactive' AND 
+                                (s.inactivationDate IS NULL OR s.inactivationDate > %s) THEN 'active'
+                           ELSE 'inactive'
+                       END as date_status
+                FROM students s
+                WHERE (s.status = 'active' OR 
+                       (s.status = 'inactive' AND 
+                        (s.inactivationDate IS NULL OR s.inactivationDate > %s)))
+            '''
+            
+            params = [date_str, date_str]
+            
+            if class_name:
+                base_query += " AND s.class = %s"
+                params.append(class_name)
+            
+            base_query += " ORDER BY CAST(s.rollNumber AS UNSIGNED)"
+            
+            cursor.execute(base_query, params)
+            
+            students = []
+            for row in cursor.fetchall():
+                student = dict(row)
+                # Remove created_at from response
+                if 'created_at' in student:
+                    del student['created_at']
+                # Only include students who were active on this date
+                if student['date_status'] == 'active':
+                    # Remove the temporary date_status field
+                    del student['date_status']
+                    students.append(student)
+            
+            cursor.close()
+            conn.close()
+            return students
+            
+        except Error as e:
+            logger.error(f"Error getting students for date {date_str}: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected error getting students for date {date_str}: {e}")
             return []
 
     def _initialize_database(self):
@@ -612,19 +779,26 @@ class MySQLDatabase:
             return {'total': 0, 'active': 0, 'inactive': 0}
     
     # Attendance methods
-    def get_attendance(self, date=None):
-        """Get attendance data"""
+    def get_attendance(self, date=None, academic_year_id=None):
+        """Get attendance data, optionally filtered by academic_year_id"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
             if date:
                 # Get attendance for specific date
-                cursor.execute('''
-                    SELECT student_id, status, reason 
-                    FROM attendance 
-                    WHERE date = %s
-                ''', (date,))
+                if academic_year_id:
+                    cursor.execute('''
+                        SELECT student_id, status, reason 
+                        FROM attendance 
+                        WHERE date = %s AND (academic_year_id = %s OR academic_year_id IS NULL)
+                    ''', (date, academic_year_id))
+                else:
+                    cursor.execute('''
+                        SELECT student_id, status, reason 
+                        FROM attendance 
+                        WHERE date = %s
+                    ''', (date,))
                 
                 attendance = {}
                 for row in cursor.fetchall():
@@ -638,11 +812,19 @@ class MySQLDatabase:
                 return attendance
             else:
                 # Get all attendance grouped by date
-                cursor.execute('''
-                    SELECT date, student_id, status, reason 
-                    FROM attendance 
-                    ORDER BY date DESC
-                ''')
+                if academic_year_id:
+                    cursor.execute('''
+                        SELECT date, student_id, status, reason 
+                        FROM attendance 
+                        WHERE (academic_year_id = %s OR academic_year_id IS NULL)
+                        ORDER BY date DESC
+                    ''', (academic_year_id,))
+                else:
+                    cursor.execute('''
+                        SELECT date, student_id, status, reason 
+                        FROM attendance 
+                        ORDER BY date DESC
+                    ''')
                 
                 attendance = {}
                 for row in cursor.fetchall():
@@ -663,28 +845,68 @@ class MySQLDatabase:
             return {}
     
     def save_attendance(self, attendance_data):
-        """Save attendance data"""
+        """Save attendance data, ensuring proper academic year context"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Clear all attendance records
+            def get_academic_year_for_date(date_str):
+                """Get the most appropriate academic year for a given date"""
+                try:
+                    # First try to find an academic year that contains this date
+                    cursor.execute('''
+                        SELECT id FROM academic_years 
+                        WHERE start_date <= %s AND end_date >= %s 
+                        ORDER BY is_current DESC, start_date DESC 
+                        LIMIT 1
+                    ''', (date_str, date_str))
+                    row = cursor.fetchone()
+                    if row:
+                        return row[0]
+                    
+                    # If no academic year contains this date, use current year
+                    current_year = self.get_current_academic_year()
+                    if current_year:
+                        return current_year['id']
+                    
+                    # If no current year, find the most recent year
+                    cursor.execute('''
+                        SELECT id FROM academic_years 
+                        ORDER BY start_date DESC 
+                        LIMIT 1
+                    ''')
+                    row = cursor.fetchone()
+                    if row:
+                        return row[0]
+                        
+                except Error as e:
+                    logger.warning(f"Error determining academic year for date {date_str}: {e}")
+                
+                return None
+            
+            # Clear all attendance records (this preserves the bulk update behavior)
             cursor.execute('DELETE FROM attendance')
             
-            # Insert new attendance records
+            # Insert new attendance records with proper academic year context
             for date, students in attendance_data.items():
+                date_year_id = get_academic_year_for_date(date)
+                
                 for student_id, info in students.items():
-                    cursor.execute('''
-                        INSERT INTO attendance (student_id, date, status, reason)
-                        VALUES (%s, %s, %s, %s)
-                    ''', (student_id, date, info.get('status', 'absent'), info.get('reason', '')))
+                    try:
+                        cursor.execute('''
+                            INSERT INTO attendance (student_id, date, academic_year_id, status, reason)
+                            VALUES (%s, %s, %s, %s, %s)
+                        ''', (student_id, date, date_year_id, info.get('status', 'absent'), info.get('reason', '')))
+                    except Error as e:
+                        logger.warning(f"Failed to insert attendance for student {student_id} on {date}: {e}")
+                        continue
             
             conn.commit()
             cursor.close()
             conn.close()
             
         except Error as e:
-            print(f"Error saving attendance: {e}")
+            logger.error(f"Error saving attendance: {e}")
             raise
 
     def reset_attendance(self):
@@ -702,18 +924,34 @@ class MySQLDatabase:
             raise
     
     def update_attendance(self, date, student_id, status, reason=""):
-        """Update attendance for a specific student and date"""
+        """Update attendance for a specific student and date, attaching current academic_year_id if available"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+            current_year = None
+            try:
+                current_year = self.get_current_academic_year()
+            except Exception:
+                current_year = None
+            ay_id = None
+            try:
+                cursor.execute(
+                    'SELECT id FROM academic_years WHERE start_date <= %s AND end_date >= %s ORDER BY is_current DESC, start_date DESC LIMIT 1',
+                    (date, date)
+                )
+                row = cursor.fetchone()
+                if row:
+                    ay_id = row[0]
+            except Error:
+                ay_id = current_year['id'] if current_year else None
             
             cursor.execute('''
-                INSERT INTO attendance (student_id, date, status, reason)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO attendance (student_id, date, academic_year_id, status, reason)
+                VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                 status = VALUES(status),
                 reason = VALUES(reason)
-            ''', (student_id, date, status, reason))
+            ''', (student_id, date, ay_id, status, reason))
             
             conn.commit()
             cursor.close()
@@ -1270,6 +1508,192 @@ class MySQLDatabase:
         except Exception as e:
             logger.error(f"Unexpected error getting score history: {e}")
             return []
+
+    # ===== ACADEMIC YEARS METHODS =====
+    def create_academic_year(self, name, start_date, end_date, is_current=False):
+        """Create a new academic year. If is_current, unset others first."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            if is_current:
+                cursor.execute('UPDATE academic_years SET is_current = FALSE')
+
+            cursor.execute('''
+                INSERT INTO academic_years (name, start_date, end_date, is_current)
+                VALUES (%s, %s, %s, %s)
+            ''', (name, start_date, end_date, bool(is_current)))
+
+            year_id = cursor.lastrowid
+            conn.commit()
+
+            cursor.close()
+            conn.close()
+            return year_id
+        except Error as e:
+            logger.error(f"Error creating academic year: {e}")
+            raise
+
+    def list_academic_years(self):
+        """Return all academic years with current flag."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT id, name, start_date, end_date, is_current
+                FROM academic_years
+                ORDER BY start_date DESC
+            ''')
+            years = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return years
+        except Error as e:
+            logger.error(f"Error listing academic years: {e}")
+            return []
+
+    def get_current_academic_year(self):
+        """Return the current academic year or None."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT id, name, start_date, end_date, is_current
+                FROM academic_years
+                WHERE is_current = TRUE
+                ORDER BY start_date DESC
+                LIMIT 1
+            ''')
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return row
+        except Error as e:
+            logger.error(f"Error getting current academic year: {e}")
+            return None
+
+    def set_current_academic_year(self, year_id):
+        """Set the specified academic year as current (unset others)."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Verify the year exists
+            cursor.execute('SELECT COUNT(*) FROM academic_years WHERE id = %s', (year_id,))
+            exists = cursor.fetchone()[0] > 0
+            if not exists:
+                cursor.close()
+                conn.close()
+                return False
+
+            cursor.execute('UPDATE academic_years SET is_current = FALSE')
+            cursor.execute('UPDATE academic_years SET is_current = TRUE WHERE id = %s', (year_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Error as e:
+            logger.error(f"Error setting current academic year: {e}")
+            return False
+
+    # ===== ENROLLMENTS METHODS =====
+    def enroll_student_current_year(self, student_id: str, class_id: int, roll_number: str):
+        """Enroll or update a student's enrollment for the current academic year."""
+        try:
+            # Get current academic year
+            current_year = self.get_current_academic_year()
+            if not current_year:
+                raise ValueError("No current academic year set")
+            academic_year_id = current_year['id']
+
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Upsert enrollment for (student_id, academic_year_id)
+            cursor.execute('''
+                INSERT INTO student_enrollments (student_id, academic_year_id, class_id, roll_number, status, start_date, end_date)
+                VALUES (%s, %s, %s, %s, 'enrolled', CURRENT_DATE(), NULL)
+                ON DUPLICATE KEY UPDATE
+                    class_id = VALUES(class_id),
+                    roll_number = VALUES(roll_number),
+                    status = 'enrolled',
+                    end_date = NULL
+            ''', (student_id, academic_year_id, class_id, roll_number))
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Error as e:
+            logger.error(f"Error enrolling student: {e}")
+            raise
+
+    def get_student_enrollments(self, student_id: str):
+        """List all enrollments for a student with year and class info."""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT se.id,
+                       se.student_id,
+                       se.roll_number,
+                       se.status,
+                       se.start_date,
+                       se.end_date,
+                       ay.id AS academic_year_id,
+                       ay.name AS academic_year_name,
+                       ay.start_date AS academic_year_start,
+                       ay.end_date AS academic_year_end,
+                       ay.is_current,
+                       c.id AS class_id,
+                       c.name AS class_name
+                FROM student_enrollments se
+                JOIN academic_years ay ON ay.id = se.academic_year_id
+                JOIN classes c ON c.id = se.class_id
+                WHERE se.student_id = %s
+                ORDER BY ay.start_date DESC
+            ''', (student_id,))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Error as e:
+            logger.error(f"Error getting student enrollments: {e}")
+            return []
+
+    def get_class_roster(self, class_id: int, academic_year_id: int = None):
+        """Get roster of students for a class in a given or current academic year."""
+        try:
+            if academic_year_id is None:
+                current_year = self.get_current_academic_year()
+                if not current_year:
+                    raise ValueError("No current academic year set")
+                academic_year_id = current_year['id']
+
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT se.id AS enrollment_id,
+                       s.id AS student_id,
+                       s.name AS student_name,
+                       se.roll_number,
+                       c.name AS class_name,
+                       se.status
+                FROM student_enrollments se
+                JOIN students s ON s.id = se.student_id
+                JOIN classes c ON c.id = se.class_id
+                WHERE se.academic_year_id = %s
+                  AND se.class_id = %s
+                  AND se.status = 'enrolled'
+                ORDER BY CAST(se.roll_number AS UNSIGNED)
+            ''', (academic_year_id, class_id))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Error as e:
+            logger.error(f"Error getting class roster: {e}")
+            return []
     
     def get_students_with_scores(self, class_name=None):
         """Get all students with their current scores"""
@@ -1304,6 +1728,33 @@ class MySQLDatabase:
         except Exception as e:
             logger.error(f"Unexpected error getting students with scores: {e}")
             return []
+
+    def update_enrollment_status(self, enrollment_id: int, status: str, end_date: str = None):
+        """Update a single enrollment's status and end_date by enrollment id."""
+        try:
+            if status not in ('transferred', 'graduated', 'enrolled'):
+                raise ValueError('Invalid status')
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # Default end_date to today if setting to a leaver status and end_date not provided
+            if status in ('transferred', 'graduated') and not end_date:
+                end_date = datetime.now().strftime('%Y-%m-%d')
+            cursor.execute('''
+                UPDATE student_enrollments
+                SET status=%s, end_date=%s
+                WHERE id=%s
+            ''', (status, end_date, enrollment_id))
+            affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return affected > 0
+        except Error as e:
+            logger.error(f"Error updating enrollment status: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error updating enrollment status: {e}")
+            return False
 
     # Book Management Methods
     def get_books(self, class_id=None):
@@ -1506,3 +1957,224 @@ class MySQLDatabase:
         except Error as e:
             logger.error(f"Error getting user by ID: {e}")
             raise
+
+    # ===== YEAR CLOSE METHODS =====
+    def find_overlapping_years(self, start_date: str, end_date: str):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT id, name, start_date, end_date, is_current
+                FROM academic_years
+                WHERE NOT (end_date < %s OR start_date > %s)
+            ''', (start_date, end_date))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Error as e:
+            logger.error(f"Error checking overlapping academic years: {e}")
+            return []
+
+    def upsert_academic_year(self, name: str, start_date: str, end_date: str, is_current: bool = False):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT id FROM academic_years WHERE name = %s', (name,))
+            row = cursor.fetchone()
+            if row:
+                year_id = row[0]
+                # Optionally update dates
+                cursor.execute('UPDATE academic_years SET start_date=%s, end_date=%s WHERE id=%s', (start_date, end_date, year_id))
+            else:
+                if is_current:
+                    cursor.execute('UPDATE academic_years SET is_current = FALSE')
+                cursor.execute('INSERT INTO academic_years (name, start_date, end_date, is_current) VALUES (%s, %s, %s, %s)', (name, start_date, end_date, bool(is_current)))
+                year_id = cursor.lastrowid
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return year_id
+        except Error as e:
+            logger.error(f"Error upserting academic year: {e}")
+            raise
+
+    def get_academic_year_by_id(self, year_id: int):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('SELECT * FROM academic_years WHERE id=%s', (year_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return row
+        except Error as e:
+            logger.error(f"Error getting academic year by id: {e}")
+            return None
+
+    def get_current_year_enrollments(self):
+        try:
+            current = self.get_current_academic_year()
+            if not current:
+                return []
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT se.id, se.student_id, se.academic_year_id, se.class_id, se.roll_number, se.status,
+                       s.name AS student_name, s.fatherName, c.name AS class_name
+                FROM student_enrollments se
+                JOIN students s ON s.id = se.student_id
+                JOIN classes c ON c.id = se.class_id
+                WHERE se.academic_year_id = %s
+            ''', (current['id'],))
+            rows = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return rows
+        except Error as e:
+            logger.error(f"Error getting current year enrollments: {e}")
+            return []
+
+    def apply_leavers(self, leavers: list):
+        """leavers: list of {student_id, status, end_date}"""
+        if not leavers:
+            return 0
+        try:
+            current = self.get_current_academic_year()
+            if not current:
+                return 0
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            affected = 0
+            for item in leavers:
+                student_id = item.get('student_id')
+                status = item.get('status')
+                end_date = item.get('end_date') or datetime.now().strftime('%Y-%m-%d')
+                if status not in ('transferred', 'graduated'):
+                    continue
+                cursor.execute('''
+                    UPDATE student_enrollments
+                    SET status=%s, end_date=%s
+                    WHERE student_id=%s AND academic_year_id=%s
+                ''', (status, end_date, student_id, current['id']))
+                affected += cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return affected
+        except Error as e:
+            logger.error(f"Error applying leavers: {e}")
+            return 0
+
+    def generate_promotions(self, next_year_id: int, promotion_rules: list, exclude_student_ids: list):
+        """promotion_rules: list of {from_class_id, to_class_id}. Keep same roll_number."""
+        try:
+            current = self.get_current_academic_year()
+            if not current:
+                return 0
+            rule_map = {int(r['from_class_id']): int(r['to_class_id']) for r in promotion_rules if r.get('from_class_id') and r.get('to_class_id')}
+            if not rule_map:
+                return 0
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # get current enrolled students not in leavers
+            placeholders = ','.join(['%s'] * len(exclude_student_ids)) if exclude_student_ids else None
+            if placeholders:
+                cursor.execute(f'''
+                    SELECT student_id, class_id, roll_number
+                    FROM student_enrollments
+                    WHERE academic_year_id=%s AND status='enrolled' AND student_id NOT IN ({placeholders})
+                ''', (current['id'], *exclude_student_ids))
+            else:
+                cursor.execute('''
+                    SELECT student_id, class_id, roll_number
+                    FROM student_enrollments
+                    WHERE academic_year_id=%s AND status='enrolled'
+                ''', (current['id'],))
+            rows = cursor.fetchall()
+            created = 0
+            # determine next year start_date for start_date field
+            next_year = self.get_academic_year_by_id(next_year_id)
+            start_date = next_year['start_date'] if next_year else None
+            for student_id, class_id, roll_number in rows:
+                to_class_id = rule_map.get(int(class_id))
+                if not to_class_id:
+                    continue
+                cursor.execute('''
+                    INSERT INTO student_enrollments (student_id, academic_year_id, class_id, roll_number, status, start_date, end_date)
+                    VALUES (%s, %s, %s, %s, 'enrolled', %s, NULL)
+                    ON DUPLICATE KEY UPDATE class_id=VALUES(class_id), roll_number=VALUES(roll_number), status='enrolled', start_date=VALUES(start_date), end_date=NULL
+                ''', (student_id, next_year_id, to_class_id, roll_number, start_date))
+                created += 1
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return created
+        except Error as e:
+            logger.error(f"Error generating promotions: {e}")
+            return 0
+
+    def year_close_preview(self, next_year: dict, promotion_rules: list, leavers: list):
+        # Validate overlaps
+        overlaps = self.find_overlapping_years(next_year['start_date'], next_year['end_date'])
+        current = self.get_current_academic_year()
+        enrollments = self.get_current_year_enrollments()
+        leaver_ids = {l['student_id'] for l in (leavers or [])}
+        rule_map = {int(r['from_class_id']): int(r['to_class_id']) for r in (promotion_rules or []) if r.get('from_class_id') and r.get('to_class_id')}
+        # Build class id to name map for readability
+        class_map = {}
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name FROM classes')
+            for cid, cname in cursor.fetchall():
+                class_map[int(cid)] = cname
+            cursor.close()
+            conn.close()
+        except Error:
+            pass
+
+        promotable = [e for e in enrollments if e['status']=='enrolled' and e['student_id'] not in leaver_ids and int(e['class_id']) in rule_map]
+        promotions_detail = []
+        for e in promotable:
+            from_id = int(e['class_id'])
+            to_id = int(rule_map.get(from_id)) if rule_map.get(from_id) else None
+            if not to_id:
+                continue
+            promotions_detail.append({
+                'student_id': e['student_id'],
+                'student_name': e.get('student_name'),
+                'old_class_id': from_id,
+                'old_class_name': e.get('class_name') or class_map.get(from_id),
+                'new_class_id': to_id,
+                'new_class_name': class_map.get(to_id),
+                'roll_number': e.get('roll_number')
+            })
+
+        return {
+            'current_year': current,
+            'overlaps': overlaps,
+            'counts': {
+                'enrolled_now': len([e for e in enrollments if e['status']=='enrolled']),
+                'leavers': len(leaver_ids),
+                'promotions': len(promotions_detail)
+            },
+            'promotions': promotions_detail
+        }
+
+    def year_close_confirm(self, next_year: dict, promotion_rules: list, leavers: list):
+        # Create or get next year
+        overlaps = self.find_overlapping_years(next_year['start_date'], next_year['end_date'])
+        # Allow overlap only if it's the same named year
+        next_year_id = self.upsert_academic_year(next_year['name'], next_year['start_date'], next_year['end_date'], is_current=False)
+        # Apply leavers
+        affected_leavers = self.apply_leavers(leavers or [])
+        exclude_ids = [l['student_id'] for l in (leavers or [])]
+        # Generate promotions
+        created = self.generate_promotions(next_year_id, promotion_rules or [], exclude_ids)
+        return {
+            'next_year_id': next_year_id,
+            'overlaps': overlaps,
+            'leavers_updated': affected_leavers,
+            'promotions_created': created
+        }

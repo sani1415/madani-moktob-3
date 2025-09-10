@@ -29,6 +29,15 @@
                     <p>Student Attendance Management System</p>
                 </div>
                 <div class="header-controls">
+                    <div class="academic-year-selector" style="margin-right: 20px;">
+                        <label for="academicYearSelector" style="color: #fff; margin-right: 8px; font-size: 14px;">
+                            <i class="fas fa-calendar-alt"></i> Academic Year:
+                        </label>
+                        <select id="academicYearSelector" onchange="changeAcademicYear(this.value)" 
+                                style="padding: 6px 10px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; background: rgba(255,255,255,0.9); color: #333; font-size: 14px;">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
                     <div class="language-selector">
                         <label for="languageSelector"><i class="fas fa-globe"></i></label>
                         <select id="languageSelector" onchange="changeLanguage(this.value)">
@@ -367,6 +376,7 @@
                 <div class="attendance-header">
                     <h2><i class="fas fa-check-circle"></i> Daily Attendance</h2>
                     <div class="attendance-date-selector">
+                        <span id="attendanceYearBadge" class="badge" style="display:none;margin-right:8px;background:#e8f5e8;color:#27ae60;padding:6px 10px;border-radius:4px;"></span>
                         <input type="date" id="attendanceDate" max="">
                     </div>
                 </div>
@@ -567,6 +577,9 @@
                     <button class="tab-button" onclick="openSettingsTab(event, 'academic')">
                         <i class="fas fa-school"></i> Academic
                     </button>
+                    <button class="tab-button" onclick="openSettingsTab(event, 'year-close'); window.renderYearCloseUI && window.renderYearCloseUI();">
+                        <i class="fas fa-calendar-check"></i> Year Close Wizard
+                    </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'books')">
                         <i class="fas fa-book"></i> Book Management
                     </button>
@@ -614,6 +627,27 @@
                 <!-- Academic Tab -->
                 <div id="academic" class="tab-content">
                     <h3>Academic Management</h3>
+                    <div class="setting-group">
+                        <label>Academic Years</label>
+                        <p class="help-text">Manage academic years. Set one as current.</p>
+                        <div class="input-group" style="gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <input type="text" id="ayName" placeholder="e.g., 2025-2026" style="min-width: 160px;">
+                            <input type="date" id="ayStart" title="Start Date">
+                            <input type="date" id="ayEnd" title="End Date">
+                            <label style="display: flex; align-items: center; gap: 6px;">
+                                <input type="checkbox" id="ayIsCurrent"> Set as Current
+                            </label>
+                            <button class="btn btn-primary" onclick="createAcademicYear()">
+                                <i class="fas fa-plus"></i> Add Academic Year
+                            </button>
+                        </div>
+                        <div id="currentYearBadge" style="display:none; margin-top: 10px;">
+                            <span class="badge" id="currentYearBadgeText" style="background:#e8f5e8;color:#27ae60;padding:6px 10px;border-radius:4px;">
+                                Current Year: <strong id="currentYearName"></strong>
+                            </span>
+                        </div>
+                        <div class="item-list" id="academicYearsList" style="margin-top: 10px;"></div>
+                    </div>
                     <div class="setting-group">
                         <label for="academicYearStartInput">Academic Year Start Date</label>
                         <p class="help-text">Used for reports and date restrictions.</p>
@@ -754,6 +788,23 @@
                         <button class="btn btn-secondary" onclick="downloadAllStudentsCSV()">
                             <i class="fas fa-file-export"></i> Export All Data
                         </button>
+                    </div>
+                </div>
+
+                <!-- Year Close Wizard Tab -->
+                <div id="year-close" class="tab-content">
+                    <h3>Year Close Wizard</h3>
+                    <div class="setting-group">
+                        <p class="help-text">Prepare to close the current academic year and generate enrollments for the next year.</p>
+                        <div id="yearCloseWizard">
+                            <ol class="wizard-steps">
+                                <li><strong>Step 1:</strong> Mark Leavers (transferred/graduated)</li>
+                                <li><strong>Step 2:</strong> Define Promotion Rules (Class → Class)</li>
+                                <li><strong>Step 3:</strong> Preview New Enrollments</li>
+                                <li><strong>Step 4:</strong> Confirm & Generate</li>
+                            </ol>
+                            <div id="yearCloseContent"></div>
+                        </div>
                     </div>
                 </div>
 

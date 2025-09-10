@@ -36,6 +36,13 @@ FRONTEND_PATH = os.path.join(BASE_DIR, "../frontend")
 app = Flask(__name__, static_folder=FRONTEND_PATH)
 CORS(app)
 
+# Dev mode flag
+def is_dev_mode():
+    try:
+        return os.getenv('APP_MODE', '').lower() == 'dev'
+    except Exception:
+        return False
+
 # Initialize database based on environment
 def get_database():
     logger.info("🔍 Starting database selection process...")
@@ -97,8 +104,12 @@ try:
     logger.info("✅ Database and tables initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize database: {e}")
-    logger.error("❌ Server cannot start without database")
-    raise e
+    if is_dev_mode():
+        logger.warning("⚠️ Continuing to start server in DEV mode without database. Dev endpoints only.")
+        db = None
+    else:
+        logger.error("❌ Server cannot start without database")
+        raise e
 
 # Session management for authentication
 from flask import session
@@ -291,7 +302,24 @@ def bulk_import_students():
 @app.route('/api/students', methods=['GET'])
 def get_students():
     try:
-        students = db.get_students()
+        # Get query parameters
+        academic_year_id = request.args.get('academic_year_id', type=int)
+        active_only = request.args.get('active_only', 'false').lower() == 'true'
+        include_enrollments = request.args.get('include_enrollments', 'false').lower() == 'true'
+        date_filter = request.args.get('date')  # For historical view
+        class_name = request.args.get('class')  # For class filtering
+        
+        if date_filter:
+            # Use historical date filtering
+            students = db.get_students_for_date(date_filter, class_name)
+        else:
+            # Use standard filtering
+            students = db.get_students(academic_year_id, active_only, include_enrollments)
+            
+            # Apply class filtering if specified
+            if class_name:
+                students = [s for s in students if s.get('class') == class_name or s.get('enrolled_class_name') == class_name]
+        
         return jsonify(students)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -415,7 +443,8 @@ def get_next_roll_number(class_name):
 def get_attendance():
     try:
         date = request.args.get('date')
-        attendance = db.get_attendance(date)
+        academic_year_id = request.args.get('academic_year_id', type=int)
+        attendance = db.get_attendance(date, academic_year_id)
         return jsonify(attendance)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -555,6 +584,111 @@ def delete_all_education_progress():
     try:
         db.delete_all_education_progress()
         return jsonify({'success': True, 'message': 'All education progress data deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Reports API (year-aware)
+@app.route('/api/reports/attendance', methods=['GET'])
+def reports_attendance():
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        academic_year_id = request.args.get('academic_year_id', type=int)
+        class_name = request.args.get('class')
+
+        # Basic validation
+        if not start_date or not end_date:
+            return jsonify({'error': 'start_date and end_date are required'}), 400
+
+        # If no academic year specified, try to infer from current year or date range
+        if not academic_year_id:
+            current_year = db.get_current_academic_year()
+            if current_year:
+                academic_year_id = current_year['id']
+
+        # Fetch attendance filtered by year if provided
+        data = db.get_attendance(None, academic_year_id)
+        
+        # Filter by date range
+        filtered = {d: records for d, records in data.items() if start_date <= d <= end_date}
+        
+        # If class filter is provided, further filter the results
+        if class_name:
+            # Get students for this class to filter attendance records
+            students_in_class = db.get_students_for_date(start_date, class_name)
+            student_ids_in_class = {s['id'] for s in students_in_class}
+            
+            filtered_by_class = {}
+            for date, records in filtered.items():
+                filtered_by_class[date] = {
+                    student_id: record for student_id, record in records.items()
+                    if student_id in student_ids_in_class
+                }
+            filtered = filtered_by_class
+        
+        return jsonify({
+            'attendance_data': filtered,
+            'academic_year_id': academic_year_id,
+            'date_range': {'start': start_date, 'end': end_date},
+            'class_filter': class_name
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reports/student-summary', methods=['GET'])
+def reports_student_summary():
+    """Get summary report for all students with attendance stats"""
+    try:
+        academic_year_id = request.args.get('academic_year_id', type=int)
+        class_name = request.args.get('class')
+        
+        # If no academic year specified, use current year
+        if not academic_year_id:
+            current_year = db.get_current_academic_year()
+            if current_year:
+                academic_year_id = current_year['id']
+        
+        # Get students (filtered by class if specified)
+        students = db.get_students(academic_year_id, active_only=True)
+        if class_name:
+            students = [s for s in students if s.get('class') == class_name]
+        
+        # Get attendance data for the academic year
+        attendance_data = db.get_attendance(None, academic_year_id)
+        
+        # Calculate summary stats for each student
+        summary = []
+        for student in students:
+            student_id = student['id']
+            present_days = 0
+            absent_days = 0
+            total_days = 0
+            
+            for date, records in attendance_data.items():
+                if student_id in records:
+                    total_days += 1
+                    if records[student_id]['status'] == 'present':
+                        present_days += 1
+                    elif records[student_id]['status'] == 'absent':
+                        absent_days += 1
+            
+            attendance_rate = (present_days / total_days * 100) if total_days > 0 else 0
+            
+            summary.append({
+                'student': student,
+                'attendance_stats': {
+                    'present_days': present_days,
+                    'absent_days': absent_days,
+                    'total_days': total_days,
+                    'attendance_rate': round(attendance_rate, 2)
+                }
+            })
+        
+        return jsonify({
+            'students': summary,
+            'academic_year_id': academic_year_id,
+            'class_filter': class_name
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -890,6 +1024,162 @@ def health():
             'error': str(e),
             'timestamp': datetime.now().isoformat()
         }), 500
+
+# ========= DEV-ONLY ADMIN ENDPOINTS =========
+if is_dev_mode():
+    @app.route('/admin/dev/health', methods=['GET'])
+    def dev_health():
+        return "OK", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+    @app.route('/admin/dev/db-check', methods=['GET'])
+    def dev_db_check():
+        try:
+            status = db.get_schema_status() if (db and hasattr(db, 'get_schema_status')) else {'error': 'database not initialized'}
+            return jsonify(status)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+# ===== Academic Year API Endpoints =====
+@app.route('/api/academic-years', methods=['POST'])
+def create_academic_year():
+    try:
+        data = request.json or {}
+        name = data.get('name')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        is_current = bool(data.get('is_current', False))
+
+        if not all([name, start_date, end_date]):
+            return jsonify({'error': 'name, start_date, end_date are required'}), 400
+
+        year_id = db.create_academic_year(name, start_date, end_date, is_current)
+        return jsonify({'success': True, 'id': year_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/academic-years', methods=['GET'])
+def list_academic_years():
+    try:
+        years = db.list_academic_years()
+        return jsonify(years)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/academic-years/current', methods=['GET'])
+def get_current_academic_year():
+    try:
+        year = db.get_current_academic_year()
+        if not year:
+            return jsonify({}), 200
+        return jsonify(year)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/academic-years/<int:year_id>/set-current', methods=['PUT'])
+def set_current_academic_year(year_id):
+    try:
+        success = db.set_current_academic_year(year_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Academic year not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== Student Enrollments API =====
+@app.route('/api/enrollments', methods=['POST'])
+def enroll_student_current_year():
+    try:
+        data = request.json or {}
+        student_id = data.get('student_id')
+        class_id = data.get('class_id')
+        roll_number = data.get('roll_number')
+
+        if not all([student_id, class_id, roll_number]):
+            return jsonify({'error': 'student_id, class_id, roll_number are required'}), 400
+
+        success = db.enroll_student_current_year(student_id, int(class_id), str(roll_number))
+        if success:
+            return jsonify({'success': True})
+        return jsonify({'error': 'Failed to enroll student'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students/<student_id>/enrollments', methods=['GET'])
+def get_student_enrollments(student_id):
+    try:
+        enrollments = db.get_student_enrollments(student_id)
+        return jsonify(enrollments)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/classes/<int:class_id>/roster', methods=['GET'])
+def get_class_roster(class_id):
+    try:
+        year_id = request.args.get('academic_year_id', type=int)
+        roster = db.get_class_roster(class_id, year_id)
+        return jsonify(roster)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/academic-years/current/classes/<int:class_id>/students', methods=['GET'])
+def get_current_year_class_students(class_id):
+    try:
+        # Implicitly uses current academic year
+        roster = db.get_class_roster(class_id, None)
+        return jsonify(roster)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/student-enrollments/<int:enrollment_id>/status', methods=['PUT'])
+def update_enrollment_status(enrollment_id):
+    try:
+        data = request.json or {}
+        status = data.get('status')
+        end_date = data.get('end_date')
+        if status not in ('transferred', 'graduated', 'enrolled'):
+            return jsonify({'error': 'Invalid status'}), 400
+        success = db.update_enrollment_status(enrollment_id, status, end_date)
+        if success:
+            return jsonify({'success': True})
+        return jsonify({'error': 'Failed to update enrollment status'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== Year Close Wizard API =====
+@app.route('/api/year-close/preview', methods=['POST'])
+def year_close_preview():
+    try:
+        data = request.json or {}
+        next_year = data.get('next_year') or {}
+        promotion_rules = data.get('promotion_rules') or []
+        leavers = data.get('leavers') or []
+
+        required = ['name', 'start_date', 'end_date']
+        if not all(next_year.get(k) for k in required):
+            return jsonify({'error': 'next_year requires name, start_date, end_date'}), 400
+
+        result = db.year_close_preview(next_year, promotion_rules, leavers)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/year-close/confirm', methods=['POST'])
+def year_close_confirm():
+    try:
+        data = request.json or {}
+        next_year = data.get('next_year') or {}
+        promotion_rules = data.get('promotion_rules') or []
+        leavers = data.get('leavers') or []
+
+        required = ['name', 'start_date', 'end_date']
+        if not all(next_year.get(k) for k in required):
+            return jsonify({'error': 'next_year requires name, start_date, end_date'}), 400
+
+        result = db.year_close_confirm(next_year, promotion_rules, leavers)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/debug')
 def debug():

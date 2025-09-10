@@ -77,7 +77,7 @@ async function loadAttendanceForDate() {
         attendance[selectedDate] = {};
     }
     
-    let filteredStudents = getFilteredStudents();
+    let filteredStudents = await getFilteredStudents();
     
     // Debug: Log students data
     console.log('Total students available:', students.length);
@@ -155,6 +155,24 @@ async function loadAttendanceForDate() {
     // Update Hijri date for attendance page
     if (typeof updateAttendancePageHijri === 'function') {
         updateAttendancePageHijri();
+    }
+    // Update Year badge
+    try {
+        const res = await fetch('/api/academic-years/current');
+        if (res.ok) {
+            const current = await res.json();
+            const badge = document.getElementById('attendanceYearBadge');
+            if (badge) {
+                if (current && current.name) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = `Year: ${current.name}`;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+    } catch(e) {
+        // ignore
     }
     
     console.log('=== loadAttendanceForDate completed ===');
@@ -281,7 +299,7 @@ async function saveAttendance() {
     }
     
     // Get all filtered students for the current date
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     
     // Only save attendance for students who have been explicitly marked (not neutral)
     // Remove neutral/unset students from the attendance record
@@ -580,17 +598,47 @@ function updateFilterStatus() {
     }
 }
 
-function getFilteredStudents() {
+async function getFilteredStudents() {
     const selectedDate = document.getElementById('attendanceDate').value;
     const selectedClass = document.getElementById('classFilter').value;
     
     console.log('🔍 getFilteredStudents - selectedDate:', selectedDate);
     console.log('🔍 getFilteredStudents - selectedClass:', selectedClass);
-    console.log('🔍 getFilteredStudents - selectedClass type:', typeof selectedClass);
-    console.log('🔍 getFilteredStudents - selectedClass length:', selectedClass ? selectedClass.length : 'N/A');
-    console.log('🔍 getFilteredStudents - students.length:', students.length);
-    console.log('🔍 getFilteredStudents - sample student class:', students[0]?.class);
-
+    
+    if (!selectedDate) {
+        console.warn('⚠️ No date selected, using current students');
+        return students.filter(student => {
+            if (selectedClass && selectedClass.trim() !== '') {
+                return student.class === selectedClass;
+            }
+            return true;
+        });
+    }
+    
+    try {
+        // Use the server-side date-aware filtering for more accurate results
+        const params = new URLSearchParams();
+        params.append('date', selectedDate);
+        
+        if (selectedClass && selectedClass.trim() !== '') {
+            params.append('class', selectedClass);
+        }
+        
+        const response = await fetch(`/api/students?${params.toString()}`);
+        if (response.ok) {
+            const dateFilteredStudents = await response.json();
+            console.log(`✅ Got ${dateFilteredStudents.length} students active on ${selectedDate}`);
+            return dateFilteredStudents;
+        } else {
+            console.error('❌ Failed to fetch date-filtered students, falling back to client-side filtering');
+        }
+    } catch (error) {
+        console.error('❌ Error fetching date-filtered students:', error);
+    }
+    
+    // Fallback to client-side filtering if server request fails
+    console.log('🔄 Using fallback client-side filtering');
+    
     // Helper function to parse inactivation date
     function parseInactivationDate(inactivationDate) {
         if (!inactivationDate) return null;
@@ -627,8 +675,6 @@ function getFilteredStudents() {
             const parsedInactivationDate = parseInactivationDate(student.inactivationDate);
             if (parsedInactivationDate) {
                 // Include if the selected date is before the inactivation date
-                // This means the student was still active on that date
-                // Note: On the day of inactivation, the student becomes inactive, so exclude them
                 return selectedDate < parsedInactivationDate;
             }
         }
@@ -640,31 +686,18 @@ function getFilteredStudents() {
     let finalFilteredStudents = dateFilteredStudents;
     if (selectedClass && selectedClass.trim() !== '') {
         console.log('🔍 getFilteredStudents - Filtering by class:', selectedClass);
-        console.log('🔍 getFilteredStudents - dateFilteredStudents before class filter:', dateFilteredStudents.length);
-        
-        // Debug: Show sample student class data
-        console.log('🔍 getFilteredStudents - Sample student classes:', dateFilteredStudents.slice(0, 5).map(s => ({ name: s.name, class: s.class })));
         
         finalFilteredStudents = dateFilteredStudents.filter(student => {
-            const matches = student.class === selectedClass;
-            if (!matches) {
-                console.log(`🔍 getFilteredStudents - Student ${student.name} class "${student.class}" doesn't match selected class "${selectedClass}"`);
-            }
-            return matches;
+            return student.class === selectedClass || student.enrolled_class_name === selectedClass;
         });
-        console.log('🔍 getFilteredStudents - finalFilteredStudents after class filter:', finalFilteredStudents.length);
         
-        // If no matches found, show more debugging
+        // If no matches found, show debugging info
         if (finalFilteredStudents.length === 0) {
             console.warn('⚠️ No students found for class:', selectedClass);
-            console.warn('⚠️ Available classes in student data:', [...new Set(dateFilteredStudents.map(s => s.class))]);
-            console.warn('⚠️ Selected class:', selectedClass);
+            console.warn('⚠️ Available classes in student data:', [...new Set(dateFilteredStudents.map(s => s.class || s.enrolled_class_name))]);
         }
-    } else {
-        console.log('🔍 getFilteredStudents - No class selected or "All Classes" selected, showing all students');
-        // When no class is selected or "All Classes" is selected, show all students
-        finalFilteredStudents = dateFilteredStudents;
     }
+    
     return finalFilteredStudents;
 }
 
@@ -681,7 +714,7 @@ async function markAllPresent() {
         return;
     }
     
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     if (filteredStudents.length === 0) {
         showModal(t('error'), t('noStudentsFound'));
         return;
@@ -724,14 +757,14 @@ async function markAllPresent() {
     showModal(t('success'), `${filteredStudents.length} ${t('studentsConfirmedPresent')}`);
 }
 
-function showMarkAllAbsentModal() {
+async function showMarkAllAbsentModal() {
     const selectedDate = document.getElementById('attendanceDate').value;
     if (!selectedDate) {
         showModal(t('error'), t('pleaseSelectDate'));
         return;
     }
     
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     if (filteredStudents.length === 0) {
         showModal(t('error'), t('noStudentsFound'));
         return;
@@ -764,7 +797,7 @@ async function confirmMarkAllAbsent() {
         return;
     }
     
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     
     // Initialize attendance for the date if it doesn't exist
     if (!attendance[selectedDate]) {
@@ -814,7 +847,7 @@ async function markAllNeutral() {
         return;
     }
     
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     if (filteredStudents.length === 0) {
         showModal(t('error'), t('noStudentsFound'));
         return;
@@ -859,7 +892,7 @@ async function autoCopyFromPreviousDay(targetDate) {
         return;
     }
     
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = await getFilteredStudents();
     if (filteredStudents.length === 0) {
         return;
     }

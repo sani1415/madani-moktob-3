@@ -99,6 +99,12 @@ window.displayHolidays = Settings.displayHolidays;
 window.loadBooks = Settings.loadBooks;
 window.updateClassFilterOptions = Registration.updateClassFilterOptions;
 window.updateClassDropdowns = Settings.updateClassDropdowns;
+window.createAcademicYear = Settings.createAcademicYear;
+window.setCurrentAcademicYear = Settings.setCurrentAcademicYear;
+window.renderYearCloseUI = Settings.renderYearCloseUI;
+window.yearClosePreview = Settings.yearClosePreview;
+window.yearCloseConfirm = Settings.yearCloseConfirm;
+window.applyLeaversSelection = Settings.applyLeaversSelection;
 
 // Dashboard functions
 window.refreshAttendanceData = Dashboard.refreshAttendanceData;
@@ -176,6 +182,11 @@ window.holidays = State.holidays;
 window.academicYearStartDate = State.academicYearStartDate;
 window.savedAttendanceDates = State.savedAttendanceDates;
 
+// Academic year state
+window.academicYears = [];
+window.currentAcademicYear = null;
+window.selectedAcademicYear = null;
+
 // Debug: Check state variables
 // console.log('🔍 State.classes:', State.classes); // Removed - classes now loaded from database
 console.log('🔍 window.classes:', window.classes);
@@ -203,7 +214,21 @@ window.t = t;
 async function refreshStudentsData() {
     try {
         console.log('🔄 Refreshing students data from server...');
-        const studentsResponse = await fetch('/api/students');
+        
+        // Build query parameters based on current context
+        let url = '/api/students';
+        const params = new URLSearchParams();
+        
+        if (window.selectedAcademicYear) {
+            params.append('academic_year_id', window.selectedAcademicYear.id);
+            params.append('include_enrollments', 'true');
+        }
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+        
+        const studentsResponse = await fetch(url);
         if (studentsResponse.ok) {
             const studentsData = await studentsResponse.json();
             // Update the global window variables directly
@@ -220,19 +245,145 @@ async function refreshStudentsData() {
     }
 }
 
+// Academic year management functions
+async function loadAcademicYears() {
+    try {
+        console.log('🔄 Loading academic years...');
+        const response = await fetch('/api/academic-years');
+        if (response.ok) {
+            window.academicYears = await response.json();
+            
+            // Load current academic year
+            const currentResponse = await fetch('/api/academic-years/current');
+            if (currentResponse.ok) {
+                window.currentAcademicYear = await currentResponse.json();
+                // If no selected year, use current year
+                if (!window.selectedAcademicYear && window.currentAcademicYear && window.currentAcademicYear.id) {
+                    window.selectedAcademicYear = window.currentAcademicYear;
+                }
+            }
+            
+            updateAcademicYearSelector();
+            console.log(`✅ Loaded ${window.academicYears.length} academic years`);
+            return true;
+        } else {
+            console.error('❌ Failed to load academic years');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error loading academic years:', error);
+        return false;
+    }
+}
+
+function updateAcademicYearSelector() {
+    const selector = document.getElementById('academicYearSelector');
+    if (!selector) return;
+    
+    // Clear existing options
+    selector.innerHTML = '';
+    
+    if (!window.academicYears || window.academicYears.length === 0) {
+        selector.innerHTML = '<option value="">No Academic Years</option>';
+        return;
+    }
+    
+    // Add academic year options
+    window.academicYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year.id;
+        option.textContent = `${year.name}${year.is_current ? ' (Current)' : ''}`;
+        selector.appendChild(option);
+    });
+    
+    // Set selected value
+    if (window.selectedAcademicYear) {
+        selector.value = window.selectedAcademicYear.id;
+    }
+}
+
+async function changeAcademicYear(yearId) {
+    try {
+        console.log(`🔄 Changing academic year to: ${yearId}`);
+        
+        if (yearId && window.academicYears) {
+            const year = window.academicYears.find(y => y.id == yearId);
+            if (year) {
+                window.selectedAcademicYear = year;
+                console.log(`✅ Selected academic year: ${year.name}`);
+                
+                // Refresh data for the new academic year
+                await refreshStudentsData();
+                
+                // Refresh attendance data with academic year context
+                const attendanceResponse = await fetch(`/api/attendance?academic_year_id=${yearId}`);
+                if (attendanceResponse.ok) {
+                    const attendanceData = await attendanceResponse.json();
+                    window.attendance = attendanceData;
+                    
+                    // Update saved attendance dates
+                    const savedDates = Object.keys(attendanceData).filter(date => {
+                        const dateAttendance = attendanceData[date];
+                        return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
+                    });
+                    
+                    window.savedAttendanceDates.clear();
+                    savedDates.forEach(date => window.savedAttendanceDates.add(date));
+                    
+                    console.log(`✅ Loaded attendance data for ${year.name}`);
+                }
+                
+                // Update UI components
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
+                }
+                
+                // Refresh current section
+                const activeSection = document.querySelector('.section.active');
+                if (activeSection) {
+                    const sectionId = activeSection.id;
+                    if (sectionId === 'attendance') {
+                        // Refresh attendance view
+                        if (typeof loadAttendanceForDate === 'function') {
+                            await loadAttendanceForDate();
+                        }
+                    } else if (sectionId === 'registration') {
+                        // Refresh student registration view
+                        if (typeof displayStudentsList === 'function') {
+                            displayStudentsList();
+                        }
+                    }
+                }
+                
+                // Show notification
+                if (typeof showModal === 'function') {
+                    showModal('Success', `Switched to academic year: ${year.name}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error changing academic year:', error);
+        if (typeof showModal === 'function') {
+            showModal('Error', 'Failed to switch academic year');
+        }
+    }
+}
+
+// Expose academic year functions globally
+window.loadAcademicYears = loadAcademicYears;
+window.updateAcademicYearSelector = updateAcademicYearSelector;
+window.changeAcademicYear = changeAcademicYear;
+
 // Initialize application data from database
 async function initializeApp() {
     try {
         console.log('🔄 Initializing application data...');
         
-        // Load students from database
-        const studentsResponse = await fetch('/api/students');
-        if (studentsResponse.ok) {
-            const studentsData = await studentsResponse.json();
-            // Update the global window variables directly
-            window.students = studentsData;
-            console.log(`✅ Loaded ${studentsData.length} students from database`);
-        }
+        // Load academic years first
+        await loadAcademicYears();
+        
+        // Load students from database (with academic year context)
+        await refreshStudentsData();
         
         // Load attendance from database
         const attendanceResponse = await fetch('/api/attendance');

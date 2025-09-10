@@ -153,7 +153,28 @@
         }
         
         // Function to get active students for a class
-        function getActiveStudentsForClass(className) {
+        async function getActiveStudentsForClass(className) {
+            // Try to use enrollments-based roster first
+            try {
+                const classId = getClassIdByName(className);
+                if (classId) {
+                    const res = await fetch(`/api/classes/${classId}/roster`);
+                    if (res.ok) {
+                        const roster = await res.json();
+                        // Map roster to minimal student objects for downstream rendering compatibility
+                        return roster.map(r => ({
+                            id: r.student_id,
+                            name: r.student_name,
+                            rollNumber: r.roll_number,
+                            class: className,
+                            status: 'active'
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.warn('Roster API fallback to students list:', e);
+            }
+            // Fallback to legacy approach if roster not available
             return allStudents.filter(student => 
                 student.class === className && 
                 student.status !== 'inactive'
@@ -321,25 +342,6 @@
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            initTeachersCorner();
-            
-            // Load real data from main app
-            await loadClassMapping(); // Load class mapping first
-            await loadStudentsFromMainApp();
-            await loadAttendanceFromMainApp();
-            
-              const teachersCornerSection = document.getElementById('teachers-corner-section');
-              if (teachersCornerSection) {
-                  teachersCornerSection.innerHTML = `
-                        <div class="text-center p-8">
-                            <h2 class="text-2xl font-bold mb-4 text-gray-700">শ্রেণী নির্বাচন করুন</h2>
-                            <p class="text-gray-600">Teachers Corner থেকে একটি শ্রেণী নির্বাচন করুন।</p>
-                        </div>
-                    `;
-              }
-        });
-
         function initTeachersCorner() {
             console.log('🚀 Initializing Teachers Corner section...');
             
@@ -561,7 +563,7 @@
             }
             
             // Get active and inactive students separately
-            const activeStudentsInClass = getActiveStudentsForClass(className);
+            const activeStudentsInClass = await getActiveStudentsForClass(className);
             const inactiveStudentsInClass = getInactiveStudentsForClass(className);
                 
                 console.log(`👥 Found ${activeStudentsInClass.length} active students and ${inactiveStudentsInClass.length} inactive students for class: ${className}`);
@@ -784,7 +786,7 @@
                     await loadScoreHistoryFromDatabase(studentId);
                     
                     // Refresh display
-                const activeStudentsInClass = getActiveStudentsForClass(currentClass);
+                const activeStudentsInClass = await getActiveStudentsForClass(currentClass);
                 renderClassStudentList(activeStudentsInClass);
                 renderClassOverview(activeStudentsInClass);
                     
@@ -1851,7 +1853,7 @@
                     await loadScoreHistoryFromDatabase(studentId);
                     
                     // Refresh display
-                const activeStudentsInClass = getActiveStudentsForClass(currentClass);
+                const activeStudentsInClass = await getActiveStudentsForClass(currentClass);
                 renderClassStudentList(activeStudentsInClass);
                 renderClassOverview(activeStudentsInClass);
                     
@@ -2629,6 +2631,7 @@
                         <button onclick="switchProfileTab('attendance')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">উপস্থিতি</button>
                         <button onclick="switchProfileTab('logs')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">শিক্ষকের নোট</button>
                         <button onclick="switchProfileTab('score-history')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">স্কোর ইতিহাস</button>
+                        <button onclick="switchProfileTab('enrollments')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">ভর্তি</button>
                         <button onclick="switchProfileTab('tarbiyah-goals')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">তরবিয়াহ লক্ষ্য</button>
                     </nav>
                     </div>
@@ -2673,6 +2676,34 @@
                                 <p><strong>ছুটির দিন:</strong> ${attendanceStats.leave} দিন</p>
                                 <p><strong>উপস্থিতির হার:</strong> ${attendanceStats.attendanceRate}%</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Enrollments Tab -->
+                <div id="profile-enrollments" class="profile-tab-content hidden">
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-700 mb-3">বর্তমান বছরে ভর্তি</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                                <div>
+                                    <label class="text-sm text-gray-600">শ্রেণী</label>
+                                    <select id="enroll-class-select" class="w-full border-gray-300 rounded-md shadow-sm">
+                                        ${(Object.keys(classMapping).length > 0 ? Object.entries(classMapping).map(([name, id]) => `<option value="${id}">${name}</option>`).join('') : '<option value="">শ্রেণী লোড হচ্ছে...</option>')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-gray-600">রোল নম্বর</label>
+                                    <input type="text" id="enroll-roll" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., 101">
+                                </div>
+                                <div>
+                                    <button onclick="enrollInCurrentYear('${studentId}')" class="btn-primary text-white px-4 py-2 rounded-md"><i class="fas fa-user-plus"></i> ভর্তি করুন</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">ভর্তি ইতিহাস</h4>
+                            <div id="enrollments-list" class="space-y-2"></div>
                         </div>
                     </div>
                 </div>
@@ -2816,6 +2847,12 @@
             }
             const studentProfileModal = document.getElementById('student-profile-modal');
             if (studentProfileModal) studentProfileModal.style.display = 'flex';
+            // Load enrollments after UI render
+            try {
+                await loadAndRenderEnrollments(studentId);
+            } catch (e) {
+                console.warn('Failed to load enrollments', e);
+            }
         }
         function closeStudentProfileModal() { 
             const studentProfileModal = document.getElementById('student-profile-modal');
@@ -3524,5 +3561,86 @@
         // Load settings when page loads
         loadAlertSettings();
 
+        // Load enrollments for a student and render the list
+        async function loadAndRenderEnrollments(studentId) {
+            try {
+                const res = await fetch(`/api/students/${studentId}/enrollments`);
+                if (!res.ok) throw new Error('Failed to load enrollments');
+                const enrollments = await res.json();
+                const list = document.getElementById('enrollments-list');
+                if (!list) return;
+                if (!Array.isArray(enrollments) || enrollments.length === 0) {
+                    list.innerHTML = '<div class="text-sm text-gray-500">কোনো ভর্তি তথ্য নেই।</div>';
+                    return;
+                }
+                list.innerHTML = enrollments.map(e => `
+                    <div class="p-3 bg-gray-50 rounded border">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-sm font-semibold text-gray-700">${e.academic_year_name}</div>
+                                <div class="text-xs text-gray-600">${e.academic_year_start} → ${e.academic_year_end}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm"><span class="font-medium">শ্রেণী:</span> ${e.class_name}</div>
+                                <div class="text-sm"><span class="font-medium">রোল:</span> ${e.roll_number || '-'}</div>
+                                <div class="text-xs ${e.is_current ? 'text-green-600' : 'text-gray-500'}">${e.is_current ? 'বর্তমান বছর' : e.status}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading enrollments:', e);
+            }
+        }
 
+        // Enroll student in current year via API
+        async function enrollInCurrentYear(studentId) {
+            try {
+                const select = document.getElementById('enroll-class-select');
+                const rollInput = document.getElementById('enroll-roll');
+                const classId = select ? parseInt(select.value) : null;
+                const rollNumber = rollInput ? (rollInput.value || '').trim() : '';
+                if (!classId || !rollNumber) {
+                    alert('শ্রেণী এবং রোল নম্বর প্রদান করুন');
+                    return;
+                }
+                const res = await fetch('/api/enrollments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: studentId, class_id: classId, roll_number: rollNumber })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'ভর্তি সম্পন্ন হয়নি');
+                }
+                await loadAndRenderEnrollments(studentId);
+                // If current class matches selected, refresh roster-driven list
+                if (currentClass && classMapping[currentClass] === classId) {
+                    showClassDashboard(currentClass);
+                }
+                alert('বর্তমান বছরে ভর্তি সম্পন্ন হয়েছে');
+            } catch (e) {
+                console.error('Enroll error:', e);
+                alert(e.message || 'ভর্তি করতে সমস্যা হয়েছে');
+            }
+        }
 
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTeachersCorner();
+            
+            // Load real data from main app
+            await loadClassMapping(); // Load class mapping first
+            await loadStudentsFromMainApp();
+            await loadAttendanceFromMainApp();
+            
+            const teachersCornerSection = document.getElementById('teachers-corner-section');
+            if (teachersCornerSection) {
+                teachersCornerSection.innerHTML = `
+                    <div class="text-center p-8">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-700">শ্রেণী নির্বাচন করুন</h2>
+                        <p class="text-gray-600">Teachers Corner থেকে একটি শ্রেণী নির্বাচন করুন।</p>
+                    </div>
+                `;
+            }
+        });
