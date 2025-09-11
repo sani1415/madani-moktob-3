@@ -189,6 +189,7 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
+            session['class_name'] = user.get('class_name')
             
             logger.info(f"✅ User {username} logged in successfully")
             return jsonify({
@@ -253,6 +254,165 @@ def get_current_user():
         
     except Exception as e:
         logger.error(f"Get user error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# User Management API Routes (Admin Only)
+def require_admin():
+    """Decorator to require admin role"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = db.get_user_by_id(session['user_id'])
+    if not user or user['role'] != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    return None
+
+@app.route('/api/users', methods=['GET'])
+def get_all_users():
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        users = db.get_all_users()
+        # Remove sensitive information
+        for user in users:
+            if 'password_hash' in user:
+                del user['password_hash']
+        
+        return jsonify(users)
+        
+    except Exception as e:
+        logger.error(f"Get all users error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        data = request.json
+        username = data.get('username')
+        password = data.get('password')
+        role = data.get('role', 'user')
+        class_name = data.get('class_name')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        if role not in ['admin', 'user']:
+            return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
+        
+        # Check if username already exists
+        existing_users = db.get_all_users()
+        if any(user['username'] == username for user in existing_users):
+            return jsonify({'error': 'Username already exists'}), 409
+        
+        user_id = db.create_user(username, password, role, class_name)
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'message': f'User "{username}" created successfully'
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Create user error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        data = request.json
+        username = data.get('username')
+        role = data.get('role')
+        class_name = data.get('class_name')
+        is_active = data.get('is_active')
+        
+        if role and role not in ['admin', 'user']:
+            return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
+        
+        # Check if username already exists (excluding current user)
+        if username:
+            existing_users = db.get_all_users()
+            if any(user['username'] == username and user['id'] != user_id for user in existing_users):
+                return jsonify({'error': 'Username already exists'}), 409
+        
+        success = db.update_user(user_id, username, role, class_name, is_active)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'User updated successfully'
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Update user error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        # Prevent admin from deleting themselves
+        if session['user_id'] == user_id:
+            return jsonify({'error': 'Cannot delete your own account'}), 400
+        
+        success = db.delete_user(user_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'User deleted successfully'
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Delete user error: {e}")
+        if "Cannot delete the last admin user" in str(e):
+            return jsonify({'error': 'Cannot delete the last admin user'}), 400
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>/reset-password', methods=['PUT'])
+def reset_user_password(user_id):
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        data = request.json
+        new_password = data.get('new_password')
+        
+        if not new_password:
+            return jsonify({'error': 'New password is required'}), 400
+        
+        if len(new_password) < 4:
+            return jsonify({'error': 'Password must be at least 4 characters long'}), 400
+        
+        success = db.reset_user_password(user_id, new_password)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Password reset successfully'
+            })
+        else:
+            return jsonify({'error': 'User not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Reset password error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # API Routes

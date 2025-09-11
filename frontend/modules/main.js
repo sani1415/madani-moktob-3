@@ -118,6 +118,16 @@ window.editBook = Settings.editBook;
 window.deleteBook = Settings.deleteBook;
 // Note: Education Progress functions removed - Progress tracking is now handled in Teachers Corner
 
+// User Management functions
+window.loadUsers = Settings.loadUsers;
+window.showCreateUserModal = Settings.showCreateUserModal;
+window.closeCreateUserModal = Settings.closeCreateUserModal;
+window.editUser = Settings.editUser;
+window.closeEditUserModal = Settings.closeEditUserModal;
+window.deleteUser = Settings.deleteUser;
+window.resetUserPassword = Settings.resetUserPassword;
+window.refreshUsersList = Settings.refreshUsersList;
+
 // Note: testAddBookProgress function removed - Education Progress is now handled in Teachers Corner
 
 // Modal functions
@@ -198,6 +208,9 @@ window.bengaliClassMap = Utils.bengaliClassMap;
 
 // Make translation function globally accessible
 window.t = t;
+
+// Make currentUser globally accessible (will be set by authentication check)
+window.currentUser = null;
 
 // Add a function to refresh students data from server
 async function refreshStudentsData() {
@@ -379,10 +392,19 @@ function populateTeachersCornerDropdown() {
     const dropdown = document.getElementById('teachersCornerDropdown');
     
     // Get classes from your existing class data
-    const classes = window.classes || [];
+    let classes = window.classes || [];
+    
+    // If user is not admin, filter to only their assigned class
+    if (window.currentUser && window.currentUser.role === 'user' && window.currentUser.class_name) {
+        classes = classes.filter(cls => cls.name === window.currentUser.class_name);
+    }
     
     if (classes.length === 0) {
-        dropdown.innerHTML = '<a href="#" style="color: #6c757d; font-style: italic;">No classes available</a>';
+        if (window.currentUser && window.currentUser.role === 'user') {
+            dropdown.innerHTML = '<a href="#" style="color: #6c757d; font-style: italic;">No class assigned</a>';
+        } else {
+            dropdown.innerHTML = '<a href="#" style="color: #6c757d; font-style: italic;">No classes available</a>';
+        }
         return;
     }
     

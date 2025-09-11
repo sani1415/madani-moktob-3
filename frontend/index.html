@@ -55,16 +55,16 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <ul class="nav-list" id="navList">
-                    <li><a href="#" onclick="showSection('dashboard', event)" class="nav-link active">
+                    <li class="admin-only"><a href="#" onclick="showSection('dashboard', event)" class="nav-link active">
                         <i class="fas fa-home"></i> Dashboard
                     </a></li>
-                    <li><a href="#" onclick="showSection('registration', event)" class="nav-link">
+                    <li class="admin-only"><a href="#" onclick="showSection('registration', event)" class="nav-link">
                         <i class="fas fa-user-plus"></i> Register Student
                     </a></li>
-                    <li><a href="#" onclick="showSection('attendance', event)" class="nav-link">
+                    <li class="admin-only"><a href="#" onclick="showSection('attendance', event)" class="nav-link">
                         <i class="fas fa-check-circle"></i> Daily Attendance
                     </a></li>
-                    <li><a href="#" onclick="showSection('reports', event)" class="nav-link">
+                    <li class="admin-only"><a href="#" onclick="showSection('reports', event)" class="nav-link">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a></li>
                     <li class="nav-item dropdown">
@@ -75,7 +75,7 @@
                             <!-- Class options will be populated dynamically -->
                         </div>
                     </li>
-                    <li><a href="#" onclick="showSection('settings', event)" class="nav-link">
+                    <li class="admin-only"><a href="#" onclick="showSection('settings', event)" class="nav-link">
                         <i class="fas fa-cog"></i> Settings
                     </a></li>
                 </ul>
@@ -762,6 +762,24 @@
                     <h3>User Account Management</h3>
                     
                     <div class="setting-group">
+                        <label>Manage Users</label>
+                        <p class="help-text">Create, edit, and delete user accounts for the system.</p>
+                        
+                        <div class="input-group">
+                            <button class="btn btn-primary" onclick="showCreateUserModal()">
+                                <i class="fas fa-user-plus"></i> Create New User
+                            </button>
+                            <button class="btn btn-secondary" onclick="refreshUsersList()">
+                                <i class="fas fa-refresh"></i> Refresh List
+                            </button>
+                        </div>
+                        
+                        <div class="item-list" id="usersList" style="margin-top: 20px;">
+                            <!-- Users will be displayed here -->
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
                         <label>Change Admin Password</label>
                         <p class="help-text">Update your admin account password for security.</p>
                         
@@ -1015,6 +1033,112 @@
             </form>
         </div>
     </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New User</h3>
+                <button type="button" onclick="closeCreateUserModal()" class="btn btn-secondary btn-small">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="createUserForm" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="createUsername">Username *</label>
+                        <input type="text" id="createUsername" required placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="createPassword">Password *</label>
+                        <input type="password" id="createPassword" required placeholder="Enter password">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="createRole">Role *</label>
+                        <select id="createRole" required>
+                            <option value="">Select Role</option>
+                            <option value="admin">Admin</option>
+                            <option value="user">User</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="createUserClass">Assigned Class</label>
+                        <select id="createUserClass">
+                            <option value="">No Class (Admin Access)</option>
+                            <!-- Class options will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Create User
+                    </button>
+                    <button type="button" onclick="closeCreateUserModal()" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit User</h3>
+                <button type="button" onclick="closeEditUserModal()" class="btn btn-secondary btn-small">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="editUserForm" class="form">
+                <input type="hidden" id="editUserId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUsername">Username *</label>
+                        <input type="text" id="editUsername" required placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="editRole">Role *</label>
+                        <select id="editRole" required>
+                            <option value="admin">Admin</option>
+                            <option value="user">User</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editUserClass">Assigned Class</label>
+                        <select id="editUserClass">
+                            <option value="">No Class (Admin Access)</option>
+                            <!-- Class options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserStatus">Status</label>
+                        <select id="editUserStatus" required>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update User
+                    </button>
+                    <button type="button" onclick="resetUserPassword()" class="btn btn-warning">
+                        <i class="fas fa-key"></i> Reset Password
+                    </button>
+                    <button type="button" onclick="closeEditUserModal()" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
     
 
 
@@ -1033,7 +1157,11 @@
                 const response = await fetch('/api/auth/user');
                 if (response.ok) {
                     currentUser = await response.json();
+                    window.currentUser = currentUser;  // Make it globally accessible
                     document.getElementById('currentUser').textContent = `Welcome, ${currentUser.username}`;
+                    
+                    // Apply role-based UI restrictions
+                    applyRoleBasedUI(currentUser);
                 } else {
                     // Not authenticated, redirect to login
                     window.location.href = '/';
@@ -1041,6 +1169,24 @@
             } catch (error) {
                 // Network error, redirect to login
                 window.location.href = '/';
+            }
+        }
+        
+        // Apply role-based UI restrictions
+        function applyRoleBasedUI(user) {
+            if (user.role === 'user') {
+                // Add user-role class to body for CSS restrictions
+                document.body.classList.add('user-role');
+                
+                // For regular users, automatically show Teachers Corner for their assigned class
+                if (user.class_name) {
+                    setTimeout(() => {
+                        openTeachersCornerForClass(user.class_name);
+                    }, 500);
+                }
+            } else if (user.role === 'admin') {
+                // Remove user-role class if it exists (for admin users)
+                document.body.classList.remove('user-role');
             }
         }
         
