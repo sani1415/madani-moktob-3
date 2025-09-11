@@ -248,8 +248,11 @@ async function initializeApp() {
             }
         }
         
-        // Only load admin data for admin users
+        // Load data based on user role
         if (window.currentUser && window.currentUser.role === 'admin') {
+            // Admin users: load all data
+            console.log('👤 Admin user detected, loading all data');
+            
             // Load students from database
             const studentsResponse = await fetch('/api/students');
             if (studentsResponse.ok) {
@@ -290,9 +293,49 @@ async function initializeApp() {
                 window.holidays = holidaysData;
                 console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
             }
+        } else if (window.currentUser && window.currentUser.role === 'user' && window.currentUser.class_name) {
+            // Regular users: load only their class data
+            console.log(`👤 Regular user detected, loading data for class: ${window.currentUser.class_name}`);
+            
+            // Load students for their assigned class only
+            const studentsResponse = await fetch('/api/students');
+            if (studentsResponse.ok) {
+                const allStudentsData = await studentsResponse.json();
+                // Filter students to only their assigned class
+                const classStudents = allStudentsData.filter(student => 
+                    student.class === window.currentUser.class_name && student.is_active
+                );
+                window.students = classStudents;
+                console.log(`✅ Loaded ${classStudents.length} students for class ${window.currentUser.class_name}`);
+            }
+            
+            // Load attendance data (will be filtered later by Teachers Corner)
+            const attendanceResponse = await fetch('/api/attendance');
+            if (attendanceResponse.ok) {
+                const attendanceData = await attendanceResponse.json();
+                window.attendance = attendanceData;
+                
+                // Populate savedAttendanceDates with dates that have attendance data
+                if (attendanceData && typeof attendanceData === 'object') {
+                    const savedDates = Object.keys(attendanceData).filter(date => {
+                        const dateAttendance = attendanceData[date];
+                        return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
+                    });
+                    
+                    // Clear and populate the savedAttendanceDates Set
+                    window.savedAttendanceDates.clear();
+                    savedDates.forEach(date => window.savedAttendanceDates.add(date));
+                    
+                    console.log(`✅ Loaded attendance data from database`);
+                }
+            }
+            
+            // Initialize holidays as empty for regular users
+            window.holidays = [];
+            window.savedAttendanceDates = window.savedAttendanceDates || new Set();
         } else {
-            console.log('👤 Regular user detected, skipping admin data load');
-            // Initialize empty data for regular users
+            console.log('👤 User detected but no class assigned, initializing empty data');
+            // Initialize empty data
             window.students = [];
             window.attendance = {};
             window.holidays = [];
