@@ -303,7 +303,7 @@ async function initializeApp() {
                 const allStudentsData = await studentsResponse.json();
                 // Filter students to only their assigned class
                 const classStudents = allStudentsData.filter(student => 
-                    student.class === window.currentUser.class_name && student.is_active
+                    student.class === window.currentUser.class_name && student.status === 'active'
                 );
                 window.students = classStudents;
                 console.log(`✅ Loaded ${classStudents.length} students for class ${window.currentUser.class_name}`);

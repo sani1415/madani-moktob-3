@@ -403,6 +403,30 @@ class MySQLDatabase:
             logger.error(f"Unexpected error getting students: {e}")
             return []
 
+    def get_student_by_id(self, student_id):
+        """Get a single student by ID"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('SELECT * FROM students WHERE id = %s', (student_id,))
+            student = cursor.fetchone()
+            
+            cursor.close()
+            conn.close()
+            
+            if student and 'created_at' in student:
+                del student['created_at']
+            
+            return student
+            
+        except Error as e:
+            logger.error(f"Error getting student by ID {student_id}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error getting student by ID {student_id}: {e}")
+            return None
+
     def _initialize_database(self):
         """Initialize database tables - called once during startup"""
         try:

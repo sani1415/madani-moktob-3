@@ -554,6 +554,18 @@ def delete_student(student_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/students/<student_id>', methods=['GET'])
+def get_student_detail(student_id):
+    try:
+        student = db.get_student_by_id(student_id)
+        if student:
+            return jsonify(student)
+        else:
+            return jsonify({'error': 'Student not found'}), 404
+    except Exception as e:
+        logger.error(f"Error getting student details for ID {student_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/students', methods=['DELETE'])
 def delete_all_students():
     try:

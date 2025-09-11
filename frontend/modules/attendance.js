@@ -958,7 +958,29 @@ async function autoCopyFromPreviousDay(targetDate) {
 let studentDetailSource = 'attendance'; // Track where student detail was opened from
 
 async function showStudentDetail(studentId, source = 'attendance') {
-    const student = students.find(s => s.id === studentId);
+    let student = students.find(s => s.id === studentId);
+
+    if (!student) {
+        // If student not found in local array, fetch from backend
+        try {
+            const response = await fetch(`/api/students/${studentId}`);
+            if (response.ok) {
+                student = await response.json();
+            } else if (response.status === 404) {
+                showModal(t('error'), t('studentNotFound'));
+                return;
+            } else {
+                console.error(`Error fetching student ${studentId}:`, response.statusText);
+                showModal(t('error'), t('failedToFetchStudent'));
+                return;
+            }
+        } catch (error) {
+            console.error(`Network error fetching student ${studentId}:`, error);
+            showModal(t('error'), t('networkError'));
+            return;
+        }
+    }
+
     if (!student) {
         showModal(t('error'), t('studentNotFound'));
         return;

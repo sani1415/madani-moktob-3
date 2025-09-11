@@ -216,6 +216,8 @@ const translations = {
         studentNotFound: "Student not found",
         attendanceLabel: "Attendance",
         backToRegistration: "Back to Registration",
+        failedToFetchStudent: "Failed to fetch student details. Please try again.",
+        networkError: "Network error. Please check your internet connection and try again.",
         
         // Student List and Management
         rollNo: "Roll No.",
@@ -485,94 +487,8 @@ const translations = {
         studentNotFound: "ছাত্র পাওয়া যায়নি",
         attendanceLabel: "উপস্থিতি",
         backToRegistration: "নিবন্ধনে ফিরে যান",
-        
-        // Student List and Management
-        rollNo: "রোল নং",
-        fullName: "পূর্ণ নাম",
-        actions: "কার্যক্রম",
-        allRegisteredStudents: "সকল নিবন্ধিত ছাত্র",
-        registerNewStudent: "নতুন ছাত্র নিবন্ধন",
-        bulkImport: "বাল্ক ইমপোর্ট",
-        editStudent: "ছাত্র সম্পাদনা",
-        updateStudent: "ছাত্র আপডেট",
-        deleteStudent: "ছাত্র মুছুন",
-        noStudentsRegisteredYet: "এখনো কোন ছাত্র নিবন্ধিত হয়নি। ছাত্র যোগ করতে \"নতুন ছাত্র নিবন্ধন\" ক্লিক করুন।",
-        backToList: "তালিকায় ফিরে যান",
-        leaveDays: "ছুটির দিন",
-        
-        // Report Table Headers
-        roll: "রোল",
-        name: "নাম",
-        rate: "হার",
-        
-        // Confirmation Messages
-        confirmDeleteStudent: "আপনি কি নিশ্চিত যে আপনি মুছে দিতে চান",
-        actionCannotBeUndone: "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
-        confirmDeleteStudentFinal: "আপনি কি সম্পূর্ণ নিশ্চিত যে আপনি এই ছাত্রকে মুছে দিতে চান?",
-        finalDeleteWarning: "এই কাজটি স্থায়ী এবং অপরিবর্তনীয়। এই ছাত্রের সব উপস্থিতি রেকর্ডও মুছে যাবে।",
-        deleteAllStudents: "সব ছাত্র মুছুন",
-        confirmDeleteAllStudents: "আপনি কি নিশ্চিত যে আপনি সব ছাত্র মুছে দিতে চান?",
-        confirmDeleteAllStudentsFinal: "আপনি কি সম্পূর্ণ নিশ্চিত যে আপনি সব ছাত্র মুছে দিতে চান?",
-        finalDeleteAllWarning: "এটি সব ছাত্র এবং তাদের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি অপরিবর্তনীয় এবং আপনার ছাত্র ডেটাবেস সম্পূর্ণভাবে রিসেট করবে।",
-        
-        // Reset Attendance
-        dataManagement: "ডেটা ব্যবস্থাপনা",
-        dangerZone: "বিপদজনক এলাকা",
-        dangerZoneWarning: "এই কাজগুলি পূর্বাবস্থায় ফেরানো যাবে না। অনুগ্রহ করে সাবধান থাকুন।",
-        resetAttendanceHistory: "উপস্থিতি ইতিহাস রিসেট করুন",
-        resetAttendanceDescription: "এটি সব ছাত্রের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
-        resetAllAttendance: "সব উপস্থিতি রিসেট করুন",
-        resetAttendanceConfirm: "এটি সব ছাত্রের উপস্থিতি রেকর্ড স্থায়ীভাবে মুছে দেবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
-        resetAttendanceWarning: "সতর্কতা: এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না!",
-        resetAttendanceList: "এটি স্থায়ীভাবে মুছে দেবে:",
-        resetAttendanceListItem1: "সব ছাত্রের উপস্থিতি রেকর্ড",
-        resetAttendanceListItem2: "সব সংরক্ষিত উপস্থিতি তারিখ",
-        resetAttendanceListItem3: "ক্যালেন্ডার থেকে সব উপস্থিতি ইতিহাস",
-        typeResetToConfirm: "নিশ্চিত করতে RESET টাইপ করুন:",
-        typeResetPlaceholder: "নিশ্চিত করতে RESET টাইপ করুন",
-        attendanceResetSuccess: "সব উপস্থিতি ইতিহাস সফলভাবে রিসেট করা হয়েছে।",
-        attendanceResetFailed: "উপস্থিতি রিসেট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
-        attendanceResetPleaseTypeReset: "কাজটি নিশ্চিত করতে অনুগ্রহ করে \"RESET\" টাইপ করুন।",
-        clearAllFilters: "সব ফিল্টার মুছুন",
-        searchRoll: "রোল অনুসন্ধান...",
-        searchName: "নাম অনুসন্ধান...",
-        searchMobile: "মোবাইল অনুসন্ধান...",
-        
-        // Mobile Table Headers (for responsive)
-        mobile: "মোবাইল",
-        
-        // Missing Error/Success Messages
-        cannotSaveAttendanceOnHolidays: "ছুটির দিনে উপস্থিতি সংরক্ষণ করা যাবে না",
-        cannotMarkAttendanceOnHolidays: "ছুটির দিনে উপস্থিতি চিহ্নিত করা যাবে না",
-        failedToSaveAttendance: "উপস্থিতি সংরক্ষণ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
-        noAttendanceDataForPreviousDay: "পূর্ববর্তী দিনের জন্য কোন উপস্থিতির তথ্য উপলব্ধ নেই।",
-        successfullyCopiedAttendance: "পূর্ববর্তী দিন থেকে উপস্থিতি সফলভাবে কপি করা হয়েছে।",
-        attendanceSavedSuccessfully: "উপস্থিতি সফলভাবে সংরক্ষণ করা হয়েছে!",
-        studentsConfirmedPresent: "ছাত্র উপস্থিত নিশ্চিত করা হয়েছে",
-        studentsMarkedPresent: "ছাত্র উপস্থিত চিহ্নিত করা হয়েছে",
-        studentsMarkedAbsent: "ছাত্র অনুপস্থিত চিহ্নিত করা হয়েছে",
-        studentsMarkedNeutral: "ছাত্র নিউট্রাল অবস্থায় সাফ করা হয়েছে",
-        markAllNeutral: "সব সাফ করুন",
-        rememberToSaveAttendance: "পরিবর্তন করার পর উপস্থিতি সংরক্ষণ করতে ভুলবেন না!",
-        selectDateRangeToGenerate: "তারিখের পরিসর নির্বাচন করুন এবং উপস্থিতির তথ্য দেখার জন্য \"রিপোর্ট তৈরি করুন\" ক্লিক করুন।",
-        showAttendanceTrackingCalendar: "উপস্থিতি ট্র্যাকিং ক্যালেন্ডার দেখান",
-        viewAttendanceStatistics: "এই মাসে কোন দিন উপস্থিতি নেওয়া হয়েছে বনাম মিস করা হয়েছে তা সারসংক্ষেপ পরিসংখ্যান সহ দেখুন",
-        hideAttendanceTrackingCalendar: "উপস্থিতি ট্র্যাকিং ক্যালেন্ডার লুকান",
-        stickyAttendanceApplied: "স্টিকি উপস্থিতি প্রয়োগ করা হয়েছে!",
-        stillAbsentFromLastTime: "গত বার থেকে এখনও অনুপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
-        allStudentsPresent: "সব ছাত্র উপস্থিত। প্রয়োজনে যেকোনো ছাত্রের অবস্থা পরিবর্তন করুন।",
-        present: "উপস্থিত",
-        absent: "অনুপস্থিত", 
-        total: "মোট",
-        
-        // Student Detail Summary Options
-        last30Days: "গত ৩০ দিন",
-        fromBeginning: "শুরু থেকে",
-        summaryPeriod: "সারসংক্ষেপ সময়কাল",
-        
-        // Attendance Status
-        notSet: "নির্ধারিত নয়",
-        neutral: "নির্ধারিত নয়"
+        failedToFetchStudent: "ছাত্রের বিবরণ আনতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        networkError: "নেটওয়ার্ক ত্রুটি। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন এবং আবার চেষ্টা করুন।"
     }
 };
 
