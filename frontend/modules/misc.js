@@ -18,6 +18,15 @@ function toggleMobileMenu() {
 async function showSection(sectionId, event) {
     console.log(`🚀 showSection called with sectionId: ${sectionId}`);
     
+    // Check role-based access control
+    if (window.currentUser && window.currentUser.role === 'user') {
+        // Regular users can only access Teachers Corner
+        if (sectionId !== 'teachers-corner-section') {
+            console.log('❌ Access denied: Regular users can only access Teachers Corner');
+            return;
+        }
+    }
+    
     // Hide all sections
     const sections = document.querySelectorAll('.section');
     console.log(`🔍 Found ${sections.length} sections:`, Array.from(sections).map(s => ({ id: s.id, hasActive: s.classList.contains('active') })));

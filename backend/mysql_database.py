@@ -155,6 +155,7 @@ class MySQLDatabase:
                     username VARCHAR(50) UNIQUE NOT NULL,
                     password_hash VARCHAR(255) NOT NULL,
                     role VARCHAR(20) NOT NULL DEFAULT 'admin',
+                    class_name VARCHAR(255) DEFAULT NULL,
                     is_active BOOLEAN DEFAULT TRUE,
                     last_login TIMESTAMP NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -162,6 +163,16 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             logger.info("✅ MySQLDatabase: Users_new table created/verified")
+            
+            # Add class_name column to existing users table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM users_new LIKE 'class_name'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding class_name column to users_new table...")
+                    cursor.execute('ALTER TABLE users_new ADD COLUMN class_name VARCHAR(255) DEFAULT NULL')
+                    logger.info("✅ MySQLDatabase: class_name column added successfully")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_name column: {e}")
             
             # Force commit to ensure table is created
             conn.commit()
@@ -1468,6 +1479,7 @@ class MySQLDatabase:
                         'id': user['id'],
                         'username': user['username'],
                         'role': user['role'],
+                        'class_name': user['class_name'],
                         'last_login': user['last_login']
                     }
                     
@@ -1511,7 +1523,7 @@ class MySQLDatabase:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
-            cursor.execute('SELECT id, username, role, last_login, created_at FROM users_new WHERE id = %s', (user_id,))
+            cursor.execute('SELECT id, username, role, class_name, last_login, created_at FROM users_new WHERE id = %s', (user_id,))
             user = cursor.fetchone()
             
             cursor.close()
@@ -1520,4 +1532,168 @@ class MySQLDatabase:
             
         except Error as e:
             logger.error(f"Error getting user by ID: {e}")
+            raise
+
+    # User Management Methods for Admin
+    def get_all_users(self):
+        """Get all users for admin management"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT id, username, role, class_name, is_active, last_login, created_at, updated_at 
+                FROM users_new 
+                ORDER BY created_at DESC
+            ''')
+            users = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            return users
+            
+        except Error as e:
+            logger.error(f"Error getting all users: {e}")
+            raise
+
+    def create_user(self, username, password, role='user', class_name=None):
+        """Create a new user"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Hash the password
+            import hashlib
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Insert new user
+            cursor.execute('''
+                INSERT INTO users_new (username, password_hash, role, class_name)
+                VALUES (%s, %s, %s, %s)
+            ''', (username, password_hash, role, class_name))
+            
+            user_id = cursor.lastrowid
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"✅ User created successfully: {username} (ID: {user_id})")
+            return user_id
+            
+        except Error as e:
+            logger.error(f"Error creating user: {e}")
+            raise
+
+    def update_user(self, user_id, username=None, role=None, class_name=None, is_active=None):
+        """Update user information"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Build dynamic update query
+            updates = []
+            params = []
+            
+            if username is not None:
+                updates.append("username = %s")
+                params.append(username)
+            if role is not None:
+                updates.append("role = %s")
+                params.append(role)
+            if class_name is not None:
+                updates.append("class_name = %s")
+                params.append(class_name)
+            if is_active is not None:
+                updates.append("is_active = %s")
+                params.append(is_active)
+            
+            if updates:
+                params.append(user_id)
+                query = f"UPDATE users_new SET {', '.join(updates)} WHERE id = %s"
+                cursor.execute(query, params)
+                
+                rows_affected = cursor.rowcount
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+                if rows_affected > 0:
+                    logger.info(f"✅ User updated successfully: {user_id}")
+                    return True
+                else:
+                    logger.warning(f"⚠️ No user found to update: {user_id}")
+                    return False
+            else:
+                cursor.close()
+                conn.close()
+                return True
+                
+        except Error as e:
+            logger.error(f"Error updating user: {e}")
+            raise
+
+    def delete_user(self, user_id):
+        """Delete a user"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Don't allow deletion of the last admin user
+            cursor.execute("SELECT COUNT(*) FROM users_new WHERE role = 'admin' AND is_active = TRUE")
+            admin_count = cursor.fetchone()[0]
+            
+            if admin_count <= 1:
+                cursor.execute("SELECT role FROM users_new WHERE id = %s", (user_id,))
+                user_role = cursor.fetchone()
+                if user_role and user_role[0] == 'admin':
+                    cursor.close()
+                    conn.close()
+                    raise Exception("Cannot delete the last admin user")
+            
+            # Delete the user
+            cursor.execute('DELETE FROM users_new WHERE id = %s', (user_id,))
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if rows_affected > 0:
+                logger.info(f"✅ User deleted successfully: {user_id}")
+                return True
+            else:
+                logger.warning(f"⚠️ No user found to delete: {user_id}")
+                return False
+                
+        except Error as e:
+            logger.error(f"Error deleting user: {e}")
+            raise
+
+    def reset_user_password(self, user_id, new_password):
+        """Reset user password (admin function)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Hash the new password
+            import hashlib
+            password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+            
+            # Update password
+            cursor.execute('UPDATE users_new SET password_hash = %s WHERE id = %s', (password_hash, user_id))
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if rows_affected > 0:
+                logger.info(f"✅ Password reset successfully for user: {user_id}")
+                return True
+            else:
+                logger.warning(f"⚠️ No user found for password reset: {user_id}")
+                return False
+                
+        except Error as e:
+            logger.error(f"Error resetting password: {e}")
             raise

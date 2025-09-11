@@ -4228,3 +4228,21 @@ body {
 #class-student-list td {
     font-family: 'Noto Sans Bengali', 'SolaimanLipi', 'Kalpurush', 'Bangla Web', 'Nikosh', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+/* Role-based UI restrictions */
+body.user-role .admin-only {
+    display: none !important;
+}
+
+/* Make Teachers Corner the default active section for regular users */
+body.user-role .section {
+    display: none;
+}
+
+body.user-role #teachers-corner-section {
+    display: block;
+}
+
+body.user-role #teachers-corner-section.active {
+    display: block;
+}
