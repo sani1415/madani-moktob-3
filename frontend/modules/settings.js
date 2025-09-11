@@ -1128,10 +1128,12 @@ document.addEventListener('DOMContentLoaded', function() {
         editUserForm.addEventListener('submit', updateUser);
     }
     
-    // Load users when the page loads
-    if (typeof loadUsers === 'function') {
-        loadUsers();
-    }
+    // Only load users for admin users - wait for authentication check
+    setTimeout(() => {
+        if (window.currentUser && window.currentUser.role === 'admin' && typeof loadUsers === 'function') {
+            loadUsers();
+        }
+    }, 1000);
 });
 
 // Export all functions

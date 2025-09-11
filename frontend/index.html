@@ -18,6 +18,43 @@
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    ">
+        <div style="text-align: center;">
+            <div style="
+                width: 60px;
+                height: 60px;
+                border: 4px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top-color: white;
+                animation: spin 1s ease-in-out infinite;
+                margin: 0 auto 20px;
+            "></div>
+            <h2 style="margin: 0 0 10px 0; font-size: 24px; font-weight: 300;">
+                <i class="fas fa-graduation-cap"></i> Madani Maktab
+            </h2>
+            <p style="margin: 0; font-size: 16px; opacity: 0.8;">
+                Loading your dashboard...
+            </p>
+        </div>
+    </div>
+    
+    <!-- Main Application Content (hidden initially) -->
+    <div id="mainAppContent" style="display: none;">
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -55,7 +92,7 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <ul class="nav-list" id="navList">
-                    <li class="admin-only"><a href="#" onclick="showSection('dashboard', event)" class="nav-link active">
+                    <li class="admin-only"><a href="#" onclick="showSection('dashboard', event)" class="nav-link">
                         <i class="fas fa-home"></i> Dashboard
                     </a></li>
                     <li class="admin-only"><a href="#" onclick="showSection('registration', event)" class="nav-link">
@@ -87,7 +124,7 @@
     <main class="main">
         <div class="container">
             <!-- Dashboard Section -->
-            <section id="dashboard" class="section active">
+            <section id="dashboard" class="section">
                 <h2>Dashboard</h2>
                 
                 <!-- Holiday Notice -->
@@ -829,6 +866,8 @@
             <p>&copy; 2024 Madani Maktab. All rights reserved.</p>
         </div>
     </footer>
+    
+    </div> <!-- End of mainAppContent div -->
 
     <!-- Teachers Corner Modals -->
     <div id="log-modal" class="modal-backdrop justify-center items-center">
@@ -1164,11 +1203,19 @@
                     applyRoleBasedUI(currentUser);
                 } else {
                     // Not authenticated, redirect to login
-                    window.location.href = '/';
+                    // Hide loading screen before redirect
+                    hideLoadingScreen();
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 200);
                 }
             } catch (error) {
                 // Network error, redirect to login
-                window.location.href = '/';
+                // Hide loading screen before redirect
+                hideLoadingScreen();
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 200);
             }
         }
         
@@ -1178,15 +1225,65 @@
                 // Add user-role class to body for CSS restrictions
                 document.body.classList.add('user-role');
                 
+                // Hide all sections initially
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Show Teachers Corner section
+                const teachersCornerSection = document.getElementById('teachers-corner-section');
+                if (teachersCornerSection) {
+                    teachersCornerSection.classList.add('active');
+                }
+                
                 // For regular users, automatically show Teachers Corner for their assigned class
                 if (user.class_name) {
                     setTimeout(() => {
                         openTeachersCornerForClass(user.class_name);
-                    }, 500);
+                    }, 300);
                 }
             } else if (user.role === 'admin') {
                 // Remove user-role class if it exists (for admin users)
                 document.body.classList.remove('user-role');
+                
+                // Show dashboard for admin users
+                const dashboardSection = document.getElementById('dashboard');
+                if (dashboardSection) {
+                    dashboardSection.classList.add('active');
+                }
+                
+                // Add active class to dashboard nav link
+                const dashboardNavLink = document.querySelector('a[onclick*="dashboard"]');
+                if (dashboardNavLink) {
+                    dashboardNavLink.classList.add('active');
+                }
+            }
+            
+            // Hide loading screen and show main app content
+            hideLoadingScreen();
+        }
+        
+        // Function to hide loading screen and show main app
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainAppContent = document.getElementById('mainAppContent');
+            
+            if (loadingScreen && mainAppContent) {
+                // Fade out loading screen
+                loadingScreen.style.transition = 'opacity 0.3s ease-out';
+                loadingScreen.style.opacity = '0';
+                
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    mainAppContent.style.display = 'block';
+                    
+                    // Fade in main app
+                    mainAppContent.style.opacity = '0';
+                    mainAppContent.style.transition = 'opacity 0.3s ease-in';
+                    setTimeout(() => {
+                        mainAppContent.style.opacity = '1';
+                    }, 50);
+                }, 300);
             }
         }
         

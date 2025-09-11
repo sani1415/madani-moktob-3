@@ -238,45 +238,65 @@ async function initializeApp() {
     try {
         console.log('🔄 Initializing application data...');
         
-        // Load students from database
-        const studentsResponse = await fetch('/api/students');
-        if (studentsResponse.ok) {
-            const studentsData = await studentsResponse.json();
-            // Update the global window variables directly
-            window.students = studentsData;
-            console.log(`✅ Loaded ${studentsData.length} students from database`);
-        }
-        
-        // Load attendance from database
-        const attendanceResponse = await fetch('/api/attendance');
-        if (attendanceResponse.ok) {
-            const attendanceData = await attendanceResponse.json();
-            // Update the global window variables directly
-            window.attendance = attendanceData;
-            
-            // Populate savedAttendanceDates with dates that have attendance data
-            if (attendanceData && typeof attendanceData === 'object') {
-                const savedDates = Object.keys(attendanceData).filter(date => {
-                    const dateAttendance = attendanceData[date];
-                    return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
-                });
-                
-                // Clear and populate the savedAttendanceDates Set
-                window.savedAttendanceDates.clear();
-                savedDates.forEach(date => window.savedAttendanceDates.add(date));
-                
-                console.log(`✅ Loaded attendance data from database`);
-                console.log(`✅ Populated savedAttendanceDates with ${savedDates.length} dates:`, savedDates);
+        // Wait for authentication check first
+        if (!window.currentUser) {
+            console.log('⏳ Waiting for authentication check...');
+            let attempts = 0;
+            while (!window.currentUser && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
             }
         }
         
-        // Load holidays from database
-        const holidaysResponse = await fetch('/api/holidays');
-        if (holidaysResponse.ok) {
-            const holidaysData = await holidaysResponse.json();
-            // Update the global window variables directly
-            window.holidays = holidaysData;
-            console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
+        // Only load admin data for admin users
+        if (window.currentUser && window.currentUser.role === 'admin') {
+            // Load students from database
+            const studentsResponse = await fetch('/api/students');
+            if (studentsResponse.ok) {
+                const studentsData = await studentsResponse.json();
+                // Update the global window variables directly
+                window.students = studentsData;
+                console.log(`✅ Loaded ${studentsData.length} students from database`);
+            }
+            
+            // Load attendance from database
+            const attendanceResponse = await fetch('/api/attendance');
+            if (attendanceResponse.ok) {
+                const attendanceData = await attendanceResponse.json();
+                // Update the global window variables directly
+                window.attendance = attendanceData;
+                
+                // Populate savedAttendanceDates with dates that have attendance data
+                if (attendanceData && typeof attendanceData === 'object') {
+                    const savedDates = Object.keys(attendanceData).filter(date => {
+                        const dateAttendance = attendanceData[date];
+                        return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
+                    });
+                    
+                    // Clear and populate the savedAttendanceDates Set
+                    window.savedAttendanceDates.clear();
+                    savedDates.forEach(date => window.savedAttendanceDates.add(date));
+                    
+                    console.log(`✅ Loaded attendance data from database`);
+                    console.log(`✅ Populated savedAttendanceDates with ${savedDates.length} dates:`, savedDates);
+                }
+            }
+            
+            // Load holidays from database
+            const holidaysResponse = await fetch('/api/holidays');
+            if (holidaysResponse.ok) {
+                const holidaysData = await holidaysResponse.json();
+                // Update the global window variables directly
+                window.holidays = holidaysData;
+                console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
+            }
+        } else {
+            console.log('👤 Regular user detected, skipping admin data load');
+            // Initialize empty data for regular users
+            window.students = [];
+            window.attendance = {};
+            window.holidays = [];
+            window.savedAttendanceDates = new Set();
         }
         
         // Load classes from database
@@ -296,34 +316,39 @@ async function initializeApp() {
             console.log('✅ Loaded books from database');
         }
         
-        // Update class dropdowns after loading data
-        if (typeof updateClassDropdowns === 'function') {
-            updateClassDropdowns();
-        }
-        
-        // Populate attendance class filter after classes are loaded
-        if (typeof Attendance.populateAttendanceClassFilter === 'function') {
-            Attendance.populateAttendanceClassFilter();
-        }
-        
-        // Update book dropdowns after loading books
-        if (typeof updateBookDropdowns === 'function') {
-            updateBookDropdowns();
-        }
-        
-        // Update dashboard
-        if (typeof updateDashboard === 'function') {
-            updateDashboard();
-        }
-        
-        // Initialize academic year start date
-        if (typeof initializeAcademicYearStart === 'function') {
-            initializeAcademicYearStart();
-        }
-        
-        // Initialize Hijri settings
-        if (typeof initializeHijriSettings === 'function') {
-            initializeHijriSettings();
+        // Only initialize admin-specific features for admin users
+        if (window.currentUser && window.currentUser.role === 'admin') {
+            // Update class dropdowns after loading data
+            if (typeof updateClassDropdowns === 'function') {
+                updateClassDropdowns();
+            }
+            
+            // Populate attendance class filter after classes are loaded
+            if (typeof Attendance.populateAttendanceClassFilter === 'function') {
+                Attendance.populateAttendanceClassFilter();
+            }
+            
+            // Update book dropdowns after loading books
+            if (typeof updateBookDropdowns === 'function') {
+                updateBookDropdowns();
+            }
+            
+            // Update dashboard - ONLY for admin users
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
+            // Initialize academic year start date
+            if (typeof initializeAcademicYearStart === 'function') {
+                initializeAcademicYearStart();
+            }
+            
+            // Initialize Hijri settings
+            if (typeof initializeHijriSettings === 'function') {
+                initializeHijriSettings();
+            }
+        } else {
+            console.log('👤 Regular user detected, skipping admin-specific initialization');
         }
         
         // Clean up any auto-applied future attendance data
