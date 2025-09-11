@@ -297,8 +297,23 @@ class MySQLDatabase:
             if class_name in bengali_class_map:
                 return bengali_class_map[class_name]
             
-            # Fallback for English class names
-            return int(class_name.split()[-1])
+            english_class_map = {
+                'Class One': 1, 'Class Two': 2, 'Class Three': 3, 'Class Four': 4,
+                'Class Five': 5, 'Class Six': 6, 'Class Seven': 7, 'Class Eight': 8,
+                'Class Nine': 9, 'Class Ten': 10
+            }
+
+            if class_name in english_class_map:
+                return english_class_map[class_name]
+            
+            # Fallback for English class names (e.g., 'Grade 1')
+            words = class_name.split()
+            for word in reversed(words):
+                try:
+                    return int(word)
+                except ValueError:
+                    continue
+            return 1 # Default to class 1 if parsing fails
         except:
             return 1  # Default to class 1 if parsing fails
     
