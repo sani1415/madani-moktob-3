@@ -730,6 +730,22 @@ def delete_all_education_progress():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/education/<int:progress_id>/history', methods=['GET'])
+def get_education_progress_history(progress_id):
+    try:
+        history = db.get_progress_history(progress_id)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/education/history/book/<int:book_id>/class/<class_name>', methods=['GET'])
+def get_education_progress_history_by_book(book_id, class_name):
+    try:
+        history = db.get_progress_history_by_book(book_id, class_name)
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== TEACHER LOGS API ENDPOINTS =====
 
 @app.route('/api/teacher-logs', methods=['GET'])

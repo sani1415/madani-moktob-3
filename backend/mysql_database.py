@@ -231,6 +231,22 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create education progress history table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS education_progress_history (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    progress_id INT NOT NULL,
+                    class_name VARCHAR(50) NOT NULL,
+                    book_id INT,
+                    book_name VARCHAR(255) NOT NULL,
+                    completed_pages INT NOT NULL,
+                    notes TEXT,
+                    change_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (progress_id) REFERENCES education_progress(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
             # Create teacher_logs table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS teacher_logs (
@@ -1009,13 +1025,41 @@ class MySQLDatabase:
         """Update completed pages for a specific progress record"""
         try:
             conn = self.get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             
+            # First, get the current progress record to check if pages changed
+            cursor.execute('''
+                SELECT * FROM education_progress WHERE id = %s
+            ''', (progress_id,))
+            
+            current_progress = cursor.fetchone()
+            if not current_progress:
+                raise Error(f"Progress record with id {progress_id} not found")
+            
+            # Check if completed pages actually changed
+            old_completed_pages = current_progress['completed_pages']
+            
+            # Update the progress record
             cursor.execute('''
                 UPDATE education_progress 
                 SET completed_pages = %s, last_updated = %s, notes = %s
                 WHERE id = %s
             ''', (completed_pages, datetime.now().strftime('%Y-%m-%d'), notes, progress_id))
+            
+            # Add to history if pages changed
+            if completed_pages != old_completed_pages:
+                cursor.execute('''
+                    INSERT INTO education_progress_history 
+                    (progress_id, class_name, book_id, book_name, completed_pages, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ''', (
+                    progress_id, 
+                    current_progress['class_name'], 
+                    current_progress['book_id'], 
+                    current_progress['book_name'], 
+                    completed_pages, 
+                    notes
+                ))
             
             conn.commit()
             cursor.close()
@@ -1074,6 +1118,70 @@ class MySQLDatabase:
         except Error as e:
             print(f"Error editing education progress details: {e}")
             raise
+    
+    def add_progress_history_entry(self, progress_id, class_name, book_id, book_name, completed_pages, notes=None):
+        """Add a new entry to the progress history"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO education_progress_history 
+                (progress_id, class_name, book_id, book_name, completed_pages, notes)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (progress_id, class_name, book_id, book_name, completed_pages, notes))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error adding progress history entry: {e}")
+            raise
+    
+    def get_progress_history(self, progress_id):
+        """Get progress history for a specific progress record"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT * FROM education_progress_history 
+                WHERE progress_id = %s 
+                ORDER BY change_date DESC
+            ''', (progress_id,))
+            
+            history = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return history
+            
+        except Error as e:
+            print(f"Error getting progress history: {e}")
+            return []
+    
+    def get_progress_history_by_book(self, book_id, class_name):
+        """Get progress history for a specific book in a class"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT h.* FROM education_progress_history h
+                JOIN education_progress p ON h.progress_id = p.id
+                WHERE p.book_id = %s AND p.class_name = %s
+                ORDER BY h.change_date DESC
+            ''', (book_id, class_name))
+            
+            history = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return history
+            
+        except Error as e:
+            print(f"Error getting progress history by book: {e}")
+            return []
     
     def delete_all_education_progress(self):
         """Delete all education progress data"""

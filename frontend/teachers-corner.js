@@ -96,6 +96,28 @@
             }
         }
         
+        // Function to load progress history for a specific book
+        async function loadProgressHistoryForBook(bookId, className) {
+            try {
+                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(className)}`);
+                if (response.ok) {
+                    const history = await response.json();
+                    console.log(`✅ Loaded ${history.length} history entries for book ${bookId} in class ${className}`);
+                    return history.map(entry => ({
+                        date: entry.change_date,
+                        completed: entry.completed_pages,
+                        note: entry.notes
+                    }));
+                } else {
+                    console.error('❌ Failed to load progress history for book', bookId);
+                    return [];
+                }
+            } catch (error) {
+                console.error('❌ Error loading progress history for book', bookId, ':', error);
+                return [];
+            }
+        }
+        
         // Dynamic class mapping - gets real class names from database
         let classMapping = {};
         
@@ -589,9 +611,14 @@
             // Convert books to education progress format for display
             console.log('🔄 Starting conversion of books to education progress format');
             console.log('📚 Books to convert:', books);
-            allEducationProgress = books.map(book => {
+            
+            // Load progress history for all books in parallel
+            const booksWithHistory = await Promise.all(books.map(async (book) => {
                 // Find existing progress for this book
                 const existingBookProgress = existingProgress.find(p => p.book_id === book.id);
+                
+                // Load progress history from database
+                const progressHistory = await loadProgressHistoryForBook(book.id, className);
                 
                 const converted = {
                     id: book.id,
@@ -601,13 +628,15 @@
                     total_pages: book.total_pages || 100, // Default if not set
                     completed_pages: existingBookProgress ? existingBookProgress.completed_pages : 0,
                     notes: existingBookProgress ? existingBookProgress.notes : '',
-                    progressHistory: book.progressHistory || [],
+                    progressHistory: progressHistory, // Load from database
                     progress_record_id: existingBookProgress ? existingBookProgress.id : null
                 };
                 console.log(`🔄 Converting book:`, book);
                 console.log(`✅ Converted to:`, converted);
                 return converted;
-            });
+            }));
+            
+            allEducationProgress = booksWithHistory;
             
             console.log(`🎯 Final allEducationProgress array:`, allEducationProgress);
             
@@ -3144,26 +3173,13 @@
                     book.total_pages = totalPages;
                     book.book_name = bookName;
                     
-                    // Add to progress history if pages changed
-                    if (!book.progressHistory) {
-                        book.progressHistory = [];
-                    }
-                    
-                    const lastCompleted = book.progressHistory.length > 0 ? 
-                        book.progressHistory[book.progressHistory.length - 1].completed : -1;
-                        
-                    if (completedPages !== lastCompleted) {
-                         book.progressHistory.push({ 
-                             date: new Date().toISOString(), 
-                             completed: completedPages,
-                             note: progressNote || null
-                         });
-                    }
+                    // Reload progress history from database to get the latest history
+                    book.progressHistory = await loadProgressHistoryForBook(book.id, currentClass);
                     
                     // Refresh display
-            renderClassEducationProgress(currentClass);
+                    renderClassEducationProgress(currentClass);
                     alert('বইয়ের অগ্রগতি সংরক্ষিত হয়েছে।');
-            closeBookModal();
+                    closeBookModal();
                     
                 } catch (error) {
                     console.error('Error saving progress:', error);
