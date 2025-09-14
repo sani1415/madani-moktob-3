@@ -648,20 +648,38 @@ async function updateMainDashboardAlerts() {
             return;
         }
         
-        // Get alert configuration from localStorage (same as class dashboard)
-        const saved = localStorage.getItem('alertConfig');
+        // Get alert configuration from database with localStorage fallback
         let alertConfig = {
             LOW_SCORE_THRESHOLD: 60,
             CRITICAL_SCORE_THRESHOLD: 50,
             LOW_CLASS_AVERAGE_THRESHOLD: 70
         };
         
-        if (saved) {
-            try {
-                const savedConfig = JSON.parse(saved);
+        try {
+            const response = await fetch('/api/settings/alertConfig');
+            if (response.ok) {
+                const data = await response.json();
+                const savedConfig = JSON.parse(data.value || '{}');
                 alertConfig = { ...alertConfig, ...savedConfig };
-            } catch (e) {
-                console.error('Error loading alert config:', e);
+            } else {
+                // Fallback to localStorage
+                const saved = localStorage.getItem('alertConfig');
+                if (saved) {
+                    const savedConfig = JSON.parse(saved);
+                    alertConfig = { ...alertConfig, ...savedConfig };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading alert config from database:', error);
+            // Fallback to localStorage
+            const saved = localStorage.getItem('alertConfig');
+            if (saved) {
+                try {
+                    const savedConfig = JSON.parse(saved);
+                    alertConfig = { ...alertConfig, ...savedConfig };
+                } catch (e) {
+                    console.error('Error loading alert config from localStorage:', e);
+                }
             }
         }
         

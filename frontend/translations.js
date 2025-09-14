@@ -531,8 +531,24 @@ function updateAllTexts() {
 }
 
 // Update header texts
-function updateHeaderTexts() {
-    const savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+async function updateHeaderTexts() {
+    let savedName = t('appTitle'); // Default fallback
+    
+    try {
+        const response = await fetch('/api/settings/appName');
+        if (response.ok) {
+            const data = await response.json();
+            savedName = data.value || t('appTitle');
+        } else {
+            // Fallback to localStorage
+            savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+        }
+    } catch (error) {
+        console.error('Error loading app name from database:', error);
+        // Fallback to localStorage
+        savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+    }
+    
     document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${savedName}`;
     document.querySelector('.header p').textContent = t('appSubtitle');
     document.title = `${savedName} - ${t('appSubtitle')}`;

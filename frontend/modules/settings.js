@@ -655,7 +655,7 @@ async function updateBookDropdownForClass(classId) {
 }
 
 // Academic year functions
-function saveAcademicYearStart() {
+async function saveAcademicYearStart() {
     const academicYearStartInput = document.getElementById('academicYearStartInput');
     const startDate = academicYearStartInput.value;
     
@@ -664,37 +664,117 @@ function saveAcademicYearStart() {
         return;
     }
     
-    window.academicYearStartDate = startDate;
-    localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
-    
-    updateDateRestrictions();
-    
-    showModal('Success', 'Academic year start date updated successfully');
+    try {
+        const response = await fetch('/api/settings/academicYearStart', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: startDate,
+                description: 'Academic year start date'
+            })
+        });
+        
+        if (response.ok) {
+            window.academicYearStartDate = startDate;
+            // Also save to localStorage as backup
+            localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
+            
+            updateDateRestrictions();
+            showModal('Success', 'Academic year start date updated successfully');
+        } else {
+            console.error('Failed to save academic year start to database');
+            // Fallback to localStorage only
+            window.academicYearStartDate = startDate;
+            localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
+            updateDateRestrictions();
+            showModal('Success', 'Academic year start date saved locally');
+        }
+    } catch (error) {
+        console.error('Error saving academic year start:', error);
+        // Fallback to localStorage only
+        window.academicYearStartDate = startDate;
+        localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
+        updateDateRestrictions();
+        showModal('Success', 'Academic year start date saved locally');
+    }
     
     academicYearStartInput.value = '';
     displayAcademicYearStart();
 }
 
-function clearAcademicYearStart() {
+async function clearAcademicYearStart() {
     if (confirm('Are you sure you want to clear the academic year start date?')) {
-        window.academicYearStartDate = null;
-        localStorage.removeItem('madaniMaktabAcademicYearStart');
-        
-        clearDateRestrictions();
-        displayAcademicYearStart();
-        
-        showModal('Success', 'Academic year start date cleared successfully');
+        try {
+            const response = await fetch('/api/settings/academicYearStart', {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                window.academicYearStartDate = null;
+                localStorage.removeItem('madaniMaktabAcademicYearStart');
+                
+                clearDateRestrictions();
+                displayAcademicYearStart();
+                
+                showModal('Success', 'Academic year start date cleared successfully');
+            } else {
+                console.error('Failed to clear academic year start from database');
+                // Fallback to localStorage only
+                window.academicYearStartDate = null;
+                localStorage.removeItem('madaniMaktabAcademicYearStart');
+                clearDateRestrictions();
+                displayAcademicYearStart();
+                showModal('Success', 'Academic year start date cleared locally');
+            }
+        } catch (error) {
+            console.error('Error clearing academic year start:', error);
+            // Fallback to localStorage only
+            window.academicYearStartDate = null;
+            localStorage.removeItem('madaniMaktabAcademicYearStart');
+            clearDateRestrictions();
+            displayAcademicYearStart();
+            showModal('Success', 'Academic year start date cleared locally');
+        }
     }
 }
 
-function initializeAcademicYearStart() {
-    const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
-    if (savedStartDate) {
-        window.academicYearStartDate = savedStartDate;
-        console.log('Loaded academic year start date:', window.academicYearStartDate);
-        
-        updateDateRestrictions();
-        displayAcademicYearStart();
+async function initializeAcademicYearStart() {
+    try {
+        const response = await fetch('/api/settings/academicYearStart');
+        if (response.ok) {
+            const data = await response.json();
+            const savedStartDate = data.value;
+            if (savedStartDate) {
+                window.academicYearStartDate = savedStartDate;
+                console.log('Loaded academic year start date from database:', window.academicYearStartDate);
+                
+                updateDateRestrictions();
+                displayAcademicYearStart();
+            }
+        } else {
+            // Fallback to localStorage
+            const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
+            if (savedStartDate) {
+                window.academicYearStartDate = savedStartDate;
+                console.log('Loaded academic year start date from localStorage:', window.academicYearStartDate);
+                
+                updateDateRestrictions();
+                displayAcademicYearStart();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading academic year start from database:', error);
+        // Fallback to localStorage
+        const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
+        if (savedStartDate) {
+            window.academicYearStartDate = savedStartDate;
+            console.log('Loaded academic year start date from localStorage:', window.academicYearStartDate);
+            
+            updateDateRestrictions();
+            displayAcademicYearStart();
+        }
     }
 }
 
@@ -790,7 +870,7 @@ function clearDateRestrictions() {
 }
 
 // App name functions
-function saveAppName() {
+async function saveAppName() {
     const appNameInput = document.getElementById('appNameInput');
     const newAppName = appNameInput.value.trim();
     
@@ -799,15 +879,71 @@ function saveAppName() {
         return;
     }
     
-    localStorage.setItem('madaniMaktabAppName', newAppName);
-    document.title = newAppName;
-    
-    const appNameDisplay = document.getElementById('appNameDisplay');
-    if (appNameDisplay) {
-        appNameDisplay.textContent = newAppName;
+    try {
+        const response = await fetch('/api/settings/appName', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: newAppName,
+                description: 'Application name'
+            })
+        });
+        
+        if (response.ok) {
+            // Also save to localStorage as backup
+            localStorage.setItem('madaniMaktabAppName', newAppName);
+            document.title = newAppName;
+            
+            const appNameDisplay = document.getElementById('appNameDisplay');
+            if (appNameDisplay) {
+                appNameDisplay.textContent = newAppName;
+            }
+            
+            // Update all header texts to reflect the new app name
+            if (typeof updateHeaderTexts === 'function') {
+                updateHeaderTexts();
+            }
+            
+            showModal('Success', 'App name updated successfully');
+        } else {
+            console.error('Failed to save app name to database');
+            // Fallback to localStorage only
+            localStorage.setItem('madaniMaktabAppName', newAppName);
+            document.title = newAppName;
+            
+            const appNameDisplay = document.getElementById('appNameDisplay');
+            if (appNameDisplay) {
+                appNameDisplay.textContent = newAppName;
+            }
+            
+            // Update all header texts to reflect the new app name
+            if (typeof updateHeaderTexts === 'function') {
+                updateHeaderTexts();
+            }
+            
+            showModal('Success', 'App name saved locally');
+        }
+    } catch (error) {
+        console.error('Error saving app name:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('madaniMaktabAppName', newAppName);
+        document.title = newAppName;
+        
+        const appNameDisplay = document.getElementById('appNameDisplay');
+        if (appNameDisplay) {
+            appNameDisplay.textContent = newAppName;
+        }
+        
+        // Update all header texts to reflect the new app name
+        if (typeof updateHeaderTexts === 'function') {
+            updateHeaderTexts();
+        }
+        
+        showModal('Success', 'App name saved locally');
     }
     
-    showModal('Success', 'App name updated successfully');
     appNameInput.value = '';
 }
 

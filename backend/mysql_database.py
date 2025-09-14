@@ -247,6 +247,18 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create app settings table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    setting_key VARCHAR(100) NOT NULL UNIQUE,
+                    setting_value TEXT,
+                    description VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            
             # Create teacher_logs table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS teacher_logs (
@@ -1182,6 +1194,96 @@ class MySQLDatabase:
         except Error as e:
             print(f"Error getting progress history by book: {e}")
             return []
+    
+    # App Settings methods
+    def get_app_setting(self, setting_key):
+        """Get a specific app setting by key"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT setting_value FROM app_settings 
+                WHERE setting_key = %s
+            ''', (setting_key,))
+            
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            return result['setting_value'] if result else None
+            
+        except Error as e:
+            print(f"Error getting app setting {setting_key}: {e}")
+            return None
+    
+    def set_app_setting(self, setting_key, setting_value, description=None):
+        """Set or update an app setting"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO app_settings (setting_key, setting_value, description)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                setting_value = VALUES(setting_value),
+                description = VALUES(description),
+                updated_at = CURRENT_TIMESTAMP
+            ''', (setting_key, setting_value, description))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error setting app setting {setting_key}: {e}")
+            return False
+    
+    def get_all_app_settings(self):
+        """Get all app settings as a dictionary"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT setting_key, setting_value, description 
+                FROM app_settings 
+                ORDER BY setting_key
+            ''')
+            
+            settings = {}
+            for row in cursor.fetchall():
+                settings[row['setting_key']] = {
+                    'value': row['setting_value'],
+                    'description': row['description']
+                }
+            
+            cursor.close()
+            conn.close()
+            return settings
+            
+        except Error as e:
+            print(f"Error getting all app settings: {e}")
+            return {}
+    
+    def delete_app_setting(self, setting_key):
+        """Delete an app setting"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM app_settings WHERE setting_key = %s', (setting_key,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+        except Error as e:
+            print(f"Error deleting app setting {setting_key}: {e}")
+            return False
     
     def delete_all_education_progress(self):
         """Delete all education progress data"""

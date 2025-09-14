@@ -20,8 +20,9 @@ class HijriCalendar {
             ]
         };
         
-        // Load adjustment from localStorage
-        this.adjustment = parseInt(localStorage.getItem('hijriAdjustment') || '0');
+        // Load adjustment from database with localStorage fallback
+        this.adjustment = 0; // Will be loaded asynchronously
+        this.loadAdjustment();
         
         // Islamic calendar epoch (July 16, 622 CE in Julian calendar)
         this.islamicEpoch = 1948085; // Julian Day Number
@@ -225,11 +226,56 @@ class HijriCalendar {
     }
 
     /**
+     * Load adjustment from database with localStorage fallback
+     */
+    async loadAdjustment() {
+        try {
+            const response = await fetch('/api/settings/hijriAdjustment');
+            if (response.ok) {
+                const data = await response.json();
+                this.adjustment = parseInt(data.value || '0');
+            } else {
+                // Fallback to localStorage
+                this.adjustment = parseInt(localStorage.getItem('hijriAdjustment') || '0');
+            }
+        } catch (error) {
+            console.error('Error loading hijri adjustment from database:', error);
+            // Fallback to localStorage
+            this.adjustment = parseInt(localStorage.getItem('hijriAdjustment') || '0');
+        }
+    }
+
+    /**
      * Set adjustment value
      */
-    setAdjustment(value) {
+    async setAdjustment(value) {
         this.adjustment = parseInt(value);
-        localStorage.setItem('hijriAdjustment', this.adjustment.toString());
+        
+        try {
+            const response = await fetch('/api/settings/hijriAdjustment', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    value: this.adjustment.toString(),
+                    description: 'Hijri calendar adjustment in days'
+                })
+            });
+            
+            if (response.ok) {
+                // Also save to localStorage as backup
+                localStorage.setItem('hijriAdjustment', this.adjustment.toString());
+            } else {
+                console.error('Failed to save hijri adjustment to database');
+                // Fallback to localStorage only
+                localStorage.setItem('hijriAdjustment', this.adjustment.toString());
+            }
+        } catch (error) {
+            console.error('Error saving hijri adjustment:', error);
+            // Fallback to localStorage only
+            localStorage.setItem('hijriAdjustment', this.adjustment.toString());
+        }
     }
 
     /**

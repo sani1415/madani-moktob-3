@@ -423,6 +423,11 @@ async function initializeApp() {
             });
         }
         
+        // Initialize language system to load app name and other settings
+        if (typeof initializeLanguage === 'function') {
+            initializeLanguage();
+        }
+        
         console.log('✅ Application initialization completed');
         
         // Handle URL parameters for student details
@@ -731,11 +736,13 @@ window.populateTeachersCornerDropdown = populateTeachersCornerDropdown;
 window.openTeachersCornerForClass = openTeachersCornerForClass;
 
 // Alert Settings Functions
-function loadAlertSettings() {
-    const saved = localStorage.getItem('alertConfig');
-    if (saved) {
-        try {
-            const config = JSON.parse(saved);
+async function loadAlertSettings() {
+    try {
+        const response = await fetch('/api/settings/alertConfig');
+        if (response.ok) {
+            const data = await response.json();
+            const config = JSON.parse(data.value || '{}');
+            
             // Update input fields with saved values
             const lowScoreInput = document.getElementById('lowScoreThreshold');
             const criticalScoreInput = document.getElementById('criticalScoreThreshold');
@@ -744,49 +751,126 @@ function loadAlertSettings() {
             if (lowScoreInput) lowScoreInput.value = config.LOW_SCORE_THRESHOLD || 60;
             if (criticalScoreInput) criticalScoreInput.value = config.CRITICAL_SCORE_THRESHOLD || 50;
             if (lowClassAverageInput) lowClassAverageInput.value = config.LOW_CLASS_AVERAGE_THRESHOLD || 70;
-        } catch (e) {
-            console.error('Error loading alert config:', e);
+        } else {
+            // Fallback to localStorage if database fails
+            const saved = localStorage.getItem('alertConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                const lowScoreInput = document.getElementById('lowScoreThreshold');
+                const criticalScoreInput = document.getElementById('criticalScoreThreshold');
+                const lowClassAverageInput = document.getElementById('lowClassAverageThreshold');
+                
+                if (lowScoreInput) lowScoreInput.value = config.LOW_SCORE_THRESHOLD || 60;
+                if (criticalScoreInput) criticalScoreInput.value = config.CRITICAL_SCORE_THRESHOLD || 50;
+                if (lowClassAverageInput) lowClassAverageInput.value = config.LOW_CLASS_AVERAGE_THRESHOLD || 70;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading alert config:', error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('alertConfig');
+        if (saved) {
+            const config = JSON.parse(saved);
+            const lowScoreInput = document.getElementById('lowScoreThreshold');
+            const criticalScoreInput = document.getElementById('criticalScoreThreshold');
+            const lowClassAverageInput = document.getElementById('lowClassAverageThreshold');
+            
+            if (lowScoreInput) lowScoreInput.value = config.LOW_SCORE_THRESHOLD || 60;
+            if (criticalScoreInput) criticalScoreInput.value = config.CRITICAL_SCORE_THRESHOLD || 50;
+            if (lowClassAverageInput) lowClassAverageInput.value = config.LOW_CLASS_AVERAGE_THRESHOLD || 70;
         }
     }
 }
 
-function saveAlertThreshold() {
+async function saveAlertThreshold() {
     const lowScoreThreshold = parseInt(document.getElementById('lowScoreThreshold').value) || 60;
     const criticalScoreThreshold = parseInt(document.getElementById('criticalScoreThreshold').value) || 50;
     const lowClassAverageThreshold = parseInt(document.getElementById('lowClassAverageThreshold').value) || 70;
     
-    // Get existing config or create new one
-    const saved = localStorage.getItem('alertConfig');
-    let config = saved ? JSON.parse(saved) : {};
+    const config = {
+        LOW_SCORE_THRESHOLD: lowScoreThreshold,
+        CRITICAL_SCORE_THRESHOLD: criticalScoreThreshold,
+        LOW_CLASS_AVERAGE_THRESHOLD: lowClassAverageThreshold
+    };
     
-    // Update thresholds
-    config.LOW_SCORE_THRESHOLD = lowScoreThreshold;
-    config.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
-    config.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
-    
-    // Save to localStorage
-    localStorage.setItem('alertConfig', JSON.stringify(config));
-    
-    // Update global ALERT_CONFIG if it exists
-    if (window.ALERT_CONFIG) {
-        window.ALERT_CONFIG.LOW_SCORE_THRESHOLD = lowScoreThreshold;
-        window.ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
-        window.ALERT_CONFIG.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+    try {
+        const response = await fetch('/api/settings/alertConfig', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: JSON.stringify(config),
+                description: 'Alert configuration thresholds'
+            })
+        });
+        
+        if (response.ok) {
+            // Also save to localStorage as backup
+            localStorage.setItem('alertConfig', JSON.stringify(config));
+            
+            // Update global ALERT_CONFIG if it exists
+            if (window.ALERT_CONFIG) {
+                window.ALERT_CONFIG.LOW_SCORE_THRESHOLD = lowScoreThreshold;
+                window.ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD = criticalScoreThreshold;
+                window.ALERT_CONFIG.LOW_CLASS_AVERAGE_THRESHOLD = lowClassAverageThreshold;
+            }
+            
+            // Show success message
+            showModal('Success', 'Alert thresholds saved successfully!');
+            
+            // Refresh alerts if dashboard is open
+            if (typeof window.renderDashboardAlerts === 'function' && window.currentClass) {
+                const activeStudents = window.getActiveStudentsForClass ? window.getActiveStudentsForClass(window.currentClass) : [];
+                window.renderDashboardAlerts(activeStudents);
+            }
+        } else {
+            console.error('Failed to save alert config to database');
+            // Fallback to localStorage only
+            localStorage.setItem('alertConfig', JSON.stringify(config));
+            showModal('Warning', 'Alert thresholds saved locally!');
+        }
+    } catch (error) {
+        console.error('Error saving alert config:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('alertConfig', JSON.stringify(config));
+        showModal('Warning', 'Alert thresholds saved locally!');
     }
-    
-    // Show success message
-    showNotification('Alert thresholds saved successfully!', 'success');
-    
-    // Refresh alerts if dashboard is open
-    if (typeof window.renderDashboardAlerts === 'function' && window.currentClass) {
-        const activeStudents = window.getActiveStudentsForClass ? window.getActiveStudentsForClass(window.currentClass) : [];
-        window.renderDashboardAlerts(activeStudents);
+}
+
+// Load current app name into the input field
+async function loadAppName() {
+    try {
+        const response = await fetch('/api/settings/appName');
+        if (response.ok) {
+            const data = await response.json();
+            const appNameInput = document.getElementById('appNameInput');
+            if (appNameInput && data.value) {
+                appNameInput.value = data.value;
+            }
+        } else {
+            // Fallback to localStorage
+            const savedName = localStorage.getItem('madaniMaktabAppName');
+            const appNameInput = document.getElementById('appNameInput');
+            if (appNameInput && savedName) {
+                appNameInput.value = savedName;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading app name:', error);
+        // Fallback to localStorage
+        const savedName = localStorage.getItem('madaniMaktabAppName');
+        const appNameInput = document.getElementById('appNameInput');
+        if (appNameInput && savedName) {
+            appNameInput.value = savedName;
+        }
     }
 }
 
 // Load alert settings when settings tab is opened
 function loadSettingsData() {
     loadAlertSettings();
+    loadAppName();
 }
 
 // Make functions globally accessible

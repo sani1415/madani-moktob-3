@@ -746,6 +746,55 @@ def get_education_progress_history_by_book(book_id, class_name):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== APP SETTINGS API ENDPOINTS =====
+
+@app.route('/api/settings', methods=['GET'])
+def get_all_settings():
+    try:
+        settings = db.get_all_app_settings()
+        return jsonify(settings)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/<setting_key>', methods=['GET'])
+def get_setting(setting_key):
+    try:
+        value = db.get_app_setting(setting_key)
+        if value is not None:
+            return jsonify({'key': setting_key, 'value': value})
+        else:
+            return jsonify({'error': 'Setting not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/<setting_key>', methods=['PUT'])
+def set_setting(setting_key):
+    try:
+        data = request.json
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+        
+        description = data.get('description', '')
+        success = db.set_app_setting(setting_key, data['value'], description)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Setting updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update setting'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/<setting_key>', methods=['DELETE'])
+def delete_setting(setting_key):
+    try:
+        success = db.delete_app_setting(setting_key)
+        if success:
+            return jsonify({'success': True, 'message': 'Setting deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete setting'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== TEACHER LOGS API ENDPOINTS =====
 
 @app.route('/api/teacher-logs', methods=['GET'])

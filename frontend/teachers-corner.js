@@ -3524,15 +3524,33 @@
             }
         };
 
-        // Function to load alert settings from localStorage
-        function loadAlertSettings() {
-            const saved = localStorage.getItem('alertConfig');
-            if (saved) {
-                try {
-                    const savedConfig = JSON.parse(saved);
+        // Function to load alert settings from database with localStorage fallback
+        async function loadAlertSettings() {
+            try {
+                const response = await fetch('/api/settings/alertConfig');
+                if (response.ok) {
+                    const data = await response.json();
+                    const savedConfig = JSON.parse(data.value || '{}');
                     Object.assign(ALERT_CONFIG, savedConfig);
-                } catch (e) {
-                    console.error('Error loading alert config:', e);
+                } else {
+                    // Fallback to localStorage
+                    const saved = localStorage.getItem('alertConfig');
+                    if (saved) {
+                        const savedConfig = JSON.parse(saved);
+                        Object.assign(ALERT_CONFIG, savedConfig);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading alert config from database:', error);
+                // Fallback to localStorage
+                const saved = localStorage.getItem('alertConfig');
+                if (saved) {
+                    try {
+                        const savedConfig = JSON.parse(saved);
+                        Object.assign(ALERT_CONFIG, savedConfig);
+                    } catch (e) {
+                        console.error('Error loading alert config from localStorage:', e);
+                    }
                 }
             }
         }
