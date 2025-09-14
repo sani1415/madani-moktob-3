@@ -177,6 +177,8 @@ window.showLowScoreStudents = Dashboard.showLowScoreStudents;
 window.showAbsentStudents = Dashboard.showAbsentStudents;
 window.toggleAlertDetails = Dashboard.toggleAlertDetails;
 window.renderAlertDetails = Dashboard.renderAlertDetails;
+window.showTeachersCornerForClass = Dashboard.showTeachersCornerForClass;
+window.showStudentLogsModal = Dashboard.showStudentLogsModal;
 
 // Make state variables globally accessible
 window.students = State.students;

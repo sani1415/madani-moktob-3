@@ -778,6 +778,58 @@ async function updateMainDashboardAlerts() {
             });
         }
         
+        // Check for important teacher logs across all classes
+        try {
+            // Get all unique classes from students
+            const allClasses = [...new Set(students.map(student => student.class))];
+            const allLogs = [];
+            
+            // Fetch logs from each class
+            for (const className of allClasses) {
+                try {
+                    const logsResponse = await fetch(`/api/teacher-logs?class=${encodeURIComponent(className)}`);
+                    if (logsResponse.ok) {
+                        const classLogs = await logsResponse.json();
+                        allLogs.push(...classLogs);
+                    }
+                } catch (classError) {
+                    console.error(`❌ Error fetching logs for class ${className}:`, classError);
+                }
+            }
+            
+            // Filter for important logs
+            const importantLogs = allLogs.filter(log => log.is_important && !log.needs_followup);
+            const followupLogs = allLogs.filter(log => log.needs_followup);
+            
+            // Add important logs alert
+            if (importantLogs.length > 0) {
+                alerts.push({
+                    type: 'danger',
+                    icon: 'fas fa-exclamation-circle',
+                    title: 'Important Teacher Logs',
+                    message: `${importantLogs.length} important logs require attention`,
+                    action: 'View Logs',
+                    logs: importantLogs,
+                    alertType: 'important_logs'
+                });
+            }
+            
+            // Add follow-up required logs alert
+            if (followupLogs.length > 0) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'fas fa-tasks',
+                    title: 'Logs Needing Follow-up',
+                    message: `${followupLogs.length} logs require follow-up action`,
+                    action: 'View Logs',
+                    logs: followupLogs,
+                    alertType: 'followup_logs'
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error fetching teacher logs for alerts:', error);
+        }
+        
         // Render alerts
         if (alerts.length === 0) {
             alertsContainer.style.display = 'none';
@@ -887,6 +939,67 @@ function renderAlertDetails(alert) {
                 </table>
             </div>
         `;
+    } else if (alert.alertType === 'important_logs' || alert.alertType === 'followup_logs') {
+        const color = alert.alertType === 'important_logs' ? '#ef4444' : '#f59e0b';
+        const bgColor = alert.alertType === 'important_logs' ? '#fef2f2' : '#fffbeb';
+        const borderColor = alert.alertType === 'important_logs' ? '#fecaca' : '#fed7aa';
+        
+        return `
+            <div class="alert-logs-table">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Date</th>
+                            <th class="px-4 py-2 text-left">Student</th>
+                            <th class="px-4 py-2 text-left">Details</th>
+                            <th class="px-4 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${alert.logs.map(log => {
+                            const logDate = new Date(log.created_at).toLocaleDateString('bn-BD');
+                            const logClass = log.class_name || 'N/A';
+                            const logDetails = log.details ? (log.details.length > 60 ? log.details.substring(0, 60) + '...' : log.details) : 'No details';
+                            
+                            // Get student name and roll number
+                            let studentInfo = 'Class Log';
+                            if (log.student_id) {
+                                // Find student in the students array
+                                const student = students.find(s => s.id === log.student_id);
+                                if (student) {
+                                    const rollNumber = student.rollNumber || student.roll || 'N/A';
+                                    studentInfo = `${student.name} (রোল: ${rollNumber})`;
+                                } else {
+                                    studentInfo = `Student ID: ${log.student_id}`;
+                                }
+                            }
+                            
+                            return `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2 text-gray-600">${logDate}</td>
+                                    <td class="px-4 py-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            ${studentInfo}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-2 text-gray-700">${logDetails}</td>
+                                    <td class="px-4 py-2 text-center">
+                                        ${log.student_id ? 
+                                            `<button onclick="showStudentLogsModal('${log.student_id}', '${studentInfo.replace(/'/g, "\\'")}', '${logClass}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
+                                                View Student Logs
+                                            </button>` :
+                                            `<button onclick="showTeachersCornerForClass('${logClass}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
+                                                View in Teachers Corner
+                                            </button>`
+                                        }
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
     }
     return '';
 }
@@ -906,6 +1019,136 @@ function toggleAlertDetails(index) {
         button.textContent = 'View Details';
         button.classList.remove('secondary');
         button.classList.add('primary');
+    }
+}
+
+// Function to show Teachers Corner for a specific class
+function showTeachersCornerForClass(className) {
+    // Navigate to Teachers Corner section
+    if (typeof showSection === 'function') {
+        showSection('teachers-corner-section');
+    }
+    
+    // If Teachers Corner is available, show the specific class dashboard
+    if (typeof window.showClassDashboard === 'function') {
+        // Small delay to ensure the section is visible
+        setTimeout(() => {
+            window.showClassDashboard(className);
+        }, 100);
+    }
+}
+
+// Function to show student logs in a modal
+async function showStudentLogsModal(studentId, studentInfo, className) {
+    try {
+        // Fetch student's logs from API
+        const response = await fetch(`/api/teacher-logs?class=${encodeURIComponent(className)}&student_id=${studentId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch student logs');
+        }
+        
+        const studentLogs = await response.json();
+        
+        // Find student details
+        const student = students.find(s => s.id === studentId);
+        const studentName = student ? student.name : 'Unknown Student';
+        const rollNumber = student ? (student.rollNumber || student.roll || 'N/A') : 'N/A';
+        
+        // Create modal HTML
+        const modalHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="this.remove()">
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+                    <!-- Modal Header -->
+                    <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-semibold">${studentName} - Student Logs</h3>
+                            <p class="text-blue-100 text-sm">রোল: ${rollNumber} | শ্রেণী: ${className}</p>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-blue-200 text-2xl font-bold">
+                            ×
+                        </button>
+                    </div>
+                    
+                    <!-- Modal Content -->
+                    <div class="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+                        ${studentLogs.length === 0 ? `
+                            <div class="text-center py-8">
+                                <i class="fas fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-600 text-lg">No logs found for this student</p>
+                                <p class="text-gray-500 text-sm mt-2">Logs will appear here when teachers add notes for this student.</p>
+                            </div>
+                        ` : `
+                            <div class="space-y-4">
+                                ${studentLogs.map(log => {
+                                    const logDate = new Date(log.created_at).toLocaleDateString('bn-BD');
+                                    const logTime = new Date(log.created_at).toLocaleTimeString('bn-BD', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    });
+                                    const logType = log.log_type || 'General';
+                                    const isImportant = log.is_important;
+                                    const needsFollowup = log.needs_followup;
+                                    
+                                    return `
+                                        <div class="border border-gray-200 rounded-lg p-4 ${isImportant ? 'border-l-4 border-l-red-500 bg-red-50' : 'bg-gray-50'}">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        ${logType}
+                                                    </span>
+                                                    ${isImportant ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">গুরুত্বপূর্ণ</span>' : ''}
+                                                    ${needsFollowup ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">অনুসরণ প্রয়োজন</span>' : ''}
+                                                </div>
+                                                <div class="text-right">
+                                                    <div class="text-sm font-medium text-gray-900">${logDate}</div>
+                                                    <div class="text-xs text-gray-500">${logTime}</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-gray-700 leading-relaxed">
+                                                ${log.details || 'No details provided'}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `}
+                    </div>
+                    
+                    <!-- Modal Footer -->
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                        <button onclick="showTeachersCornerForClass('${className}')" class="px-4 py-2 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50">
+                            <i class="fas fa-external-link-alt mr-2"></i>Open in Teachers Corner
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+    } catch (error) {
+        console.error('❌ Error showing student logs modal:', error);
+        
+        // Show error modal
+        const errorModal = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="this.remove()">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
+                    <div class="p-6 text-center">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Error Loading Logs</h3>
+                        <p class="text-gray-600 mb-4">Failed to load student logs. Please try again.</p>
+                        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', errorModal);
     }
 }
 
@@ -1026,4 +1269,4 @@ function showAbsentStudents(students, todayAttendance) {
     document.body.appendChild(modal);
 }
 
-export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData, updatePerformanceMetrics, updateMainDashboardAlerts, showLowScoreStudents, showAbsentStudents, toggleAlertDetails, renderAlertDetails }
+export { currentReportData, sortDirection, columnFilters, generateAttendanceTrackingCalendar, updateClassWiseStats, updateDashboard, updateTodayOverview, refreshAttendanceData, updatePerformanceMetrics, updateMainDashboardAlerts, showLowScoreStudents, showAbsentStudents, toggleAlertDetails, renderAlertDetails, showTeachersCornerForClass, showStudentLogsModal }

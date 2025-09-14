@@ -4151,6 +4151,85 @@ body {
     margin: 2% auto;
 }
 
+/* Teachers Corner Layout Improvements */
+#logbook-display {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+#logbook-display::-webkit-scrollbar {
+    width: 6px;
+}
+
+#logbook-display::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+#logbook-display::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+#logbook-display::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* Compact student list styling */
+.student-list-container table th,
+.student-list-container table td {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.student-list-container table th {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Log entry improvements */
+.log-entry {
+    border-left: 3px solid #3b82f6;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border-radius: 0 6px 6px 0;
+    transition: all 0.2s ease;
+}
+
+.log-entry:hover {
+    background: #f1f5f9;
+    transform: translateX(2px);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.log-type {
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.log-date {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.log-details {
+    color: #374151;
+    line-height: 1.5;
+    font-size: 13px;
+}
+
 /* Responsive improvements for student profile modal */
 @media (max-width: 768px) {
     #student-profile-modal .modal-content {

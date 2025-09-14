@@ -411,25 +411,25 @@
                 </div>
     
                 <!-- Class Overview & Teacher's Logbook -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
                     <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                          <h3 class="text-xl font-semibold mb-4 text-gray-700">শ্রেণীর সার্বিক অবস্থা</h3>
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div>
                                   <h4 class="font-semibold text-gray-600 text-sm mb-2">ছাত্রদের স্তর</h4>
-                                  <div id="performance-chart" class="space-y-3">
+                                  <div id="performance-chart" class="space-y-2">
                                       <!-- Performance categories will be rendered here -->
                                   </div>
                               </div>
                              <div>
                                  <h4 class="font-semibold text-gray-600 text-sm mb-2">সাম্প্রতিক শ্রেণী লগ</h4>
-                                 <div id="recent-class-logs" class="space-y-2">
+                                 <div id="recent-class-logs" class="space-y-2 max-h-32 overflow-y-auto">
                                      <!-- Recent logs will be rendered here -->
                                  </div>
                              </div>
                          </div>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold text-gray-700">📔 শিক্ষকের লগবুক</h3>
                             <button onclick="showAddLogModal()" class="btn-success text-white px-3 py-1 rounded-md text-sm font-semibold flex items-center gap-2"><i class="fas fa-plus"></i> নতুন নোট</button>
@@ -438,26 +438,26 @@
                             <button onclick="switchLogTab('class')" class="tab-button py-2 px-4 text-gray-500 font-semibold active">শ্রেণী লগ</button>
                             <button onclick="switchLogTab('student')" class="tab-button py-2 px-4 text-gray-500 font-semibold">ছাত্র লগ</button>
                         </div>
-                        <div id="logbook-display" class="space-y-4 max-h-[200px] overflow-y-auto pr-2"></div>
+                        <div id="logbook-display" class="space-y-4 max-h-[400px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
     
                 <!-- Student List & Education Progress -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold text-gray-700">ছাত্রদের তালিকা</h3>
                             <button onclick="clearStudentFilter()" class="text-sm text-blue-600 hover:text-blue-800 underline">
                                 সব ছাত্র দেখুন
                             </button>
                         </div>
-                        <div class="max-h-96 overflow-y-auto student-list-container">
+                        <div class="max-h-80 overflow-y-auto student-list-container">
                             <table class="w-full text-sm text-left text-gray-600">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                                     <tr>
-                                        <th class="px-4 py-3 text-center">হুসনুল খুলুক</th>
-                                        <th class="px-4 py-3">রোল</th>
-                                        <th class="px-4 py-3">নাম</th>
+                                        <th class="px-3 py-2 text-center">স্কোর</th>
+                                        <th class="px-3 py-2">রোল</th>
+                                        <th class="px-3 py-2">নাম</th>
                                     </tr>
                                 </thead>
                                 <tbody id="class-student-list"></tbody>
@@ -471,7 +471,7 @@
                                 <button onclick="showBookModal()" class="text-gray-500 hover:text-blue-500" title="নতুন বই যোগ করুন"><i class="fas fa-plus"></i></button>
                             </div>
                         </div>
-                        <div id="class-education-progress" class="space-y-4"></div>
+                        <div id="class-education-progress" class="space-y-3 max-h-80 overflow-y-auto"></div>
                     </div>
                     
                     <!-- Progress History Summary -->
