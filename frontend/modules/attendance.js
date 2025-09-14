@@ -991,6 +991,10 @@ async function showStudentDetail(studentId, source = 'attendance') {
     
     // Use the unified student profile modal instead of separate page
     if (typeof window.showStudentProfile === 'function') {
+        // Ensure Teachers Corner has the latest student data loaded
+        if (typeof window.loadStudentsFromMainApp === 'function') {
+            await window.loadStudentsFromMainApp();
+        }
         // Call the Teachers Corner profile function
         await window.showStudentProfile(studentId);
         } else {

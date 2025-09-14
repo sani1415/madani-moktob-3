@@ -4143,6 +4143,72 @@ body {
     animation: fadeIn 0.3s;
     contain: layout style paint;
 }
+
+/* Enhanced student profile modal styles */
+#student-profile-modal .modal-content {
+    max-width: 1200px;
+    min-height: 600px;
+    margin: 2% auto;
+}
+
+/* Responsive improvements for student profile modal */
+@media (max-width: 768px) {
+    #student-profile-modal .modal-content {
+        width: 95% !important;
+        margin: 5% auto;
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 480px) {
+    #student-profile-modal .modal-content {
+        width: 98% !important;
+        margin: 2% auto;
+        min-height: 400px;
+    }
+    
+    /* Stack profile tabs vertically on very small screens */
+    #student-profile-modal .profile-tab {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+}
+
+/* Profile tab improvements for better spacing */
+#student-profile-modal .profile-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+#student-profile-modal .profile-tab:hover {
+    background-color: #f3f4f6;
+    border-radius: 4px;
+}
+
+/* Better grid layout for profile content */
+#student-profile-modal .grid {
+    gap: 1rem;
+}
+
+/* Improved spacing for profile sections */
+#student-profile-modal .space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Better button spacing in modal header */
+#student-profile-modal .p-6.border-b {
+    padding-bottom: 1rem;
+}
+
+#student-profile-modal .p-6.border-b > div:last-child {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 .modal-content {
     animation: slideIn 0.3s;
 }

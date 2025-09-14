@@ -576,7 +576,7 @@
             // Ensure the element exists before setting innerText
             const dashboardTitle = document.getElementById('class-dashboard-title');
             if (dashboardTitle) {
-                dashboardTitle.innerText = `${className} - ড্যাশবোর্ড`;
+                dashboardTitle.innerText = `${className} - Teachers Corner`;
             } else {
                 console.error('❌ class-dashboard-title element not found despite check');
                 return;
@@ -987,7 +987,7 @@
                 
                 if (tier !== 'all') {
                     const titleHTML = `
-                        ${currentClass} - ড্যাশবোর্ড 
+                        ${currentClass} - Teachers Corner 
                         <span class="text-lg font-normal text-gray-600">(${tierLabels[tier]} - ${filteredStudents.length} জন)</span>
                         <button onclick="clearStudentFilter()" class="ml-2 text-sm text-blue-600 hover:text-blue-800 underline">
                             সব ছাত্র দেখুন
@@ -1008,7 +1008,7 @@
                 renderClassStudentList(studentsInClass);
                 const dashboardTitleEl = document.getElementById('class-dashboard-title');
                 if (dashboardTitleEl) {
-                    updateElementText('class-dashboard-title', `${currentClass} - ড্যাশবোর্ড`);
+                    updateElementText('class-dashboard-title', `${currentClass} - Teachers Corner`);
                 }
             });
         }
@@ -2636,7 +2636,9 @@
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
             
-            // Load score history from database for this student
+            // Ensure we have the latest data loaded for this student's class
+            await loadStudentScoresFromDatabase(student.class);
+            await loadTeacherLogsFromDatabase(student.class);
             await loadScoreHistoryFromDatabase(studentId);
             
             const profileTitle = document.getElementById('student-profile-title');

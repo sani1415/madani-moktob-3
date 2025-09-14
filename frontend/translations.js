@@ -10,6 +10,7 @@ const translations = {
         registerStudent: "Register Student",
         dailyAttendance: "Daily Attendance",
         reports: "Reports",
+        teachersCorner: "Teachers Corner",
         settings: "Settings",
         
         // Dashboard
@@ -316,6 +317,7 @@ const translations = {
         registerStudent: "ছাত্র নিবন্ধন",
         dailyAttendance: "দৈনিক উপস্থিতি",
         reports: "রিপোর্ট",
+        teachersCorner: "শিক্ষক কোণার",
         settings: "সেটিংস",
         education: "শিক্ষা",
         
@@ -527,7 +529,7 @@ function updateAllTexts() {
     updateReportsTexts();
     updateSettingsTexts();
     updateStudentListTexts();
-    updateEducationTexts();
+    updateTeachersCornerTexts();
 }
 
 // Update header texts
@@ -561,7 +563,7 @@ async function updateHeaderTexts() {
 // Update navigation texts
 function updateNavigationTexts() {
     const navLinks = document.querySelectorAll('.nav-link');
-    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'education', 'settings'];
+    const navTexts = ['dashboard', 'registerStudent', 'dailyAttendance', 'reports', 'teachersCorner', 'settings'];
     
     navLinks.forEach((link, index) => {
         const icon = link.querySelector('i').outerHTML;
@@ -775,8 +777,8 @@ function updateSettingsTexts() {
     });
 }
 
-// Update education texts
-function updateEducationTexts() {
+// Update teachers corner texts
+function updateTeachersCornerTexts() {
     const educationTitle = document.querySelector('#education h2');
     if (educationTitle) {
         educationTitle.textContent = t('EducationProgressTracking');
@@ -885,8 +887,8 @@ function updateSectionContent(sectionId) {
         case 'reports':
             updateReportsTexts();
             break;
-        case 'education':
-            updateEducationTexts();
+        case 'teachersCorner':
+            updateTeachersCornerTexts();
             break;
         case 'settings':
             updateSettingsTexts();
