@@ -1000,17 +1000,24 @@ let allUsers = [];
 
 async function loadUsers() {
     try {
+        console.log('🔄 Loading users...');
+        console.log('👤 Current user:', window.currentUser);
+        
         const response = await fetch('/api/users');
+        console.log('📡 Users API response status:', response.status);
+        
         if (response.ok) {
             allUsers = await response.json();
+            console.log('✅ Users loaded successfully:', allUsers.length);
             displayUsers();
             updateUserClassDropdowns();
         } else {
             const error = await response.json();
+            console.error('❌ Failed to load users:', error);
             showModal('Error', error.error || 'Failed to load users');
         }
     } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('❌ Error loading users:', error);
         showModal('Error', 'Failed to load users');
     }
 }
@@ -1169,6 +1176,8 @@ async function updateUser(event) {
     }
     
     try {
+        console.log(`🔄 Updating user ${userId} with data:`, { username, role, class_name: className, is_active: isActive });
+        
         const response = await fetch(`/api/users/${userId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -1180,16 +1189,22 @@ async function updateUser(event) {
             })
         });
         
+        console.log(`📡 Update user API response status: ${response.status}`);
+        
         const result = await response.json();
+        console.log('📄 Update user API response:', result);
+        
         if (response.ok) {
+            console.log('✅ User update successful, reloading users...');
             showModal('Success', result.message);
             closeEditUserModal();
             await loadUsers();
         } else {
+            console.error('❌ User update failed:', result);
             showModal('Error', result.error || 'Failed to update user');
         }
     } catch (error) {
-        console.error('Error updating user:', error);
+        console.error('❌ Error updating user:', error);
         showModal('Error', 'Failed to update user');
     }
 }

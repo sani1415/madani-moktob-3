@@ -276,6 +276,8 @@ def get_all_users():
             return admin_check
         
         users = db.get_all_users()
+        logger.info(f"📋 Found {len(users)} users in database")
+        
         # Remove sensitive information
         for user in users:
             if 'password_hash' in user:
@@ -325,8 +327,11 @@ def create_user():
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     try:
+        logger.info(f"🔄 Updating user {user_id}")
+        
         admin_check = require_admin()
         if admin_check:
+            logger.warning(f"❌ Admin check failed for user update: {user_id}")
             return admin_check
         
         data = request.json
@@ -334,6 +339,8 @@ def update_user(user_id):
         role = data.get('role')
         class_name = data.get('class_name')
         is_active = data.get('is_active')
+        
+        logger.info(f"📝 Update data for user {user_id}: username={username}, role={role}, class_name={class_name}, is_active={is_active}")
         
         if role and role not in ['admin', 'user']:
             return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
@@ -344,18 +351,31 @@ def update_user(user_id):
             if any(user['username'] == username and user['id'] != user_id for user in existing_users):
                 return jsonify({'error': 'Username already exists'}), 409
         
+        # Check if user exists before updating
+        all_users = db.get_all_users()
+        user_exists = any(user['id'] == user_id for user in all_users)
+        if not user_exists:
+            logger.warning(f"⚠️ User {user_id} not found in database")
+            return jsonify({'error': f'User with ID {user_id} not found'}), 404
+        
         success = db.update_user(user_id, username, role, class_name, is_active)
         
         if success:
-            return jsonify({
+            logger.info(f"✅ User {user_id} updated successfully")
+            response_data = {
                 'success': True,
                 'message': 'User updated successfully'
-            })
+            }
+            logger.info(f"📤 Sending success response: {response_data}")
+            return jsonify(response_data)
         else:
-            return jsonify({'error': 'User not found'}), 404
+            logger.error(f"❌ Failed to update user {user_id}")
+            error_response = {'error': 'Failed to update user'}
+            logger.info(f"📤 Sending error response: {error_response}")
+            return jsonify(error_response), 500
         
     except Exception as e:
-        logger.error(f"Update user error: {e}")
+        logger.error(f"❌ Update user error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
