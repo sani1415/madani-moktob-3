@@ -1060,7 +1060,6 @@ class MySQLDatabase:
             
             # Add to history if pages changed
             if completed_pages != old_completed_pages:
-                print(f"🔍 DB: Pages changed from {old_completed_pages} to {completed_pages}, creating history record")
                 cursor.execute('''
                     INSERT INTO education_progress_history 
                     (progress_id, class_name, book_id, book_name, completed_pages, notes, change_date)
@@ -1074,9 +1073,6 @@ class MySQLDatabase:
                     notes,
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 ))
-                print(f"✅ DB: History record created successfully")
-            else:
-                print(f"🔍 DB: Pages unchanged ({completed_pages}), skipping history creation")
             
             conn.commit()
             cursor.close()
@@ -1181,25 +1177,8 @@ class MySQLDatabase:
     def get_progress_history_by_book(self, book_id, class_name):
         """Get progress history for a specific book in a class"""
         try:
-            print(f"🔍 DB: Getting history for book_id={book_id}, class_name='{class_name}'")
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
-            
-            # First, let's check if there are any progress records for this book/class
-            cursor.execute('''
-                SELECT id, book_id, class_name FROM education_progress 
-                WHERE book_id = %s AND class_name = %s
-            ''', (book_id, class_name))
-            
-            progress_records = cursor.fetchall()
-            print(f"🔍 DB: Found {len(progress_records)} progress records for book_id={book_id}, class_name='{class_name}'")
-            print(f"🔍 DB: Progress records: {progress_records}")
-            
-            if not progress_records:
-                print(f"🔍 DB: No progress records found, returning empty history")
-                cursor.close()
-                conn.close()
-                return []
             
             # Now get the history for these progress records
             cursor.execute('''
@@ -1210,8 +1189,6 @@ class MySQLDatabase:
             ''', (book_id, class_name))
             
             history = cursor.fetchall()
-            print(f"🔍 DB: Found {len(history)} history records")
-            print(f"🔍 DB: History records: {history}")
             
             cursor.close()
             conn.close()

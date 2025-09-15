@@ -3044,8 +3044,6 @@
                 // Use real completed pages from database
                 const completedPages = book.completed_pages || 0;
                 if (bookCompletedPagesElement) bookCompletedPagesElement.value = completedPages;
-
-                console.log('🔍 book.progressHistory:', book.progressHistory);
                 
                 // Show enhanced progress history
                 const historyList = document.getElementById('progress-history-list');
