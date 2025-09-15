@@ -87,20 +87,21 @@
         // Function to load education progress for a specific class
         async function loadEducationProgressForClass(className) {
             try {
-                const response = await fetch('/api/education', {
+                // Get class ID from class name
+                const classId = getClassIdFromName(className);
+                if (!classId) {
+                    console.error(`❌ Could not find class ID for class name: ${className}`);
+                    return [];
+                }
+                
+                const response = await fetch(`/api/education?class_id=${classId}`, {
                     headers: {
                         'Cache-Control': 'no-cache'
                     }
                 });
                 if (response.ok) {
-                    const allProgress = await response.json();
-                    
-                    // Filter progress by class name
-                    const classProgress = allProgress.filter(progress => 
-                        progress.class_name === className
-                    );
-                    
-                    console.log(`✅ Loaded ${classProgress.length} education progress items for class ${className}`);
+                    const classProgress = await response.json();
+                    console.log(`✅ Loaded ${classProgress.length} education progress items for class ${className} (ID: ${classId})`);
                     return classProgress;
                 } else {
                     console.error('❌ Failed to load education progress');
@@ -117,11 +118,15 @@
             try {
                 console.log(`🔍 Frontend: Loading history for book_id=${bookId}, class_name='${className}'`);
                 
-                // Convert Bengali class name to English class name for database query
-                const englishClassName = convertBengaliClassNameToEnglish(className);
-                console.log(`🔍 Frontend: Converted '${className}' to '${englishClassName}' for database query`);
+                // Get class ID from class name
+                const classId = getClassIdFromName(className);
+                if (!classId) {
+                    console.error(`❌ Could not find class ID for class name: ${className}`);
+                    return [];
+                }
+                console.log(`🔍 Frontend: Using class_id=${classId} for class '${className}'`);
                 
-                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(englishClassName)}`, {
+                const response = await fetch(`/api/education/history/book/${bookId}/class/${classId}`, {
                     headers: {
                         'Cache-Control': 'no-cache'
                     }
@@ -208,28 +213,20 @@
             }
         }
         
-        // Helper function to convert Bengali class name to English class name for database queries
-        function convertBengaliClassNameToEnglish(className) {
-            const bengaliToEnglishMap = {
-                'প্রথম বর্ষ': 'Class One',
-                'দ্বিতীয় বর্ষ': 'Class Two', 
-                'তৃতীয় বর্ষ': 'Class Three',
-                'চতুর্থ বর্ষ': 'Class Four',
-                'পঞ্চম বর্ষ': 'Class Five',
-                'প্রথম শ্রেণী': 'Class One',
-                'দ্বিতীয় শ্রেণী': 'Class Two',
-                'তৃতীয় শ্রেণী': 'Class Three',
-                'চতুর্থ শ্রেণী': 'Class Four',
-                'পঞ্চম শ্রেণী': 'Class Five'
-            };
+        // Helper function to get class ID from class name
+        function getClassIdFromName(className) {
+            if (!window.classes) {
+                console.warn(`⚠️ Classes not loaded yet, cannot get ID for: "${className}"`);
+                return null;
+            }
             
-            const englishName = bengaliToEnglishMap[className];
-            if (englishName) {
-                console.log(`✅ Converted Bengali class name "${className}" to English "${englishName}"`);
-                return englishName;
+            const classObj = window.classes.find(c => c.name === className);
+            if (classObj) {
+                console.log(`✅ Found class ID ${classObj.id} for class name "${className}"`);
+                return classObj.id;
             } else {
-                console.warn(`⚠️ No English mapping found for Bengali class name: "${className}"`);
-                return className; // Return original if no mapping found
+                console.warn(`⚠️ No class ID found for class name: "${className}"`);
+                return null;
             }
         }
         

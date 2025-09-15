@@ -216,6 +216,7 @@ class MySQLDatabase:
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS education_progress (
                     id INT AUTO_INCREMENT PRIMARY KEY,
+                    class_id INT,
                     class_name VARCHAR(50) NOT NULL,
                     subject_name VARCHAR(100) NOT NULL,
                     book_id INT,
@@ -226,8 +227,9 @@ class MySQLDatabase:
                     notes TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_class_subject_book (class_name, subject_name, book_name),
-                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                    UNIQUE KEY unique_class_subject_book (class_id, subject_name, book_id),
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL,
+                    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
@@ -236,6 +238,7 @@ class MySQLDatabase:
                 CREATE TABLE IF NOT EXISTS education_progress_history (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     progress_id INT NOT NULL,
+                    class_id INT,
                     class_name VARCHAR(50) NOT NULL,
                     book_id INT,
                     book_name VARCHAR(255) NOT NULL,
@@ -243,7 +246,8 @@ class MySQLDatabase:
                     notes TEXT,
                     change_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (progress_id) REFERENCES education_progress(id) ON DELETE CASCADE,
-                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL,
+                    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
@@ -311,6 +315,65 @@ class MySQLDatabase:
             except Error as e:
                 logger.warning(f"⚠️ MySQLDatabase: Could not check/add inactivationDate column: {e}")
             
+            # Add class_id column to existing education_progress table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM education_progress LIKE 'class_id'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding class_id column to education_progress table...")
+                    cursor.execute('ALTER TABLE education_progress ADD COLUMN class_id INT DEFAULT NULL')
+                    logger.info("✅ MySQLDatabase: class_id column added to education_progress table")
+                    
+                    # Add foreign key constraint
+                    cursor.execute('ALTER TABLE education_progress ADD CONSTRAINT fk_education_progress_class_id FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE')
+                    logger.info("✅ MySQLDatabase: Foreign key constraint added for class_id in education_progress")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_id column to education_progress: {e}")
+            
+            # Add class_id column to existing education_progress_history table if it doesn't exist
+            try:
+                cursor.execute("SHOW COLUMNS FROM education_progress_history LIKE 'class_id'")
+                if not cursor.fetchone():
+                    logger.info("🔍 MySQLDatabase: Adding class_id column to education_progress_history table...")
+                    cursor.execute('ALTER TABLE education_progress_history ADD COLUMN class_id INT DEFAULT NULL')
+                    logger.info("✅ MySQLDatabase: class_id column added to education_progress_history table")
+                    
+                    # Add foreign key constraint
+                    cursor.execute('ALTER TABLE education_progress_history ADD CONSTRAINT fk_education_progress_history_class_id FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE')
+                    logger.info("✅ MySQLDatabase: Foreign key constraint added for class_id in education_progress_history")
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_id column to education_progress_history: {e}")
+            
+            # Migrate existing data to populate class_id
+            try:
+                logger.info("🔄 MySQLDatabase: Starting class_id data migration...")
+                
+                # Update education_progress table
+                cursor.execute("""
+                    UPDATE education_progress ep
+                    JOIN classes c ON ep.class_name = c.name
+                    SET ep.class_id = c.id
+                    WHERE ep.class_id IS NULL
+                """)
+                progress_updated = cursor.rowcount
+                if progress_updated > 0:
+                    logger.info(f"✅ MySQLDatabase: Updated {progress_updated} education_progress records with class_id")
+                
+                # Update education_progress_history table
+                cursor.execute("""
+                    UPDATE education_progress_history eph
+                    JOIN education_progress ep ON eph.progress_id = ep.id
+                    SET eph.class_id = ep.class_id
+                    WHERE eph.class_id IS NULL AND ep.class_id IS NOT NULL
+                """)
+                history_updated = cursor.rowcount
+                if history_updated > 0:
+                    logger.info(f"✅ MySQLDatabase: Updated {history_updated} education_progress_history records with class_id")
+                
+                logger.info("✅ MySQLDatabase: Class ID migration completed")
+                
+            except Error as e:
+                logger.warning(f"⚠️ MySQLDatabase: Could not migrate class_id data: {e}")
+            
             conn.commit()
             cursor.close()
             conn.close()
@@ -356,37 +419,6 @@ class MySQLDatabase:
         except:
             return 1  # Default to class 1 if parsing fails
     
-    def _convert_to_bengali_class_name(self, class_name):
-        """Convert English class name to Bengali class name"""
-        try:
-            # Mapping from English to Bengali class names
-            english_to_bengali_map = {
-                'Class One': 'প্রথম বর্ষ',
-                'Class Two': 'দ্বিতীয় বর্ষ', 
-                'Class Three': 'তৃতীয় বর্ষ',
-                'Class Four': 'চতুর্থ বর্ষ',
-                'Class Five': 'পঞ্চম বর্ষ',
-                'Class Six': 'ষষ্ঠ বর্ষ',
-                'Class Seven': 'সপ্তম বর্ষ',
-                'Class Eight': 'অষ্টম বর্ষ',
-                'Class Nine': 'নবম বর্ষ',
-                'Class Ten': 'দশম বর্ষ'
-            }
-            
-            # If it's already in Bengali, return as is
-            if class_name in english_to_bengali_map.values():
-                return class_name
-            
-            # Convert from English to Bengali
-            if class_name in english_to_bengali_map:
-                return english_to_bengali_map[class_name]
-            
-            # If no mapping found, return the original class name
-            return class_name
-            
-        except Exception as e:
-            print(f"Error converting class name: {e}")
-            return class_name
     
     def generate_roll_number(self, class_name):
         """Generate next roll number for a class"""
@@ -995,22 +1027,26 @@ class MySQLDatabase:
             raise
     
     # Education Progress methods
-    def get_education_progress(self, class_name=None):
+    def get_education_progress(self, class_id=None):
         """Get education progress for all classes or specific class"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
-            if class_name:
+            if class_id:
                 cursor.execute('''
-                    SELECT * FROM education_progress 
-                    WHERE class_name = %s 
-                    ORDER BY subject_name, book_name
-                ''', (class_name,))
+                    SELECT ep.*, c.name as class_name 
+                    FROM education_progress ep
+                    LEFT JOIN classes c ON ep.class_id = c.id
+                    WHERE ep.class_id = %s 
+                    ORDER BY ep.subject_name, ep.book_name
+                ''', (class_id,))
             else:
                 cursor.execute('''
-                    SELECT * FROM education_progress 
-                    ORDER BY class_name, subject_name, book_name
+                    SELECT ep.*, c.name as class_name 
+                    FROM education_progress ep
+                    LEFT JOIN classes c ON ep.class_id = c.id
+                    ORDER BY c.name, ep.subject_name, ep.book_name
                 ''')
             
             progress = []
@@ -1037,18 +1073,28 @@ class MySQLDatabase:
             conn = self.get_connection()
             cursor = conn.cursor()
             
+            # Get class_id from class_name if provided
+            class_id = progress_data.get('class_id')
+            if not class_id and progress_data.get('class_name'):
+                cursor.execute('SELECT id FROM classes WHERE name = %s', (progress_data.get('class_name'),))
+                class_result = cursor.fetchone()
+                if class_result:
+                    class_id = class_result[0]
+            
             cursor.execute('''
                 INSERT INTO education_progress 
-                (class_name, subject_name, book_name, total_pages, completed_pages, last_updated, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (class_id, class_name, subject_name, book_id, book_name, total_pages, completed_pages, last_updated, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                 total_pages = VALUES(total_pages),
                 completed_pages = VALUES(completed_pages),
                 last_updated = VALUES(last_updated),
                 notes = VALUES(notes)
             ''', (
+                class_id,
                 progress_data.get('class_name'),
                 progress_data.get('subject_name'),
+                progress_data.get('book_id'),
                 progress_data.get('book_name'),
                 progress_data.get('total_pages'),
                 progress_data.get('completed_pages', 0),
@@ -1094,10 +1140,11 @@ class MySQLDatabase:
             if completed_pages != old_completed_pages:
                 cursor.execute('''
                     INSERT INTO education_progress_history 
-                    (progress_id, class_name, book_id, book_name, completed_pages, notes, change_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, change_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (
                     progress_id, 
+                    current_progress['class_id'],
                     current_progress['class_name'], 
                     current_progress['book_id'], 
                     current_progress['book_name'], 
@@ -1138,13 +1185,22 @@ class MySQLDatabase:
             conn = self.get_connection()
             cursor = conn.cursor()
             
+            # Get class_id from class_name if provided
+            class_id = progress_data.get('class_id')
+            if not class_id and progress_data.get('class_name'):
+                cursor.execute('SELECT id FROM classes WHERE name = %s', (progress_data.get('class_name'),))
+                class_result = cursor.fetchone()
+                if class_result:
+                    class_id = class_result[0]
+            
             cursor.execute('''
                 UPDATE education_progress 
-                SET class_name = %s, subject_name = %s, book_name = %s, 
+                SET class_id = %s, class_name = %s, subject_name = %s, book_name = %s, 
                     total_pages = %s, completed_pages = %s, notes = %s,
                     last_updated = %s
                 WHERE id = %s
             ''', (
+                class_id,
                 progress_data.get('class_name'),
                 progress_data.get('subject_name'),
                 progress_data.get('book_name'),
@@ -1164,7 +1220,7 @@ class MySQLDatabase:
             print(f"Error editing education progress details: {e}")
             raise
     
-    def add_progress_history_entry(self, progress_id, class_name, book_id, book_name, completed_pages, notes=None):
+    def add_progress_history_entry(self, progress_id, class_id, class_name, book_id, book_name, completed_pages, notes=None):
         """Add a new entry to the progress history"""
         try:
             conn = self.get_connection()
@@ -1172,9 +1228,9 @@ class MySQLDatabase:
             
             cursor.execute('''
                 INSERT INTO education_progress_history 
-                (progress_id, class_name, book_id, book_name, completed_pages, notes)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (progress_id, class_name, book_id, book_name, completed_pages, notes))
+                (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, change_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
             
             conn.commit()
             cursor.close()
@@ -1206,22 +1262,19 @@ class MySQLDatabase:
             print(f"Error getting progress history: {e}")
             return []
     
-    def get_progress_history_by_book(self, book_id, class_name):
+    def get_progress_history_by_book(self, book_id, class_id):
         """Get progress history for a specific book in a class"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
-            # Convert English class name to Bengali if needed
-            bengali_class_name = self._convert_to_bengali_class_name(class_name)
-            
-            # Now get the history for these progress records
+            # Now get the history for these progress records using class_id
             cursor.execute('''
                 SELECT h.* FROM education_progress_history h
                 JOIN education_progress p ON h.progress_id = p.id
-                WHERE p.book_id = %s AND p.class_name = %s
+                WHERE p.book_id = %s AND p.class_id = %s
                 ORDER BY h.change_date DESC
-            ''', (book_id, bengali_class_name))
+            ''', (book_id, class_id))
             
             history = cursor.fetchall()
             

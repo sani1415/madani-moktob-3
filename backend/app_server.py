@@ -672,8 +672,8 @@ def add_holiday():
 @app.route('/api/education', methods=['GET'])
 def get_education_progress():
     try:
-        class_name = request.args.get('class')
-        progress = db.get_education_progress(class_name)
+        class_id = request.args.get('class_id', type=int)
+        progress = db.get_education_progress(class_id)
         return jsonify(progress)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -685,10 +685,14 @@ def add_education_progress():
         if not progress_data:
             return jsonify({'error': 'No data provided'}), 400
             
-        required_fields = ['class_name', 'subject_name', 'book_name', 'total_pages']
+        required_fields = ['subject_name', 'book_name', 'total_pages']
         for field in required_fields:
             if field not in progress_data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Either class_id or class_name must be provided
+        if not progress_data.get('class_id') and not progress_data.get('class_name'):
+            return jsonify({'error': 'Either class_id or class_name is required'}), 400
         
         db.add_education_progress(progress_data)
         return jsonify({'success': True})
@@ -728,10 +732,14 @@ def edit_education_progress(progress_id):
         if not progress_data:
             return jsonify({'error': 'No data provided'}), 400
             
-        required_fields = ['class_name', 'subject_name', 'book_name', 'total_pages']
+        required_fields = ['subject_name', 'book_name', 'total_pages']
         for field in required_fields:
             if field not in progress_data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Either class_id or class_name must be provided
+        if not progress_data.get('class_id') and not progress_data.get('class_name'):
+            return jsonify({'error': 'Either class_id or class_name is required'}), 400
         
         # Update the education progress with new details
         success = db.edit_education_progress_details(progress_id, progress_data)
@@ -758,12 +766,20 @@ def get_education_progress_history(progress_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/education/history/book/<int:book_id>/class/<class_name>', methods=['GET'])
-def get_education_progress_history_by_book(book_id, class_name):
+@app.route('/api/education/history/book/<int:book_id>/class/<int:class_id>', methods=['GET'])
+def get_education_progress_history_by_book(book_id, class_id):
     try:
-        print(f"🔍 API: Getting history for book_id={book_id}, class_name='{class_name}'")
-        history = db.get_progress_history_by_book(book_id, class_name)
-        print(f"🔍 API: Found {len(history)} history records")
+        print(f"🔍 API: Getting history for book_id={book_id}, class_id={class_id}")
+        
+        # Use the database method directly
+        history = db.get_progress_history_by_book(book_id, class_id)
+        print(f"🔍 API: Method returned {len(history)} history records")
+        
+        # Convert datetime objects to strings for JSON serialization
+        for record in history:
+            if 'change_date' in record and record['change_date']:
+                record['change_date'] = record['change_date'].strftime('%Y-%m-%d %H:%M:%S')
+        
         print(f"🔍 API: History data: {history}")
         return jsonify(history)
     except Exception as e:
