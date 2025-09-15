@@ -356,6 +356,38 @@ class MySQLDatabase:
         except:
             return 1  # Default to class 1 if parsing fails
     
+    def _convert_to_bengali_class_name(self, class_name):
+        """Convert English class name to Bengali class name"""
+        try:
+            # Mapping from English to Bengali class names
+            english_to_bengali_map = {
+                'Class One': 'প্রথম বর্ষ',
+                'Class Two': 'দ্বিতীয় বর্ষ', 
+                'Class Three': 'তৃতীয় বর্ষ',
+                'Class Four': 'চতুর্থ বর্ষ',
+                'Class Five': 'পঞ্চম বর্ষ',
+                'Class Six': 'ষষ্ঠ বর্ষ',
+                'Class Seven': 'সপ্তম বর্ষ',
+                'Class Eight': 'অষ্টম বর্ষ',
+                'Class Nine': 'নবম বর্ষ',
+                'Class Ten': 'দশম বর্ষ'
+            }
+            
+            # If it's already in Bengali, return as is
+            if class_name in english_to_bengali_map.values():
+                return class_name
+            
+            # Convert from English to Bengali
+            if class_name in english_to_bengali_map:
+                return english_to_bengali_map[class_name]
+            
+            # If no mapping found, return the original class name
+            return class_name
+            
+        except Exception as e:
+            print(f"Error converting class name: {e}")
+            return class_name
+    
     def generate_roll_number(self, class_name):
         """Generate next roll number for a class"""
         try:
@@ -1180,13 +1212,16 @@ class MySQLDatabase:
             conn = self.get_connection()
             cursor = conn.cursor(dictionary=True)
             
+            # Convert English class name to Bengali if needed
+            bengali_class_name = self._convert_to_bengali_class_name(class_name)
+            
             # Now get the history for these progress records
             cursor.execute('''
                 SELECT h.* FROM education_progress_history h
                 JOIN education_progress p ON h.progress_id = p.id
                 WHERE p.book_id = %s AND p.class_name = %s
                 ORDER BY h.change_date DESC
-            ''', (book_id, class_name))
+            ''', (book_id, bengali_class_name))
             
             history = cursor.fetchall()
             

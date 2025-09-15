@@ -819,6 +819,171 @@ def delete_setting(setting_key):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== SPECIFIC SETTINGS ENDPOINTS FOR FRONTEND COMPATIBILITY =====
+
+@app.route('/api/settings/alertConfig', methods=['GET'])
+def get_alert_config():
+    """Get alert configuration settings"""
+    try:
+        value = db.get_app_setting('alertConfig')
+        if value is not None:
+            # Try to parse as JSON if it's a string
+            try:
+                import json
+                config = json.loads(value) if isinstance(value, str) else value
+                return jsonify(config)
+            except:
+                return jsonify({'value': value})
+        else:
+            # Return default alert configuration
+            default_config = {
+                "CRITICAL_SCORE_THRESHOLD": 50,
+                "LOW_SCORE_THRESHOLD": 70,
+                "ENABLE_ALERTS": True
+            }
+            return jsonify(default_config)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/alertConfig', methods=['PUT'])
+def set_alert_config():
+    """Set alert configuration settings"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Store as JSON string
+        import json
+        config_json = json.dumps(data)
+        success = db.set_app_setting('alertConfig', config_json, 'Alert configuration settings')
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Alert configuration updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update alert configuration'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/hijriAdjustment', methods=['GET'])
+def get_hijri_adjustment():
+    """Get Hijri date adjustment setting"""
+    try:
+        value = db.get_app_setting('hijriAdjustment')
+        if value is not None:
+            return jsonify({'value': int(value)})
+        else:
+            # Return default adjustment (0)
+            return jsonify({'value': 0})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/hijriAdjustment', methods=['PUT'])
+def set_hijri_adjustment():
+    """Set Hijri date adjustment setting"""
+    try:
+        data = request.json
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+        
+        adjustment = int(data['value'])
+        success = db.set_app_setting('hijriAdjustment', str(adjustment), 'Hijri date adjustment in days')
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Hijri adjustment updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update Hijri adjustment'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/appName', methods=['GET'])
+def get_app_name():
+    """Get application name setting"""
+    try:
+        value = db.get_app_setting('appName')
+        if value is not None:
+            return jsonify({'value': value})
+        else:
+            # Return default app name
+            return jsonify({'value': 'Madani Maktab'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/appName', methods=['PUT'])
+def set_app_name():
+    """Set application name setting"""
+    try:
+        data = request.json
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+        
+        app_name = str(data['value']).strip()
+        if not app_name:
+            return jsonify({'error': 'Application name cannot be empty'}), 400
+        
+        success = db.set_app_setting('appName', app_name, 'Application name')
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Application name updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update application name'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/academicYearStart', methods=['GET'])
+def get_academic_year_start():
+    """Get academic year start date setting"""
+    try:
+        value = db.get_app_setting('academicYearStart')
+        if value is not None:
+            return jsonify({'value': value})
+        else:
+            # Return null if not set
+            return jsonify({'value': None})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/academicYearStart', methods=['PUT'])
+def set_academic_year_start():
+    """Set academic year start date setting"""
+    try:
+        data = request.json
+        if not data or 'value' not in data:
+            return jsonify({'error': 'Value is required'}), 400
+        
+        start_date = data['value']
+        if start_date and not isinstance(start_date, str):
+            return jsonify({'error': 'Date must be a string in YYYY-MM-DD format'}), 400
+        
+        # Validate date format if provided
+        if start_date:
+            try:
+                from datetime import datetime
+                datetime.strptime(start_date, '%Y-%m-%d')
+            except ValueError:
+                return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        success = db.set_app_setting('academicYearStart', start_date, 'Academic year start date')
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Academic year start date updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update academic year start date'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings/academicYearStart', methods=['DELETE'])
+def clear_academic_year_start():
+    """Clear academic year start date setting"""
+    try:
+        success = db.delete_app_setting('academicYearStart')
+        if success:
+            return jsonify({'success': True, 'message': 'Academic year start date cleared successfully'})
+        else:
+            return jsonify({'error': 'Failed to clear academic year start date'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ===== TEACHER LOGS API ENDPOINTS =====
 
 @app.route('/api/teacher-logs', methods=['GET'])
