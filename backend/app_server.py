@@ -779,22 +779,11 @@ def get_education_progress_history_by_book(book_id, class_id):
         history = db.get_progress_history_by_book(book_id, class_id)
         logger.info(f"API: Method returned {len(history)} history records")
         
-        # Convert datetime objects to strings for JSON serialization
+        # The database method now handles timezone conversion, so we just need to ensure proper JSON serialization
         for record in history:
-            if 'change_date' in record and record['change_date']:
-                try:
-                    if hasattr(record['change_date'], 'strftime'):
-                        # Convert to ISO format for better timezone handling
-                        record['change_date'] = record['change_date'].strftime('%Y-%m-%d %H:%M:%S')
-                    else:
-                        record['change_date'] = str(record['change_date'])
-                except Exception as date_error:
-                    logger.warning(f"API: Error converting date {record['change_date']}: {date_error}")
-                    record['change_date'] = str(record['change_date'])
-            
-            # Also handle other datetime fields that might exist
+            # Handle any remaining datetime objects that might not be converted
             for key, value in record.items():
-                if hasattr(value, 'strftime'):
+                if hasattr(value, 'strftime') and not isinstance(value, str):
                     try:
                         record[key] = value.strftime('%Y-%m-%d %H:%M:%S')
                     except:
@@ -1389,11 +1378,17 @@ def debug_timezone():
         utc_now = datetime.now(timezone.utc)
         local_now = datetime.now()
         
+        # Test the database timezone conversion
+        db_utc_time = db.get_timezone_aware_datetime()
+        db_local_time = db.convert_utc_to_local(db_utc_time)
+        
         return jsonify({
             'utc_time': utc_now.strftime('%Y-%m-%d %H:%M:%S UTC'),
             'local_time': local_now.strftime('%Y-%m-%d %H:%M:%S'),
             'utc_iso': utc_now.isoformat(),
             'local_iso': local_now.isoformat(),
+            'database_utc': db_utc_time.strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'database_local': db_local_time,
             'timezone_info': {
                 'utc_offset': utc_now.strftime('%z'),
                 'local_offset': local_now.strftime('%z') if hasattr(local_now, 'strftime') else 'Unknown'

@@ -50,6 +50,27 @@ class MySQLDatabase:
             return dt.strftime('%Y-%m-%d %H:%M:%S')
         return str(dt)
     
+    def convert_utc_to_local(self, utc_dt):
+        """Convert UTC datetime to local time for display"""
+        if utc_dt is None:
+            return None
+        
+        try:
+            # If it's already timezone-aware and in UTC, convert to local
+            if hasattr(utc_dt, 'tzinfo') and utc_dt.tzinfo is not None:
+                # Convert from UTC to local time
+                local_dt = utc_dt.astimezone()
+                return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                # If it's naive, assume it's UTC and convert
+                utc_dt = utc_dt.replace(tzinfo=timezone.utc)
+                local_dt = utc_dt.astimezone()
+                return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            logger.warning(f"Error converting UTC to local time: {e}")
+            # Fallback to original formatting
+            return self.format_datetime_for_display(utc_dt)
+    
     def get_connection(self):
         """Get a database connection"""
         logger.info("MySQLDatabase: Attempting to connect to MySQL...")
@@ -1272,6 +1293,12 @@ class MySQLDatabase:
             ''', (progress_id,))
             
             history = cursor.fetchall()
+            
+            # Format datetime fields for consistent display in local time
+            for record in history:
+                if 'change_date' in record and record['change_date']:
+                    record['change_date'] = self.convert_utc_to_local(record['change_date'])
+            
             cursor.close()
             conn.close()
             return history
@@ -1296,10 +1323,10 @@ class MySQLDatabase:
             
             history = cursor.fetchall()
             
-            # Format datetime fields for consistent display
+            # Format datetime fields for consistent display in local time
             for record in history:
                 if 'change_date' in record and record['change_date']:
-                    record['change_date'] = self.format_datetime_for_display(record['change_date'])
+                    record['change_date'] = self.convert_utc_to_local(record['change_date'])
             
             cursor.close()
             conn.close()
