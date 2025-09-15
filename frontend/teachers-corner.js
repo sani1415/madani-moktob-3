@@ -5,7 +5,11 @@
         // Function to load students from main app
         async function loadStudentsFromMainApp() {
             try {
-                const response = await fetch('/api/students');
+                const response = await fetch('/api/students', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     allStudents = await response.json();
                     console.log('✅ Loaded students from main app:', allStudents.length);
@@ -25,7 +29,11 @@
         // Function to load attendance data from main app
         async function loadAttendanceFromMainApp() {
             try {
-                const response = await fetch('/api/attendance');
+                const response = await fetch('/api/attendance', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const attendanceData = await response.json();
                     console.log('✅ Loaded attendance data from main app');
@@ -57,7 +65,11 @@
                     return [];
                 }
                 
-                const response = await fetch(`/api/books/class/${classId}`);
+                const response = await fetch(`/api/books/class/${classId}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const books = await response.json();
                     console.log(`✅ Loaded ${books.length} books for class ${className} (ID: ${classId})`);
@@ -75,7 +87,11 @@
         // Function to load education progress for a specific class
         async function loadEducationProgressForClass(className) {
             try {
-                const response = await fetch('/api/education');
+                const response = await fetch('/api/education', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const allProgress = await response.json();
                     
@@ -105,7 +121,11 @@
                 const englishClassName = convertBengaliClassNameToEnglish(className);
                 console.log(`🔍 Frontend: Converted '${className}' to '${englishClassName}' for database query`);
                 
-                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(englishClassName)}`);
+                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(englishClassName)}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 console.log(`🔍 Frontend: API response status: ${response.status}`);
                 
                 if (response.ok) {
@@ -134,7 +154,11 @@
         // Function to load and build class mapping from database
         async function loadClassMapping() {
             try {
-                const response = await fetch('/api/classes');
+                const response = await fetch('/api/classes', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const classes = await response.json();
                     // Build mapping: class name -> class id
@@ -277,7 +301,11 @@
         // Load teacher logs from database
         async function loadTeacherLogsFromDatabase(className) {
             try {
-                const response = await fetch(`/api/teacher-logs?class=${encodeURIComponent(className)}`);
+                const response = await fetch(`/api/teacher-logs?class=${encodeURIComponent(className)}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const logs = await response.json();
                     console.log(`✅ Loaded ${logs.length} teacher logs for class: ${className}`);
@@ -328,7 +356,11 @@
         // Load student scores from database
         async function loadStudentScoresFromDatabase(className) {
             try {
-                const response = await fetch(`/api/students-with-scores?class=${encodeURIComponent(className)}`);
+                const response = await fetch(`/api/students-with-scores?class=${encodeURIComponent(className)}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const studentsWithScores = await response.json();
                     console.log(`✅ Loaded ${studentsWithScores.length} student scores for class: ${className}`);
@@ -352,7 +384,11 @@
         // Load score change history from database
         async function loadScoreHistoryFromDatabase(studentId) {
             try {
-                const response = await fetch(`/api/student-scores/${studentId}/history`);
+                const response = await fetch(`/api/student-scores/${studentId}/history`, {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const history = await response.json();
                     console.log(`✅ Loaded ${history.length} score changes for student: ${studentId}`);
@@ -875,7 +911,11 @@
             let absent = 0;
             
             // Load attendance data from main app (same endpoint as main app)
-            fetch('/api/attendance')
+            fetch('/api/attendance', {
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            })
                 .then(response => response.json())
                 .then(attendanceData => {
                     if (attendanceData && attendanceData[today]) {
@@ -3004,6 +3044,8 @@
                 // Use real completed pages from database
                 const completedPages = book.completed_pages || 0;
                 if (bookCompletedPagesElement) bookCompletedPagesElement.value = completedPages;
+
+                console.log('🔍 book.progressHistory:', book.progressHistory);
                 
                 // Show enhanced progress history
                 const historyList = document.getElementById('progress-history-list');
@@ -3320,7 +3362,11 @@
         async function calculateAttendanceStats(student) {
             try {
                 // Fetch real attendance data for this student
-                const response = await fetch('/api/attendance');
+                const response = await fetch('/api/attendance', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const allAttendance = await response.json();
                     
@@ -3564,7 +3610,11 @@
         // Function to load alert settings from database with localStorage fallback
         async function loadAlertSettings() {
             try {
-                const response = await fetch('/api/settings/alertConfig');
+                const response = await fetch('/api/settings/alertConfig', {
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     const savedConfig = JSON.parse(data.value || '{}');
