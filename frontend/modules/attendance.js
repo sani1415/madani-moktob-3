@@ -1114,12 +1114,13 @@ function populateAttendanceClassFilter() {
     
     console.log('✅ Found classFilter element:', classFilter);
     
+    // Preserve the current selection before clearing
+    const currentValue = classFilter.value;
+    console.log('🔍 Current selected value before repopulating:', currentValue);
+    
     // Clear existing options and add "All Classes" option
     classFilter.innerHTML = '<option value="">All Classes</option>';
     console.log('✅ Cleared existing options, current options:', Array.from(classFilter.options).map(opt => ({ value: opt.value, text: opt.textContent })));
-    
-    // Ensure the "All Classes" option is selected by default
-    classFilter.value = '';
     
     // Get classes from window.classes (populated by main app)
     console.log('🔍 window.classes:', window.classes);
@@ -1140,8 +1141,19 @@ function populateAttendanceClassFilter() {
         });
         console.log(`✅ Added ${window.classes.length} class options to attendance filter`);
         
+        // Restore the previous selection if it exists
+        if (currentValue && currentValue.trim() !== '') {
+            classFilter.value = currentValue;
+            console.log('✅ Restored previous selection:', currentValue);
+        } else {
+            // Only set to empty if no previous selection
+            classFilter.value = '';
+            console.log('✅ Set to "All Classes" (no previous selection)');
+        }
+        
         // Debug: Show what's actually in the dropdown
         console.log('🔍 Final class filter options:', Array.from(classFilter.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+        console.log('🔍 Final selected value:', classFilter.value);
         
         // Also check for potential class name mismatches
         if (window.students && window.students.length > 0) {

@@ -38,8 +38,13 @@ function updateClassDropdowns() {
             dropdown.innerHTML = firstOption;
 
             window.classes.forEach(cls => {
-                // Use cls.id for value and cls.name for display text
-                dropdown.options.add(new Option(cls.name, cls.id));
+                // Special handling for attendance classFilter - use cls.name as value
+                if (id === 'classFilter') {
+                    dropdown.options.add(new Option(cls.name, cls.name));
+                } else {
+                    // Use cls.id for value and cls.name for display text for other dropdowns
+                    dropdown.options.add(new Option(cls.name, cls.id));
+                }
             });
 
             // Try to restore the previously selected value
