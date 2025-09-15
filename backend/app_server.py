@@ -1381,6 +1381,7 @@ def debug_timezone():
         # Test the database timezone conversion
         db_utc_time = db.get_timezone_aware_datetime()
         db_local_time = db.convert_utc_to_local(db_utc_time)
+        server_tz_info = db.get_server_timezone_info()
         
         return jsonify({
             'utc_time': utc_now.strftime('%Y-%m-%d %H:%M:%S UTC'),
@@ -1389,6 +1390,7 @@ def debug_timezone():
             'local_iso': local_now.isoformat(),
             'database_utc': db_utc_time.strftime('%Y-%m-%d %H:%M:%S UTC'),
             'database_local': db_local_time,
+            'server_timezone_info': server_tz_info,
             'timezone_info': {
                 'utc_offset': utc_now.strftime('%z'),
                 'local_offset': local_now.strftime('%z') if hasattr(local_now, 'strftime') else 'Unknown'

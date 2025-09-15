@@ -8,7 +8,7 @@ import mysql.connector
 import json
 import os
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from mysql.connector import Error
 
 # Configure logging
@@ -56,20 +56,81 @@ class MySQLDatabase:
             return None
         
         try:
-            # If it's already timezone-aware and in UTC, convert to local
+            # Log the original datetime for debugging
+            logger.info(f"Converting datetime: {utc_dt} (type: {type(utc_dt)})")
+            
+            # Check if we have a specific timezone offset configured
+            timezone_offset = os.getenv('DISPLAY_TIMEZONE_OFFSET', '+06:00')  # Default to Bangladesh time for testing
+            
+            if timezone_offset:
+                # Use a specific timezone offset if configured (e.g., "+06:00", "-05:00")
+                try:
+                    # Parse offset like "+06:00" or "-05:00"
+                    if timezone_offset.startswith(('+', '-')):
+                        sign = 1 if timezone_offset.startswith('+') else -1
+                        offset_str = timezone_offset[1:]  # Remove + or -
+                        hours, minutes = map(int, offset_str.split(':'))
+                        offset_seconds = sign * (hours * 3600 + minutes * 60)
+                        
+                        # Apply offset
+                        if hasattr(utc_dt, 'tzinfo') and utc_dt.tzinfo is not None:
+                            local_dt = utc_dt + timedelta(seconds=offset_seconds)
+                        else:
+                            utc_dt_with_tz = utc_dt.replace(tzinfo=timezone.utc)
+                            local_dt = utc_dt_with_tz + timedelta(seconds=offset_seconds)
+                        
+                        result = local_dt.strftime('%Y-%m-%d %H:%M:%S')
+                        logger.info(f"Converted with offset {timezone_offset}: {result}")
+                        return result
+                except Exception as offset_error:
+                    logger.warning(f"Error using timezone offset {timezone_offset}: {offset_error}")
+            
+            # Default behavior: convert to server's local time
             if hasattr(utc_dt, 'tzinfo') and utc_dt.tzinfo is not None:
                 # Convert from UTC to local time
                 local_dt = utc_dt.astimezone()
-                return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+                result = local_dt.strftime('%Y-%m-%d %H:%M:%S')
+                logger.info(f"Converted timezone-aware UTC to local: {result}")
+                return result
             else:
                 # If it's naive, assume it's UTC and convert
-                utc_dt = utc_dt.replace(tzinfo=timezone.utc)
-                local_dt = utc_dt.astimezone()
-                return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+                utc_dt_with_tz = utc_dt.replace(tzinfo=timezone.utc)
+                local_dt = utc_dt_with_tz.astimezone()
+                result = local_dt.strftime('%Y-%m-%d %H:%M:%S')
+                logger.info(f"Converted naive UTC to local: {result}")
+                return result
         except Exception as e:
             logger.warning(f"Error converting UTC to local time: {e}")
             # Fallback to original formatting
-            return self.format_datetime_for_display(utc_dt)
+            fallback = self.format_datetime_for_display(utc_dt)
+            logger.info(f"Using fallback formatting: {fallback}")
+            return fallback
+    
+    def get_server_timezone_info(self):
+        """Get information about the server's timezone"""
+        try:
+            import time
+            import os
+            
+            # Get timezone info
+            tz_name = os.environ.get('TZ', 'Not set')
+            local_now = datetime.now()
+            utc_now = datetime.now(timezone.utc)
+            
+            # Calculate offset
+            offset_seconds = local_now.utcoffset().total_seconds() if local_now.utcoffset() else 0
+            offset_hours = offset_seconds / 3600
+            
+            return {
+                'tz_env': tz_name,
+                'local_time': local_now.strftime('%Y-%m-%d %H:%M:%S'),
+                'utc_time': utc_now.strftime('%Y-%m-%d %H:%M:%S UTC'),
+                'offset_hours': offset_hours,
+                'offset_str': f"{offset_hours:+.0f}:00"
+            }
+        except Exception as e:
+            logger.error(f"Error getting timezone info: {e}")
+            return {'error': str(e)}
     
     def get_connection(self):
         """Get a database connection"""
