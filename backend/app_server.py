@@ -625,22 +625,22 @@ def save_attendance():
 
 @app.route('/api/test-delete', methods=['DELETE'])
 def test_delete():
-    print("DEBUG: test_delete called")
+    logger.info("DEBUG: test_delete called")
     return jsonify({'success': True, 'message': 'Test delete works'})
 
 @app.route('/api/test-delete2', methods=['DELETE'])
 def test_delete2():
-    print("DEBUG: test_delete2 called")
+    logger.info("DEBUG: test_delete2 called")
     return jsonify({'success': True, 'message': 'Test delete2 works'})
 
 @app.route('/api/holidays/delete/<path:date>', methods=['DELETE'])
 def delete_holiday(date):
-    print(f"DEBUG: delete_holiday called with date: {date}")
+    logger.info(f"DEBUG: delete_holiday called with date: {date}")
     try:
         db.delete_holiday(date)
         return jsonify({'success': True})
     except Exception as e:
-        print(f"DEBUG: Error in delete_holiday: {e}")
+        logger.error(f"DEBUG: Error in delete_holiday: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/holidays', methods=['GET'])
@@ -764,11 +764,11 @@ def get_education_progress_history(progress_id):
 @app.route('/api/education/history/book/<int:book_id>/class/<int:class_id>', methods=['GET'])
 def get_education_progress_history_by_book(book_id, class_id):
     try:
-        print(f"🔍 API: Getting history for book_id={book_id}, class_id={class_id}")
+        logger.info(f"API: Getting history for book_id={book_id}, class_id={class_id}")
         
         # Use the database method directly
         history = db.get_progress_history_by_book(book_id, class_id)
-        print(f"🔍 API: Method returned {len(history)} history records")
+        logger.info(f"API: Method returned {len(history)} history records")
         
         # Convert datetime objects to strings for JSON serialization
         for record in history:
@@ -779,13 +779,13 @@ def get_education_progress_history_by_book(book_id, class_id):
                     else:
                         record['change_date'] = str(record['change_date'])
                 except Exception as date_error:
-                    print(f"⚠️ API: Error converting date {record['change_date']}: {date_error}")
+                    logger.warning(f"API: Error converting date {record['change_date']}: {date_error}")
                     record['change_date'] = str(record['change_date'])
         
-        print(f"🔍 API: History data: {history}")
+        logger.info(f"API: History data: {history}")
         return jsonify(history)
     except Exception as e:
-        print(f"❌ API: Error getting history: {e}")
+        logger.error(f"API: Error getting history: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500

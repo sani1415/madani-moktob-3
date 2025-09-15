@@ -1283,7 +1283,7 @@ class MySQLDatabase:
             return history
             
         except Error as e:
-            print(f"❌ DB: Error getting progress history by book: {e}")
+            logger.error(f"DB: Error getting progress history by book: {e}")
             return []
     
     # App Settings methods
