@@ -1618,6 +1618,79 @@ body {
     font-size: 0.9rem;
 }
 
+/* Data Management Reset Sections */
+.reset-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.reset-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.reset-section:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.reset-section h4 {
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reset-section .help-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.reset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.reset-buttons .btn {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+}
+
+.danger-zone {
+    background: #fff5f5;
+    border: 2px solid #fed7d7;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.danger-zone h4 {
+    color: #e53e3e;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.danger-zone .help-text {
+    color: #c53030;
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+
 /* Attendance List */
 .attendance-list {
     background: white;

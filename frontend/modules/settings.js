@@ -1292,6 +1292,255 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 });
 
+// Data Reset Functions
+function showResetStudentsModal() {
+    showModal('Reset All Students', `
+        <div class="text-center">
+            <i class="fas fa-users text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset All Students</h3>
+            <p class="text-gray-600 mb-6">This will delete all student data including:</p>
+            <ul class="text-left text-gray-600 mb-6 space-y-2">
+                <li>• Student personal information</li>
+                <li>• All attendance records</li>
+                <li>• All scores and progress</li>
+                <li>• All teacher logs for students</li>
+            </ul>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetStudents()" class="btn btn-danger">Reset All Students</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetScoresModal() {
+    showModal('Reset All Scores', `
+        <div class="text-center">
+            <i class="fas fa-chart-line text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset All Scores</h3>
+            <p class="text-gray-600 mb-6">This will reset all student scores to default values.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetScores()" class="btn btn-danger">Reset All Scores</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetProgressModal() {
+    showModal('Reset Education Progress', `
+        <div class="text-center">
+            <i class="fas fa-book-open text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset Education Progress</h3>
+            <p class="text-gray-600 mb-6">This will delete all education progress records.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetProgress()" class="btn btn-danger">Reset Progress</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetTodayAttendanceModal() {
+    showModal('Reset Today\'s Attendance', `
+        <div class="text-center">
+            <i class="fas fa-calendar-day text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset Today's Attendance</h3>
+            <p class="text-gray-600 mb-6">This will clear all attendance records for today only.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetTodayAttendance()" class="btn btn-danger">Reset Today's Attendance</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetBooksModal() {
+    showModal('Reset All Books', `
+        <div class="text-center">
+            <i class="fas fa-books text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset All Books</h3>
+            <p class="text-gray-600 mb-6">This will delete all books and their progress records.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetBooks()" class="btn btn-danger">Reset All Books</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetClassesModal() {
+    showModal('Reset All Classes', `
+        <div class="text-center">
+            <i class="fas fa-school text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset All Classes</h3>
+            <p class="text-gray-600 mb-6">This will delete all classes and reassign students.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetClasses()" class="btn btn-danger">Reset All Classes</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetLogsModal() {
+    showModal('Reset Teacher Logs', `
+        <div class="text-center">
+            <i class="fas fa-clipboard-list text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset Teacher Logs</h3>
+            <p class="text-gray-600 mb-6">This will delete all teacher logbook entries.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetLogs()" class="btn btn-danger">Reset All Logs</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetUsersModal() {
+    showModal('Reset All Users', `
+        <div class="text-center">
+            <i class="fas fa-user-cog text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset All Users</h3>
+            <p class="text-gray-600 mb-6">This will delete all user accounts except the current admin.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetUsers()" class="btn btn-danger">Reset All Users</button>
+            </div>
+        </div>
+    `);
+}
+
+function showResetSettingsModal() {
+    showModal('Reset Settings', `
+        <div class="text-center">
+            <i class="fas fa-cog text-4xl text-warning mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Reset Settings</h3>
+            <p class="text-gray-600 mb-6">This will reset all application settings to default values.</p>
+            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmResetSettings()" class="btn btn-danger">Reset Settings</button>
+            </div>
+        </div>
+    `);
+}
+
+function showCompleteResetModal() {
+    showModal('Complete Reset', `
+        <div class="text-center">
+            <i class="fas fa-bomb text-6xl text-red-500 mb-4"></i>
+            <h3 class="text-2xl font-bold text-red-600 mb-4">⚠️ COMPLETE RESET ⚠️</h3>
+            <p class="text-gray-600 mb-6 text-lg">This will delete ALL data and reset the entire application to its initial state.</p>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <h4 class="font-semibold text-red-800 mb-2">This will delete:</h4>
+                <ul class="text-left text-red-700 space-y-1">
+                    <li>• All students and their data</li>
+                    <li>• All attendance records</li>
+                    <li>• All books and classes</li>
+                    <li>• All teacher logs</li>
+                    <li>• All user accounts (except admin)</li>
+                    <li>• All settings and preferences</li>
+                </ul>
+            </div>
+            <p class="text-red-600 font-bold text-lg mb-6">THIS ACTION CANNOT BE UNDONE!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmCompleteReset()" class="btn btn-danger text-lg px-6 py-3">RESET EVERYTHING</button>
+            </div>
+        </div>
+    `);
+}
+
+function showBackupModal() {
+    showModal('Create Backup', `
+        <div class="text-center">
+            <i class="fas fa-download text-4xl text-blue-500 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Create Data Backup</h3>
+            <p class="text-gray-600 mb-6">Download a complete backup of all your data.</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="createBackup()" class="btn btn-primary">Create Backup</button>
+            </div>
+        </div>
+    `);
+}
+
+// Confirmation functions (to be implemented)
+function confirmResetStudents() {
+    console.log('Resetting all students...');
+    closeModal();
+    showModal('Success', 'All students have been reset successfully.');
+}
+
+function confirmResetScores() {
+    console.log('Resetting all scores...');
+    closeModal();
+    showModal('Success', 'All scores have been reset successfully.');
+}
+
+function confirmResetProgress() {
+    console.log('Resetting education progress...');
+    closeModal();
+    showModal('Success', 'Education progress has been reset successfully.');
+}
+
+function confirmResetTodayAttendance() {
+    console.log('Resetting today\'s attendance...');
+    closeModal();
+    showModal('Success', 'Today\'s attendance has been reset successfully.');
+}
+
+function confirmResetBooks() {
+    console.log('Resetting all books...');
+    closeModal();
+    showModal('Success', 'All books have been reset successfully.');
+}
+
+function confirmResetClasses() {
+    console.log('Resetting all classes...');
+    closeModal();
+    showModal('Success', 'All classes have been reset successfully.');
+}
+
+function confirmResetLogs() {
+    console.log('Resetting all logs...');
+    closeModal();
+    showModal('Success', 'All teacher logs have been reset successfully.');
+}
+
+function confirmResetUsers() {
+    console.log('Resetting all users...');
+    closeModal();
+    showModal('Success', 'All users have been reset successfully.');
+}
+
+function confirmResetSettings() {
+    console.log('Resetting settings...');
+    closeModal();
+    showModal('Success', 'Settings have been reset successfully.');
+}
+
+function confirmCompleteReset() {
+    console.log('Performing complete reset...');
+    closeModal();
+    showModal('Success', 'Complete reset has been performed successfully.');
+}
+
+function createBackup() {
+    console.log('Creating backup...');
+    closeModal();
+    showModal('Success', 'Backup created successfully.');
+}
+
 // Export all functions
 export { 
     books, 
@@ -1331,5 +1580,17 @@ export {
     closeEditUserModal,
     deleteUser,
     resetUserPassword,
-    refreshUsersList
+    refreshUsersList,
+    // Data reset functions
+    showResetStudentsModal,
+    showResetScoresModal,
+    showResetProgressModal,
+    showResetTodayAttendanceModal,
+    showResetBooksModal,
+    showResetClassesModal,
+    showResetLogsModal,
+    showResetUsersModal,
+    showResetSettingsModal,
+    showCompleteResetModal,
+    showBackupModal
 }
