@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Fix production database default collation with hardcoded credentials
+Fix database collation using the same connection method as the app
 """
 
 import mysql.connector
+import os
 import logging
 from mysql.connector import Error
 
@@ -11,24 +12,34 @@ from mysql.connector import Error
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def fix_production_collation():
-    """Fix production database default collation"""
+def fix_collation_using_app_config():
+    """Fix database collation using app's connection method"""
     try:
-        # Replace these with your actual production database credentials
+        # Use the same connection method as your app
         db_config = {
-            'host': 'localhost',  # Replace with your production host
-            'user': 'your_username',  # Replace with your production username
-            'password': 'your_password',  # Replace with your production password
-            'database': 'your_database',  # Replace with your production database name
-            'port': 3306,
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'database': os.getenv('DB_NAME', 'madani_moktob'),
+            'port': int(os.getenv('DB_PORT', 3306)),
             'charset': 'utf8mb4',
             'collation': 'utf8mb4_unicode_ci',
             'use_unicode': True
         }
         
-        logger.info("🔍 Connecting to production database...")
+        logger.info("🔍 Using app's database configuration...")
+        logger.info(f"   Host: {db_config['host']}")
+        logger.info(f"   User: {db_config['user']}")
+        logger.info(f"   Database: {db_config['database']}")
+        logger.info(f"   Port: {db_config['port']}")
+        logger.info(f"   Password: {'*' * len(db_config['password']) if db_config['password'] else 'None'}")
+        
+        # Try to connect using the same method as your app
+        logger.info("🔍 Attempting to connect...")
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
+        
+        logger.info("✅ Successfully connected to database!")
         
         # Check current database collation
         cursor.execute("SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s", (db_config['database'],))
@@ -63,23 +74,26 @@ def fix_production_collation():
         cursor.close()
         conn.close()
         
-        logger.info("🎉 Production database collation fix completed!")
+        logger.info("🎉 Database collation fix completed!")
         
     except Error as e:
         logger.error(f"❌ Database error: {e}")
+        if "Access denied" in str(e):
+            logger.error("💡 The app's database credentials are not working")
+            logger.error("💡 Check your cPanel Python app configuration")
         raise
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         raise
 
 if __name__ == "__main__":
-    print("🔧 Production Database Collation Fix Tool")
+    print("🔧 Database Collation Fix (Using App Config)")
     print("=" * 50)
-    print("⚠️  IMPORTANT: Update the database credentials in this script first!")
+    print("This will use the same database connection as your app")
     print("=" * 50)
     
-    confirm = input("Have you updated the database credentials? (y/N): ").strip().lower()
+    confirm = input("Do you want to continue? (y/N): ").strip().lower()
     if confirm in ['y', 'yes']:
-        fix_production_collation()
+        fix_collation_using_app_config()
     else:
-        print("❌ Please update the database credentials first")
+        print("❌ Operation cancelled")
