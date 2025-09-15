@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def import_mysql():
     logger.info("🔍 Attempting to import MySQL database module...")
     try:
-        from .mysql_database import MySQLDatabase
+        from mysql_database import MySQLDatabase
         logger.info("✅ Successfully imported MySQLDatabase")
         return MySQLDatabase
     except ImportError as e:
@@ -73,21 +73,16 @@ def get_database():
             raise Exception(f"Failed to connect to MySQL: {e}")
     else:
         logger.info("💾 MySQL environment variables not found")
-        logger.info("💾 Attempting to use default MySQL configuration...")
-        
-        # Try to use default MySQL configuration for local development
-        try:
-            MySQLDatabase = import_mysql()
-            if MySQLDatabase is None:
-                raise Exception("MySQL database not available")
-            
-            mysql_db = MySQLDatabase()
-            logger.info("✅ Successfully created MySQLDatabase instance with default config")
-            return mysql_db
-        except Exception as e:
-            logger.error(f"❌ Failed to connect to MySQL with default config: {e}")
-            logger.error("❌ Please set up MySQL environment variables or install MySQL")
-            raise Exception("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
+        logger.error("❌ MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
+        logger.error("❌ Please set up your MySQL environment variables:")
+        logger.error("   - Create a .env file with your MySQL credentials")
+        logger.error("   - Or set environment variables: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME")
+        logger.error("   - Example .env file:")
+        logger.error("     DB_HOST=localhost")
+        logger.error("     DB_USER=your_username")
+        logger.error("     DB_PASSWORD=your_password")
+        logger.error("     DB_NAME=madani_moktob")
+        raise Exception("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
 
 # Initialize database
 try:
