@@ -25,7 +25,7 @@ class SampleDataGenerator:
         
     def generate_sample_data(self):
         """Generate sample data for all database areas"""
-        logger.info("🚀 Starting sample data generation...")
+        logger.info("Starting sample data generation...")
         
         try:
             # 1. Generate Classes
@@ -37,15 +37,15 @@ class SampleDataGenerator:
             self.generate_sample_students()
             
             # 3. Generate Books
-            logger.info("📖 Generating sample books...")
+            logger.info("Generating sample books...")
             self.generate_sample_books()
             
             # 4. Generate Education Progress
-            logger.info("📊 Generating sample education progress...")
+            logger.info("Generating sample education progress...")
             self.generate_sample_education_progress()
             
             # 5. Generate Teacher Logs
-            logger.info("📝 Generating sample teacher logs...")
+            logger.info("Generating sample teacher logs...")
             self.generate_sample_teacher_logs()
             
             # 6. Generate Student Scores
@@ -61,13 +61,13 @@ class SampleDataGenerator:
             self.generate_sample_holidays()
             
             # 9. Generate Attendance
-            logger.info("✅ Generating sample attendance...")
+            logger.info("Generating sample attendance...")
             self.generate_sample_attendance()
             
-            logger.info("✅ Sample data generation completed successfully!")
+            logger.info("Sample data generation completed successfully!")
             
         except Exception as e:
-            logger.error(f"❌ Error generating sample data: {e}")
+            logger.error(f"Error generating sample data: {e}")
             raise
     
     def generate_sample_classes(self):
@@ -88,9 +88,9 @@ class SampleDataGenerator:
         for class_data in sample_classes:
             try:
                 self.db.add_class(class_data["name"])
-                logger.info(f"✅ Added class: {class_data['name']}")
+                logger.info(f"Added class: {class_data['name']}")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add class {class_data['name']}: {e}")
+                logger.warning(f"Could not add class {class_data['name']}: {e}")
     
     def generate_sample_students(self):
         """Generate sample students"""
@@ -220,9 +220,9 @@ class SampleDataGenerator:
         for student in sample_students:
             try:
                 self.db.add_student(student)
-                logger.info(f"✅ Added student: {student['name']} ({student['class']})")
+                logger.info(f"Added student: {student['name']} ({student['class']})")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add student {student['name']}: {e}")
+                logger.warning(f"Could not add student {student['name']}: {e}")
     
     def generate_sample_books(self):
         """Generate sample books"""
@@ -242,9 +242,9 @@ class SampleDataGenerator:
         for book in sample_books:
             try:
                 self.db.add_book(book["book_name"], book["class_id"], book["total_pages"])
-                logger.info(f"✅ Added book: {book['book_name']} for class {book['class_id']}")
+                logger.info(f"Added book: {book['book_name']} for class {book['class_id']}")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add book {book['book_name']}: {e}")
+                logger.warning(f"Could not add book {book['book_name']}: {e}")
     
     def generate_sample_education_progress(self):
         """Generate sample education progress"""
@@ -263,11 +263,11 @@ class SampleDataGenerator:
                 
                 try:
                     self.db.add_education_progress(progress_data)
-                    logger.info(f"✅ Added education progress for {book['book_name']}")
+                    logger.info(f"Added education progress for {book['book_name']}")
                 except Exception as e:
-                    logger.warning(f"⚠️ Could not add education progress for {book['book_name']}: {e}")
+                    logger.warning(f"Could not add education progress for {book['book_name']}: {e}")
         except Exception as e:
-            logger.warning(f"⚠️ Could not get books for education progress: {e}")
+            logger.warning(f"Could not get books for education progress: {e}")
     
     def generate_sample_teacher_logs(self):
         """Generate sample teacher logs"""
@@ -314,9 +314,9 @@ class SampleDataGenerator:
         for log_data in sample_logs:
             try:
                 self.db.add_teacher_log(log_data)
-                logger.info(f"✅ Added teacher log: {log_data['log_type']}")
+                logger.info(f"Added teacher log: {log_data['log_type']}")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add teacher log: {e}")
+                logger.warning(f"Could not add teacher log: {e}")
     
     def generate_sample_student_scores(self):
         """Generate sample student scores"""
@@ -337,14 +337,14 @@ class SampleDataGenerator:
             try:
                 # Update the student's current score in the students table
                 self.db.update_student_score(score_data["student_id"], score_data["score"], "Initial score")
-                logger.info(f"✅ Added score for student {score_data['student_id']}: {score_data['score']}")
+                logger.info(f"Added score for student {score_data['student_id']}: {score_data['score']}")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add score for student {score_data['student_id']}: {e}")
+                logger.warning(f"Could not add score for student {score_data['student_id']}: {e}")
     
     def generate_sample_score_history(self):
         """Generate sample score change history"""
         # This will be automatically generated when we update scores above
-        logger.info("✅ Score change history will be generated automatically")
+        logger.info("Score change history will be generated automatically")
     
     def generate_sample_holidays(self):
         """Generate sample holidays"""
@@ -366,9 +366,9 @@ class SampleDataGenerator:
         for holiday in sample_holidays:
             try:
                 self.db.add_holiday(holiday["date"], holiday["name"])
-                logger.info(f"✅ Added holiday: {holiday['name']} ({holiday['date']})")
+                logger.info(f"Added holiday: {holiday['name']} ({holiday['date']})")
             except Exception as e:
-                logger.warning(f"⚠️ Could not add holiday {holiday['name']}: {e}")
+                logger.warning(f"Could not add holiday {holiday['name']}: {e}")
     
     def generate_sample_attendance(self):
         """Generate sample attendance for the last 30 days"""
@@ -412,12 +412,12 @@ class SampleDataGenerator:
                     # Save daily attendance
                     if daily_attendance:
                         self.db.save_attendance(daily_attendance)
-                        logger.info(f"✅ Generated attendance for {date_str}: {len(daily_attendance)} students")
+                        logger.info(f"Generated attendance for {date_str}: {len(daily_attendance)} students")
                 
                 current_date += timedelta(days=1)
                 
         except Exception as e:
-            logger.warning(f"⚠️ Could not generate attendance: {e}")
+            logger.warning(f"Could not generate attendance: {e}")
 
 def main():
     """Main function to run the sample data generator"""

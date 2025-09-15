@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MySQLDatabase:
     def __init__(self):
-        logger.info("🔍 MySQLDatabase: Starting initialization...")
+        logger.info("MySQLDatabase: Starting initialization...")
         # Get database connection details from environment variables
         self.db_config = {
             'host': os.getenv('DB_HOST', 'localhost'),
@@ -29,18 +29,18 @@ class MySQLDatabase:
             'use_unicode': True
         }
         
-        logger.info("🔍 MySQLDatabase: Configuration loaded:")
+        logger.info("MySQLDatabase: Configuration loaded:")
         logger.info(f"   Host: {self.db_config['host']}")
         logger.info(f"   User: {self.db_config['user']}")
         logger.info(f"   Database: {self.db_config['database']}")
         logger.info(f"   Port: {self.db_config['port']}")
         logger.info(f"   Password: {'*' * len(self.db_config['password']) if self.db_config['password'] else 'None'}")
         
-        logger.info("✅ MySQLDatabase: Initialization completed successfully (lazy connection)")
+        logger.info("MySQLDatabase: Initialization completed successfully (lazy connection)")
     
     def get_connection(self):
         """Get a database connection"""
-        logger.info("🔍 MySQLDatabase: Attempting to connect to MySQL...")
+        logger.info("MySQLDatabase: Attempting to connect to MySQL...")
         try:
             # Add connection timeout to prevent hanging
             config = self.db_config.copy()
@@ -48,22 +48,22 @@ class MySQLDatabase:
             config['autocommit'] = True
             
             conn = mysql.connector.connect(**config)
-            logger.info("✅ MySQLDatabase: Successfully connected to MySQL")
+            logger.info("MySQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
-            logger.error(f"❌ MySQLDatabase: Error connecting to MySQL: {e}")
+            logger.error(f"MySQLDatabase: Error connecting to MySQL: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ MySQLDatabase: Unexpected error connecting to MySQL: {e}")
+            logger.error(f"MySQLDatabase: Unexpected error connecting to MySQL: {e}")
             raise
     
     def _ensure_tables_exist(self):
         """Initialize database tables if they don't exist"""
-        logger.info("🔍 MySQLDatabase: Ensuring tables exist...")
+        logger.info("MySQLDatabase: Ensuring tables exist...")
         try:
-            logger.info("🔍 MySQLDatabase: Getting connection...")
+            logger.info("MySQLDatabase: Getting connection...")
             conn = self.get_connection()
-            logger.info("🔍 MySQLDatabase: Creating cursor...")
+            logger.info("MySQLDatabase: Creating cursor...")
             cursor = conn.cursor()
             
             # Create students table
@@ -88,20 +88,20 @@ class MySQLDatabase:
             try:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'current_score'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding current_score column to students table...")
+                    logger.info("MySQLDatabase: Adding current_score column to students table...")
                     cursor.execute('ALTER TABLE students ADD COLUMN current_score INT DEFAULT 70')
-                    logger.info("✅ MySQLDatabase: current_score column added successfully")
+                    logger.info("MySQLDatabase: current_score column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add current_score column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add current_score column: {e}")
             
             try:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'last_updated'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding last_updated column to students table...")
+                    logger.info("MySQLDatabase: Adding last_updated column to students table...")
                     cursor.execute('ALTER TABLE students ADD COLUMN last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
-                    logger.info("✅ MySQLDatabase: last_updated column added successfully")
+                    logger.info("MySQLDatabase: last_updated column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add last_updated column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add last_updated column: {e}")
             
             # Create attendance table
             cursor.execute('''
@@ -148,7 +148,7 @@ class MySQLDatabase:
             ''')
             
             # Create users table for authentication
-            logger.info("🔍 MySQLDatabase: Creating users_new table...")
+            logger.info("MySQLDatabase: Creating users_new table...")
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users_new (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -162,31 +162,31 @@ class MySQLDatabase:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
-            logger.info("✅ MySQLDatabase: Users_new table created/verified")
+            logger.info("MySQLDatabase: Users_new table created/verified")
             
             # Add class_name column to existing users table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM users_new LIKE 'class_name'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding class_name column to users_new table...")
+                    logger.info("MySQLDatabase: Adding class_name column to users_new table...")
                     cursor.execute('ALTER TABLE users_new ADD COLUMN class_name VARCHAR(255) DEFAULT NULL')
-                    logger.info("✅ MySQLDatabase: class_name column added successfully")
+                    logger.info("MySQLDatabase: class_name column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_name column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add class_name column: {e}")
             
             # Force commit to ensure table is created
             conn.commit()
-            logger.info("✅ MySQLDatabase: Users_new table committed to database")
+            logger.info("MySQLDatabase: Users_new table committed to database")
             
             # Now that the table exists, check if admin user exists and create if needed
             try:
-                logger.info("🔍 MySQLDatabase: Checking if admin user exists...")
+                logger.info("MySQLDatabase: Checking if admin user exists...")
                 cursor.execute("SELECT COUNT(*) FROM users_new WHERE username = 'admin'")
                 admin_count = cursor.fetchone()[0]
-                logger.info(f"🔍 MySQLDatabase: Found {admin_count} admin users")
+                logger.info(f"MySQLDatabase: Found {admin_count} admin users")
                 
                 if admin_count == 0:
-                    logger.info("🔍 MySQLDatabase: Creating default admin user...")
+                    logger.info("MySQLDatabase: Creating default admin user...")
                     # Default password: admin123 (will be hashed)
                     import hashlib
                     default_password = "admin123"
@@ -195,22 +195,22 @@ class MySQLDatabase:
                         INSERT INTO users_new (username, password_hash, role) 
                         VALUES ('admin', %s, 'admin')
                     ''', (password_hash,))
-                    logger.info("✅ MySQLDatabase: Default admin user created (username: admin, password: admin123)")
+                    logger.info("MySQLDatabase: Default admin user created (username: admin, password: admin123)")
                 else:
-                    logger.info("✅ MySQLDatabase: Admin user already exists")
+                    logger.info("MySQLDatabase: Admin user already exists")
             except Error as e:
-                logger.error(f"❌ MySQLDatabase: Error with admin user: {e}")
+                logger.error(f"MySQLDatabase: Error with admin user: {e}")
                 # Continue with other table creation even if admin user creation fails
             
             # Add total_pages column to existing books table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM books LIKE 'total_pages'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding total_pages column to books table...")
+                    logger.info("MySQLDatabase: Adding total_pages column to books table...")
                     cursor.execute('ALTER TABLE books ADD COLUMN total_pages INT DEFAULT NULL')
-                    logger.info("✅ MySQLDatabase: total_pages column added successfully")
+                    logger.info("MySQLDatabase: total_pages column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add total_pages column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add total_pages column: {e}")
             
             # Create education progress table
             cursor.execute('''
@@ -299,53 +299,53 @@ class MySQLDatabase:
             try:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'status'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding status column to students table...")
+                    logger.info("MySQLDatabase: Adding status column to students table...")
                     cursor.execute('ALTER TABLE students ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT "active"')
-                    logger.info("✅ MySQLDatabase: Status column added successfully")
+                    logger.info("MySQLDatabase: Status column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add status column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add status column: {e}")
             
             # Add inactivationDate column to existing students table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'inactivationDate'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding inactivationDate column to students table...")
+                    logger.info("MySQLDatabase: Adding inactivationDate column to students table...")
                     cursor.execute('ALTER TABLE students ADD COLUMN inactivationDate DATE DEFAULT NULL')
-                    logger.info("✅ MySQLDatabase: InactivationDate column added successfully")
+                    logger.info("MySQLDatabase: InactivationDate column added successfully")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add inactivationDate column: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add inactivationDate column: {e}")
             
             # Add class_id column to existing education_progress table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM education_progress LIKE 'class_id'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding class_id column to education_progress table...")
+                    logger.info("MySQLDatabase: Adding class_id column to education_progress table...")
                     cursor.execute('ALTER TABLE education_progress ADD COLUMN class_id INT DEFAULT NULL')
-                    logger.info("✅ MySQLDatabase: class_id column added to education_progress table")
+                    logger.info("MySQLDatabase: class_id column added to education_progress table")
                     
                     # Add foreign key constraint
                     cursor.execute('ALTER TABLE education_progress ADD CONSTRAINT fk_education_progress_class_id FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE')
-                    logger.info("✅ MySQLDatabase: Foreign key constraint added for class_id in education_progress")
+                    logger.info("MySQLDatabase: Foreign key constraint added for class_id in education_progress")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_id column to education_progress: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add class_id column to education_progress: {e}")
             
             # Add class_id column to existing education_progress_history table if it doesn't exist
             try:
                 cursor.execute("SHOW COLUMNS FROM education_progress_history LIKE 'class_id'")
                 if not cursor.fetchone():
-                    logger.info("🔍 MySQLDatabase: Adding class_id column to education_progress_history table...")
+                    logger.info("MySQLDatabase: Adding class_id column to education_progress_history table...")
                     cursor.execute('ALTER TABLE education_progress_history ADD COLUMN class_id INT DEFAULT NULL')
-                    logger.info("✅ MySQLDatabase: class_id column added to education_progress_history table")
+                    logger.info("MySQLDatabase: class_id column added to education_progress_history table")
                     
                     # Add foreign key constraint
                     cursor.execute('ALTER TABLE education_progress_history ADD CONSTRAINT fk_education_progress_history_class_id FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE')
-                    logger.info("✅ MySQLDatabase: Foreign key constraint added for class_id in education_progress_history")
+                    logger.info("MySQLDatabase: Foreign key constraint added for class_id in education_progress_history")
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not check/add class_id column to education_progress_history: {e}")
+                logger.warning(f"MySQLDatabase: Could not check/add class_id column to education_progress_history: {e}")
             
             # Migrate existing data to populate class_id
             try:
-                logger.info("🔄 MySQLDatabase: Starting class_id data migration...")
+                logger.info("MySQLDatabase: Starting class_id data migration...")
                 
                 # Update education_progress table
                 cursor.execute("""
@@ -356,7 +356,7 @@ class MySQLDatabase:
                 """)
                 progress_updated = cursor.rowcount
                 if progress_updated > 0:
-                    logger.info(f"✅ MySQLDatabase: Updated {progress_updated} education_progress records with class_id")
+                    logger.info(f"MySQLDatabase: Updated {progress_updated} education_progress records with class_id")
                 
                 # Update education_progress_history table
                 cursor.execute("""
@@ -367,23 +367,23 @@ class MySQLDatabase:
                 """)
                 history_updated = cursor.rowcount
                 if history_updated > 0:
-                    logger.info(f"✅ MySQLDatabase: Updated {history_updated} education_progress_history records with class_id")
+                    logger.info(f"MySQLDatabase: Updated {history_updated} education_progress_history records with class_id")
                 
-                logger.info("✅ MySQLDatabase: Class ID migration completed")
+                logger.info("MySQLDatabase: Class ID migration completed")
                 
             except Error as e:
-                logger.warning(f"⚠️ MySQLDatabase: Could not migrate class_id data: {e}")
+                logger.warning(f"MySQLDatabase: Could not migrate class_id data: {e}")
             
             conn.commit()
             cursor.close()
             conn.close()
-            logger.info("✅ Database tables initialized successfully")
+            logger.info("Database tables initialized successfully")
             
         except Error as e:
-            logger.error(f"❌ Error initializing database: {e}")
+            logger.error(f"Error initializing database: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ Unexpected error initializing database: {e}")
+            logger.error(f"Unexpected error initializing database: {e}")
             raise
     
     def get_class_number(self, class_name):
@@ -522,11 +522,11 @@ class MySQLDatabase:
     def _initialize_database(self):
         """Initialize database tables - called once during startup"""
         try:
-            logger.info("🔍 MySQLDatabase: Initializing database tables...")
+            logger.info("MySQLDatabase: Initializing database tables...")
             self._ensure_tables_exist()
-            logger.info("✅ MySQLDatabase: Database initialization completed")
+            logger.info("MySQLDatabase: Database initialization completed")
         except Exception as e:
-            logger.error(f"❌ MySQLDatabase: Database initialization failed: {e}")
+            logger.error(f"MySQLDatabase: Database initialization failed: {e}")
             raise
     
     def save_students(self, students):
@@ -1421,7 +1421,7 @@ class MySQLDatabase:
             cursor.close()
             conn.close()
             
-            logger.info(f"✅ Teacher log added successfully with ID: {log_id}")
+            logger.info(f"Teacher log added successfully with ID: {log_id}")
             return log_id
             
         except Error as e:
@@ -1487,10 +1487,10 @@ class MySQLDatabase:
             conn.close()
             
             if rows_affected > 0:
-                logger.info(f"✅ Teacher log updated successfully: {log_id}")
+                logger.info(f"Teacher log updated successfully: {log_id}")
                 return True
             else:
-                logger.warning(f"⚠️ No teacher log found to update: {log_id}")
+                logger.warning(f"No teacher log found to update: {log_id}")
                 return False
                 
         except Error as e:
@@ -1514,10 +1514,10 @@ class MySQLDatabase:
             conn.close()
             
             if rows_affected > 0:
-                logger.info(f"✅ Teacher log deleted successfully: {log_id}")
+                logger.info(f"Teacher log deleted successfully: {log_id}")
                 return True
             else:
-                logger.warning(f"⚠️ No teacher log found to delete: {log_id}")
+                logger.warning(f"No teacher log found to delete: {log_id}")
                 return False
                 
         except Error as e:
@@ -1544,7 +1544,7 @@ class MySQLDatabase:
             if result:
                 return result['current_score']
             else:
-                logger.warning(f"⚠️ Student not found: {student_id}")
+                logger.warning(f"Student not found: {student_id}")
                 return None
                 
         except Error as e:
@@ -1565,7 +1565,7 @@ class MySQLDatabase:
             result = cursor.fetchone()
             
             if not result:
-                logger.error(f"❌ Student not found: {student_id}")
+                logger.error(f"Student not found: {student_id}")
                 return False
             
             old_score = result[0]
@@ -1587,7 +1587,7 @@ class MySQLDatabase:
             cursor.close()
             conn.close()
             
-            logger.info(f"✅ Student score updated successfully: {student_id} ({old_score} → {new_score})")
+            logger.info(f"Student score updated successfully: {student_id} ({old_score} → {new_score})")
             return True
             
         except Error as e:
@@ -1902,7 +1902,7 @@ class MySQLDatabase:
             cursor.close()
             conn.close()
             
-            logger.info(f"✅ User created successfully: {username} (ID: {user_id})")
+            logger.info(f"User created successfully: {username} (ID: {user_id})")
             return user_id
             
         except Error as e:
@@ -1943,10 +1943,10 @@ class MySQLDatabase:
                 conn.close()
                 
                 if rows_affected > 0:
-                    logger.info(f"✅ User updated successfully: {user_id}")
+                    logger.info(f"User updated successfully: {user_id}")
                     return True
                 else:
-                    logger.warning(f"⚠️ No user found to update: {user_id}")
+                    logger.warning(f"No user found to update: {user_id}")
                     return False
             else:
                 cursor.close()
@@ -1984,10 +1984,10 @@ class MySQLDatabase:
             conn.close()
             
             if rows_affected > 0:
-                logger.info(f"✅ User deleted successfully: {user_id}")
+                logger.info(f"User deleted successfully: {user_id}")
                 return True
             else:
-                logger.warning(f"⚠️ No user found to delete: {user_id}")
+                logger.warning(f"No user found to delete: {user_id}")
                 return False
                 
         except Error as e:
@@ -2013,10 +2013,10 @@ class MySQLDatabase:
             conn.close()
             
             if rows_affected > 0:
-                logger.info(f"✅ Password reset successfully for user: {user_id}")
+                logger.info(f"Password reset successfully for user: {user_id}")
                 return True
             else:
-                logger.warning(f"⚠️ No user found for password reset: {user_id}")
+                logger.warning(f"No user found for password reset: {user_id}")
                 return False
                 
         except Error as e:

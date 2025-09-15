@@ -60,7 +60,7 @@ def clear_database_tables():
         print("\n--- Database clearing complete ---")
 
     except Exception as e:
-        logger.error(f"❌ An error occurred during database clearing: {e}")
+        logger.error(f"An error occurred during database clearing: {e}")
         print(f"An error occurred: {e}")
     finally:
         if cursor:

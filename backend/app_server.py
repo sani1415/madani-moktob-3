@@ -17,16 +17,16 @@ logger = logging.getLogger(__name__)
 
 # Import MySQL database adapter
 def import_mysql():
-    logger.info("🔍 Attempting to import MySQL database module...")
+    logger.info("Attempting to import MySQL database module...")
     try:
         from mysql_database import MySQLDatabase
-        logger.info("✅ Successfully imported MySQLDatabase")
+        logger.info("Successfully imported MySQLDatabase")
         return MySQLDatabase
     except ImportError as e:
-        logger.error(f"❌ Failed to import MySQL database: {e}")
+        logger.error(f"Failed to import MySQL database: {e}")
         return None
     except Exception as e:
-        logger.error(f"❌ Unexpected error importing MySQL database: {e}")
+        logger.error(f"Unexpected error importing MySQL database: {e}")
         return None
 
 # ✅ Fixed: Use correct path to frontend for ExonHost
@@ -38,7 +38,7 @@ CORS(app)
 
 # Initialize database based on environment
 def get_database():
-    logger.info("🔍 Starting database selection process...")
+    logger.info("Starting database selection process...")
 
     db_host = os.getenv('DB_HOST')
     db_user = os.getenv('DB_USER')
@@ -46,7 +46,7 @@ def get_database():
     db_name = os.getenv('DB_NAME')
     db_port = os.getenv('DB_PORT', '3306')
 
-    logger.info("📋 Environment variables:")
+    logger.info("Environment variables:")
     logger.info(f"   DB_HOST: {db_host}")
     logger.info(f"   DB_USER: {db_user}")
     logger.info(f"   DB_PASSWORD: {'*' * len(db_password) if db_password else 'None'}")
@@ -54,27 +54,27 @@ def get_database():
     logger.info(f"   DB_PORT: {db_port}")
 
     if (db_host and db_user and db_name):
-        logger.info("🌐 All required Cloud SQL environment variables are present")
-        logger.info("🔍 Attempting to use MySQL database...")
+        logger.info("All required Cloud SQL environment variables are present")
+        logger.info("Attempting to use MySQL database...")
 
         MySQLDatabase = import_mysql()
         if MySQLDatabase is None:
-            logger.error("❌ MySQL database not available. Please install mysql-connector-python")
-            logger.info("💡 Run: pip install mysql-connector-python")
+            logger.error("MySQL database not available. Please install mysql-connector-python")
+            logger.info("Run: pip install mysql-connector-python")
             raise Exception("MySQL database is required")
 
-        logger.info("🔍 Attempting to instantiate MySQLDatabase...")
+        logger.info("Attempting to instantiate MySQLDatabase...")
         try:
             mysql_db = MySQLDatabase()
-            logger.info("✅ Successfully created MySQLDatabase instance")
+            logger.info("Successfully created MySQLDatabase instance")
             return mysql_db
         except Exception as e:
-            logger.error(f"❌ Failed to create MySQLDatabase instance: {e}")
+            logger.error(f"Failed to create MySQLDatabase instance: {e}")
             raise Exception(f"Failed to connect to MySQL: {e}")
     else:
-        logger.info("💾 MySQL environment variables not found")
-        logger.error("❌ MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
-        logger.error("❌ Please set up your MySQL environment variables:")
+        logger.info("MySQL environment variables not found")
+        logger.error("MySQL environment variables (DB_HOST, DB_USER, DB_NAME) are required")
+        logger.error("Please set up your MySQL environment variables:")
         logger.error("   - Create a .env file with your MySQL credentials")
         logger.error("   - Or set environment variables: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME")
         logger.error("   - Example .env file:")
@@ -89,10 +89,10 @@ try:
     db = get_database()
     # Initialize database tables
     db._initialize_database()
-    logger.info("✅ Database and tables initialized successfully")
+    logger.info("Database and tables initialized successfully")
 except Exception as e:
-    logger.error(f"❌ Failed to initialize database: {e}")
-    logger.error("❌ Server cannot start without database")
+    logger.error(f"Failed to initialize database: {e}")
+    logger.error("Server cannot start without database")
     raise e
 
 # Session management for authentication
@@ -114,35 +114,35 @@ if not os.path.exists(app.config['SESSION_FILE_DIR']):
 # ✅ Serve frontend files with correct path
 @app.route('/')
 def serve_index():
-    logger.info(f"🔍 Root route accessed - Session: {dict(session)}")
+    logger.info(f"Root route accessed - Session: {dict(session)}")
     # Check if user is authenticated before serving the main application
     if 'user_id' not in session:
         logger.info("🔒 User not authenticated, serving login page")
         return send_from_directory(FRONTEND_PATH, 'login.html')
     
-    logger.info(f"✅ User authenticated, serving main application")
-    logger.info(f"🔍 Serving index.html from: {FRONTEND_PATH}")
-    logger.info(f"🔍 FRONTEND_PATH exists: {os.path.exists(FRONTEND_PATH)}")
-    logger.info(f"🔍 index.html exists: {os.path.exists(os.path.join(FRONTEND_PATH, 'index.html'))}")
+    logger.info(f"User authenticated, serving main application")
+    logger.info(f"Serving index.html from: {FRONTEND_PATH}")
+    logger.info(f"FRONTEND_PATH exists: {os.path.exists(FRONTEND_PATH)}")
+    logger.info(f"index.html exists: {os.path.exists(os.path.join(FRONTEND_PATH, 'index.html'))}")
     try:
         return send_from_directory(FRONTEND_PATH, 'index.html')
     except Exception as e:
-        logger.error(f"❌ Error serving index.html: {e}")
+        logger.error(f"Error serving index.html: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/login.html')
 def serve_login():
-    logger.info(f"🔍 Login route accessed - Session: {dict(session)}")
+    logger.info(f"Login route accessed - Session: {dict(session)}")
     # If user is already authenticated, redirect to main app
     if 'user_id' in session:
         logger.info("🔒 User already authenticated, serving main app")
         return send_from_directory(FRONTEND_PATH, 'index.html')
     
-    logger.info(f"🔍 Serving login.html from: {FRONTEND_PATH}")
+    logger.info(f"Serving login.html from: {FRONTEND_PATH}")
     try:
         return send_from_directory(FRONTEND_PATH, 'login.html')
     except Exception as e:
-        logger.error(f"❌ Error serving login.html: {e}")
+        logger.error(f"Error serving login.html: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/app')
@@ -152,11 +152,11 @@ def serve_main_app():
         logger.info("🔒 User not authenticated, redirecting to login")
         return send_from_directory(FRONTEND_PATH, 'login.html')
     
-    logger.info(f"🔍 Serving main app from: {FRONTEND_PATH}")
+    logger.info(f"Serving main app from: {FRONTEND_PATH}")
     try:
         return send_from_directory(FRONTEND_PATH, 'index.html')
     except Exception as e:
-        logger.error(f"❌ Error serving main app: {e}")
+        logger.error(f"Error serving main app: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/test-books')
@@ -167,13 +167,13 @@ def test_books():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
-        logger.info("🔍 Login API called")
+        logger.info("Login API called")
         data = request.json
         username = data.get('username')
         password = data.get('password')
         
         if not username or not password:
-            logger.warning("❌ Login attempt without username or password")
+            logger.warning("Login attempt without username or password")
             return jsonify({'error': 'Username and password are required'}), 400
         
         # Authenticate user
@@ -186,14 +186,14 @@ def login():
             session['role'] = user['role']
             session['class_name'] = user.get('class_name')
             
-            logger.info(f"✅ User {username} logged in successfully")
+            logger.info(f"User {username} logged in successfully")
             return jsonify({
                 'success': True,
                 'user': user,
                 'message': 'Login successful'
             })
         else:
-            logger.warning(f"❌ Failed login attempt for username: {username}")
+            logger.warning(f"Failed login attempt for username: {username}")
             return jsonify({'error': 'Invalid username or password'}), 401
             
     except Exception as e:
@@ -271,7 +271,7 @@ def get_all_users():
             return admin_check
         
         users = db.get_all_users()
-        logger.info(f"📋 Found {len(users)} users in database")
+        logger.info(f"Found {len(users)} users in database")
         
         # Remove sensitive information
         for user in users:
@@ -322,11 +322,11 @@ def create_user():
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     try:
-        logger.info(f"🔄 Updating user {user_id}")
+        logger.info(f"Updating user {user_id}")
         
         admin_check = require_admin()
         if admin_check:
-            logger.warning(f"❌ Admin check failed for user update: {user_id}")
+            logger.warning(f"Admin check failed for user update: {user_id}")
             return admin_check
         
         data = request.json
@@ -335,7 +335,7 @@ def update_user(user_id):
         class_name = data.get('class_name')
         is_active = data.get('is_active')
         
-        logger.info(f"📝 Update data for user {user_id}: username={username}, role={role}, class_name={class_name}, is_active={is_active}")
+        logger.info(f"Update data for user {user_id}: username={username}, role={role}, class_name={class_name}, is_active={is_active}")
         
         if role and role not in ['admin', 'user']:
             return jsonify({'error': 'Invalid role. Must be admin or user'}), 400
@@ -350,27 +350,27 @@ def update_user(user_id):
         all_users = db.get_all_users()
         user_exists = any(user['id'] == user_id for user in all_users)
         if not user_exists:
-            logger.warning(f"⚠️ User {user_id} not found in database")
+            logger.warning(f"User {user_id} not found in database")
             return jsonify({'error': f'User with ID {user_id} not found'}), 404
         
         success = db.update_user(user_id, username, role, class_name, is_active)
         
         if success:
-            logger.info(f"✅ User {user_id} updated successfully")
+            logger.info(f"User {user_id} updated successfully")
             response_data = {
                 'success': True,
                 'message': 'User updated successfully'
             }
-            logger.info(f"📤 Sending success response: {response_data}")
+            logger.info(f"Sending success response: {response_data}")
             return jsonify(response_data)
         else:
-            logger.error(f"❌ Failed to update user {user_id}")
+            logger.error(f"Failed to update user {user_id}")
             error_response = {'error': 'Failed to update user'}
-            logger.info(f"📤 Sending error response: {error_response}")
+            logger.info(f"Sending error response: {error_response}")
             return jsonify(error_response), 500
         
     except Exception as e:
-        logger.error(f"❌ Update user error: {e}")
+        logger.error(f"Update user error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
@@ -1128,14 +1128,14 @@ def get_students_with_scores():
 @app.route('/api/all-student-scores', methods=['GET'])
 def get_all_student_scores():
     try:
-        logger.info("🔄 Fetching all student scores for batch processing...")
+        logger.info("Fetching all student scores for batch processing...")
         
         # Get all active students
         students = db.get_students()
         active_students = [s for s in students if s.get('status') == 'active']
         
         if not active_students:
-            logger.info("⚠️ No active students found")
+            logger.info("No active students found")
             return jsonify({'scores': {}})
         
         # Fetch scores for all active students in one batch
@@ -1150,11 +1150,11 @@ def get_all_student_scores():
                         'name': student.get('name')
                     }
             except Exception as e:
-                logger.error(f"❌ Error fetching score for student {student['id']}: {e}")
+                logger.error(f"Error fetching score for student {student['id']}: {e}")
                 # Continue with other students even if one fails
                 continue
         
-        logger.info(f"✅ Successfully fetched scores for {len(scores_data)} students")
+        logger.info(f"Successfully fetched scores for {len(scores_data)} students")
         return jsonify({
             'success': True,
             'total_students': len(active_students),
@@ -1163,7 +1163,7 @@ def get_all_student_scores():
         })
         
     except Exception as e:
-        logger.error(f"❌ Error in get_all_student_scores: {e}")
+        logger.error(f"Error in get_all_student_scores: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Class Management API Endpoints

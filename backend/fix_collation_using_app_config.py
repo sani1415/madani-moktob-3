@@ -27,7 +27,7 @@ def fix_collation_using_app_config():
             'use_unicode': True
         }
         
-        logger.info("🔍 Using app's database configuration...")
+        logger.info("Using app's database configuration...")
         logger.info(f"   Host: {db_config['host']}")
         logger.info(f"   User: {db_config['user']}")
         logger.info(f"   Database: {db_config['database']}")
@@ -35,18 +35,18 @@ def fix_collation_using_app_config():
         logger.info(f"   Password: {'*' * len(db_config['password']) if db_config['password'] else 'None'}")
         
         # Try to connect using the same method as your app
-        logger.info("🔍 Attempting to connect...")
+        logger.info("Attempting to connect...")
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
         
-        logger.info("✅ Successfully connected to database!")
+        logger.info("Successfully connected to database!")
         
         # Check current database collation
         cursor.execute("SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s", (db_config['database'],))
         db_info = cursor.fetchone()
         
         if db_info:
-            logger.info(f"📊 Current Database: {db_config['database']}")
+            logger.info(f"Current Database: {db_config['database']}")
             logger.info(f"   Character Set: {db_info[0]}")
             logger.info(f"   Collation: {db_info[1]}")
             
@@ -56,19 +56,19 @@ def fix_collation_using_app_config():
                 # Change database default collation
                 cursor.execute(f"ALTER DATABASE {db_config['database']} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
                 
-                logger.info("✅ Database default collation changed to utf8mb4_unicode_ci")
+                logger.info("Database default collation changed to utf8mb4_unicode_ci")
                 
                 # Verify the change
                 cursor.execute("SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = %s", (db_config['database'],))
                 new_db_info = cursor.fetchone()
                 
                 if new_db_info:
-                    logger.info(f"📊 New Database: {db_config['database']}")
+                    logger.info(f"New Database: {db_config['database']}")
                     logger.info(f"   Character Set: {new_db_info[0]}")
                     logger.info(f"   Collation: {new_db_info[1]}")
                 
             else:
-                logger.info("✅ Database already using correct collation")
+                logger.info("Database already using correct collation")
         
         conn.commit()
         cursor.close()
@@ -77,13 +77,13 @@ def fix_collation_using_app_config():
         logger.info("🎉 Database collation fix completed!")
         
     except Error as e:
-        logger.error(f"❌ Database error: {e}")
+        logger.error(f"Database error: {e}")
         if "Access denied" in str(e):
-            logger.error("💡 The app's database credentials are not working")
-            logger.error("💡 Check your cPanel Python app configuration")
+            logger.error("The app's database credentials are not working")
+            logger.error("Check your cPanel Python app configuration")
         raise
     except Exception as e:
-        logger.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         raise
 
 if __name__ == "__main__":
