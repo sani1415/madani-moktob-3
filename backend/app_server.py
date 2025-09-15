@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def import_mysql():
     logger.info("🔍 Attempting to import MySQL database module...")
     try:
-        from mysql_database import MySQLDatabase
+        from .mysql_database import MySQLDatabase
         logger.info("✅ Successfully imported MySQLDatabase")
         return MySQLDatabase
     except ImportError as e:
@@ -778,12 +778,21 @@ def get_education_progress_history_by_book(book_id, class_id):
         # Convert datetime objects to strings for JSON serialization
         for record in history:
             if 'change_date' in record and record['change_date']:
-                record['change_date'] = record['change_date'].strftime('%Y-%m-%d %H:%M:%S')
+                try:
+                    if hasattr(record['change_date'], 'strftime'):
+                        record['change_date'] = record['change_date'].strftime('%Y-%m-%d %H:%M:%S')
+                    else:
+                        record['change_date'] = str(record['change_date'])
+                except Exception as date_error:
+                    print(f"⚠️ API: Error converting date {record['change_date']}: {date_error}")
+                    record['change_date'] = str(record['change_date'])
         
         print(f"🔍 API: History data: {history}")
         return jsonify(history)
     except Exception as e:
         print(f"❌ API: Error getting history: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # ===== APP SETTINGS API ENDPOINTS =====
