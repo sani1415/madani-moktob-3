@@ -100,7 +100,12 @@
         async function loadProgressHistoryForBook(bookId, className) {
             try {
                 console.log(`🔍 Frontend: Loading history for book_id=${bookId}, class_name='${className}'`);
-                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(className)}`);
+                
+                // Convert Bengali class name to English class name for database query
+                const englishClassName = convertBengaliClassNameToEnglish(className);
+                console.log(`🔍 Frontend: Converted '${className}' to '${englishClassName}' for database query`);
+                
+                const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(englishClassName)}`);
                 console.log(`🔍 Frontend: API response status: ${response.status}`);
                 
                 if (response.ok) {
