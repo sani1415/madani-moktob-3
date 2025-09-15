@@ -8,7 +8,7 @@ import mysql.connector
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from mysql.connector import Error
 
 # Configure logging
@@ -38,6 +38,18 @@ class MySQLDatabase:
         
         logger.info("MySQLDatabase: Initialization completed successfully (lazy connection)")
     
+    def get_timezone_aware_datetime(self):
+        """Get current datetime in UTC timezone"""
+        return datetime.now(timezone.utc)
+    
+    def format_datetime_for_display(self, dt):
+        """Format datetime for display in a consistent way"""
+        if dt is None:
+            return None
+        if hasattr(dt, 'strftime'):
+            return dt.strftime('%Y-%m-%d %H:%M:%S')
+        return str(dt)
+    
     def get_connection(self):
         """Get a database connection"""
         logger.info("MySQLDatabase: Attempting to connect to MySQL...")
@@ -48,6 +60,12 @@ class MySQLDatabase:
             config['autocommit'] = True
             
             conn = mysql.connector.connect(**config)
+            
+            # Set timezone to UTC for consistent timestamp handling
+            cursor = conn.cursor()
+            cursor.execute("SET time_zone = '+00:00'")
+            cursor.close()
+            
             logger.info("MySQLDatabase: Successfully connected to MySQL")
             return conn
         except Error as e:
@@ -618,7 +636,7 @@ class MySQLDatabase:
                 else:
                     # Use today's date if no specific date provided
                     from datetime import datetime
-                    inactivation_date = datetime.now().strftime('%Y-%m-%d')
+                    inactivation_date = self.get_timezone_aware_datetime().strftime('%Y-%m-%d')
             else:
                 inactivation_date = None
 
@@ -1134,7 +1152,7 @@ class MySQLDatabase:
                 UPDATE education_progress 
                 SET completed_pages = %s, last_updated = %s, notes = %s
                 WHERE id = %s
-            ''', (completed_pages, datetime.now().strftime('%Y-%m-%d'), notes, progress_id))
+            ''', (completed_pages, self.get_timezone_aware_datetime().strftime('%Y-%m-%d'), notes, progress_id))
             
             # Add to history if pages changed
             if completed_pages != old_completed_pages:
@@ -1150,7 +1168,7 @@ class MySQLDatabase:
                     current_progress['book_name'], 
                     completed_pages, 
                     notes,
-                    datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    self.get_timezone_aware_datetime().strftime('%Y-%m-%d %H:%M:%S')
                 ))
             
             conn.commit()
@@ -1207,7 +1225,7 @@ class MySQLDatabase:
                 progress_data.get('total_pages'),
                 progress_data.get('completed_pages', 0),
                 progress_data.get('notes', ''),
-                datetime.now().strftime('%Y-%m-%d'),
+                self.get_timezone_aware_datetime().strftime('%Y-%m-%d'),
                 progress_id
             ))
             
@@ -1230,7 +1248,7 @@ class MySQLDatabase:
                 INSERT INTO education_progress_history 
                 (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, change_date)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            ''', (progress_id, class_id, class_name, book_id, book_name, completed_pages, notes, self.get_timezone_aware_datetime().strftime('%Y-%m-%d %H:%M:%S')))
             
             conn.commit()
             cursor.close()
@@ -1277,6 +1295,11 @@ class MySQLDatabase:
             ''', (book_id, class_id))
             
             history = cursor.fetchall()
+            
+            # Format datetime fields for consistent display
+            for record in history:
+                if 'change_date' in record and record['change_date']:
+                    record['change_date'] = self.format_datetime_for_display(record['change_date'])
             
             cursor.close()
             conn.close()

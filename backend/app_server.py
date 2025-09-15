@@ -766,6 +766,15 @@ def get_education_progress_history_by_book(book_id, class_id):
     try:
         logger.info(f"API: Getting history for book_id={book_id}, class_id={class_id}")
         
+        # First check if the book and class exist
+        try:
+            book = db.get_book_by_id(book_id)
+            if not book:
+                logger.warning(f"API: Book with ID {book_id} not found")
+                return jsonify({'error': f'Book with ID {book_id} not found'}), 404
+        except Exception as e:
+            logger.error(f"API: Error checking book existence: {e}")
+        
         # Use the database method directly
         history = db.get_progress_history_by_book(book_id, class_id)
         logger.info(f"API: Method returned {len(history)} history records")
@@ -775,12 +784,21 @@ def get_education_progress_history_by_book(book_id, class_id):
             if 'change_date' in record and record['change_date']:
                 try:
                     if hasattr(record['change_date'], 'strftime'):
+                        # Convert to ISO format for better timezone handling
                         record['change_date'] = record['change_date'].strftime('%Y-%m-%d %H:%M:%S')
                     else:
                         record['change_date'] = str(record['change_date'])
                 except Exception as date_error:
                     logger.warning(f"API: Error converting date {record['change_date']}: {date_error}")
                     record['change_date'] = str(record['change_date'])
+            
+            # Also handle other datetime fields that might exist
+            for key, value in record.items():
+                if hasattr(value, 'strftime'):
+                    try:
+                        record[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        record[key] = str(value)
         
         logger.info(f"API: History data: {history}")
         return jsonify(history)
@@ -1357,6 +1375,29 @@ def debug():
             },
             'database_type': type(db).__name__,
             'all_vars_present': bool(db_host and db_user and db_name)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/timezone')
+def debug_timezone():
+    """Debug endpoint to check timezone handling"""
+    try:
+        from datetime import datetime, timezone
+        
+        # Get current time in different timezones
+        utc_now = datetime.now(timezone.utc)
+        local_now = datetime.now()
+        
+        return jsonify({
+            'utc_time': utc_now.strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'local_time': local_now.strftime('%Y-%m-%d %H:%M:%S'),
+            'utc_iso': utc_now.isoformat(),
+            'local_iso': local_now.isoformat(),
+            'timezone_info': {
+                'utc_offset': utc_now.strftime('%z'),
+                'local_offset': local_now.strftime('%z') if hasattr(local_now, 'strftime') else 'Unknown'
+            }
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
