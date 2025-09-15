@@ -761,9 +761,13 @@ def get_education_progress_history(progress_id):
 @app.route('/api/education/history/book/<int:book_id>/class/<class_name>', methods=['GET'])
 def get_education_progress_history_by_book(book_id, class_name):
     try:
+        print(f"🔍 API: Getting history for book_id={book_id}, class_name='{class_name}'")
         history = db.get_progress_history_by_book(book_id, class_name)
+        print(f"🔍 API: Found {len(history)} history records")
+        print(f"🔍 API: History data: {history}")
         return jsonify(history)
     except Exception as e:
+        print(f"❌ API: Error getting history: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ===== APP SETTINGS API ENDPOINTS =====

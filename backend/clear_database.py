@@ -13,6 +13,7 @@ def clear_database_tables():
     # Tables to drop, in an order that respects foreign key dependencies
     # Dependent tables should be dropped before the tables they depend on.
     tables_to_drop = [
+        "education_progress_history", # Depends on education_progress
         "education_progress", # Depends on books and classes
         "teacher_logs",       # Depends on students
         "score_change_history", # Depends on students

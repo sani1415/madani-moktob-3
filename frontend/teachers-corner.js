@@ -99,9 +99,13 @@
         // Function to load progress history for a specific book
         async function loadProgressHistoryForBook(bookId, className) {
             try {
+                console.log(`🔍 Frontend: Loading history for book_id=${bookId}, class_name='${className}'`);
                 const response = await fetch(`/api/education/history/book/${bookId}/class/${encodeURIComponent(className)}`);
+                console.log(`🔍 Frontend: API response status: ${response.status}`);
+                
                 if (response.ok) {
                     const history = await response.json();
+                    console.log(`🔍 Frontend: Raw history data:`, history);
                     console.log(`✅ Loaded ${history.length} history entries for book ${bookId} in class ${className}`);
                     return history.map(entry => ({
                         date: entry.change_date,
@@ -109,7 +113,8 @@
                         note: entry.notes
                     }));
                 } else {
-                    console.error('❌ Failed to load progress history for book', bookId);
+                    const errorText = await response.text();
+                    console.error('❌ Failed to load progress history for book', bookId, 'Status:', response.status, 'Error:', errorText);
                     return [];
                 }
             } catch (error) {
@@ -171,6 +176,31 @@
                     'পঞ্চম শ্রেণী': 5
                 };
                 return fallbackMap[className] || null;
+            }
+        }
+        
+        // Helper function to convert Bengali class name to English class name for database queries
+        function convertBengaliClassNameToEnglish(className) {
+            const bengaliToEnglishMap = {
+                'প্রথম বর্ষ': 'Class One',
+                'দ্বিতীয় বর্ষ': 'Class Two', 
+                'তৃতীয় বর্ষ': 'Class Three',
+                'চতুর্থ বর্ষ': 'Class Four',
+                'পঞ্চম বর্ষ': 'Class Five',
+                'প্রথম শ্রেণী': 'Class One',
+                'দ্বিতীয় শ্রেণী': 'Class Two',
+                'তৃতীয় শ্রেণী': 'Class Three',
+                'চতুর্থ শ্রেণী': 'Class Four',
+                'পঞ্চম শ্রেণী': 'Class Five'
+            };
+            
+            const englishName = bengaliToEnglishMap[className];
+            if (englishName) {
+                console.log(`✅ Converted Bengali class name "${className}" to English "${englishName}"`);
+                return englishName;
+            } else {
+                console.warn(`⚠️ No English mapping found for Bengali class name: "${className}"`);
+                return className; // Return original if no mapping found
             }
         }
         
