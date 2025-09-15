@@ -53,7 +53,7 @@ function updateClassDropdowns() {
 async function addClass() {
     const newClassName = document.getElementById('newClassName').value.trim();
     if (!newClassName) {
-        showModal('Error', 'Please enter a class name');
+        showModal(t('error'), t('pleaseEnterClassName'));
         return;
     }
 
@@ -66,14 +66,14 @@ async function addClass() {
 
         const result = await response.json();
         if (response.ok) {
-            showModal('Success', `"${newClassName}" class added successfully`);
+            showModal(t('success'), `"${newClassName}" ${t('classAddedSuccessfully')}`);
             document.getElementById('newClassName').value = '';
             await refreshClasses(); // Refresh global class list and UI
         } else {
-            showModal('Error', result.error || 'Failed to add class');
+            showModal(t('error'), result.error || t('failedToAddClass'));
         }
     } catch (error) {
-        showModal('Error', 'A network error occurred.');
+        showModal(t('error'), t('networkErrorOccurred'));
     }
 }
 
@@ -83,14 +83,14 @@ async function deleteClass(classId, className) {
             const response = await fetch(`/api/classes/${classId}`, { method: 'DELETE' });
 
             if (response.ok) {
-                showModal('Success', `"${className}" class deleted successfully.`);
+                showModal(t('success'), `"${className}" ${t('classDeletedSuccessfully')}`);
                 await refreshClasses(); // Refresh global class list and UI
             } else {
                 const result = await response.json();
-                showModal('Error', result.error || 'Failed to delete class.');
+                showModal(t('error'), result.error || t('failedToDeleteClass'));
             }
         } catch (error) {
-            showModal('Error', 'A network error occurred.');
+            showModal(t('error'), t('networkErrorOccurred'));
         }
     }
 }
@@ -134,13 +134,13 @@ async function editClass(classId, oldClassName) {
 
             const result = await response.json();
             if (response.ok) {
-                showModal('Success', 'Class updated successfully.');
+                showModal(t('success'), t('classUpdatedSuccessfully'));
                 await refreshClasses(); // Refresh global class list and UI
             } else {
-                showModal('Error', result.error || 'Failed to update class.');
+                showModal(t('error'), result.error || t('failedToUpdateClass'));
             }
         } catch (error) {
-            showModal('Error', 'A network error occurred.');
+            showModal(t('error'), t('networkErrorOccurred'));
         }
     }
 }
@@ -156,7 +156,7 @@ async function addHoliday() {
     const name = nameInput.value.trim();
     
     if (!startDate || !name) {
-        showModal('Error', 'Please enter holiday start date and name');
+        showModal(t('error'), t('pleaseEnterHolidayStartDateAndName'));
         return;
     }
     
@@ -165,7 +165,7 @@ async function addHoliday() {
     
     // Validate date range
     if (new Date(startDate) > new Date(finalEndDate)) {
-        showModal('Error', 'Start date cannot be after end date');
+        showModal(t('error'), t('startDateCannotBeAfterEndDate'));
         return;
     }
     
@@ -219,21 +219,21 @@ async function addHoliday() {
             nameInput.value = '';
             
             const dayCount = Math.ceil((new Date(finalEndDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-            showModal('Success', `Holiday added successfully (${dayCount} day${dayCount > 1 ? 's' : ''})`);
+            showModal(t('success'), `${t('holidayAddedSuccessfully')} (${dayCount} day${dayCount > 1 ? 's' : ''})`);
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add holiday');
         }
     } catch (error) {
         console.error('Error adding holiday:', error);
-        showModal('Error', 'Failed to add holiday: ' + error.message);
+        showModal(t('error'), t('failedToAddHoliday') + ' ' + error.message);
     }
 }
 
 async function deleteHoliday(index) {
     const holiday = window.holidays ? window.holidays[index] : null;
     if (!holiday) {
-        showModal('Error', 'Holiday not found');
+        showModal(t('error'), t('holidayNotFound'));
         return;
     }
     
@@ -250,7 +250,7 @@ async function deleteHoliday(index) {
         if (response.ok) {
             if (window.holidays) window.holidays.splice(index, 1);
             displayHolidays();
-            showModal('Success', 'Holiday deleted successfully');
+            showModal(t('success'), t('holidayDeletedSuccessfully'));
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to delete holiday');
@@ -460,12 +460,12 @@ async function addBook() {
     const totalPages = parseInt(document.getElementById('newBookPages').value) || null;
     
     if (!bookName) {
-        showModal('Error', 'Please enter a book name');
+        showModal(t('error'), t('pleaseEnterBookName'));
         return;
     }
     
     if (!totalPages || totalPages <= 0) {
-        showModal('Error', 'Please enter a valid number of total pages');
+        showModal(t('error'), t('pleaseEnterValidNumberOfTotalPages'));
         return;
     }
     
@@ -485,7 +485,7 @@ async function addBook() {
         if (response.ok) {
             const result = await response.json();
             console.log('✅ Book added successfully! API Response:', result);
-            showModal('Success', 'Book added successfully');
+            showModal(t('success'), t('bookAddedSuccessfully'));
             document.getElementById('newBookName').value = '';
             document.getElementById('newBookClass').value = '';
             document.getElementById('newBookPages').value = '';
@@ -497,11 +497,11 @@ async function addBook() {
         } else {
             const error = await response.json();
             console.error('❌ Failed to add book. API Error:', error);
-            showModal('Error', error.error || 'Failed to add book');
+            showModal(t('error'), error.error || t('failedToAddBook'));
         }
     } catch (error) {
         console.error('Error adding book:', error);
-        showModal('Error', 'Failed to add book');
+        showModal(t('error'), t('failedToAddBook'));
     }
 }
 
@@ -561,7 +561,7 @@ async function updateBook() {
     console.log('Form values:', { bookId, bookName, classId, totalPages });
     
     if (!bookName) {
-        showModal('Error', 'Please enter a book name');
+        showModal(t('error'), t('pleaseEnterBookName'));
         return;
     }
     
@@ -801,7 +801,7 @@ function displayAcademicYearStart() {
         }
         
         if (displaySpan) {
-            displaySpan.textContent = 'Not set';
+            displaySpan.textContent = t('notSet');
         }
         
         if (displayContainer) {

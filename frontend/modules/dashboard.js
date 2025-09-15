@@ -12,11 +12,11 @@ async function updateDashboard() {
             document.getElementById('inactiveStudents').textContent = healthData.inactive_students_count || 0;
         } else {
             // Fallback for safety
-            document.getElementById('inactiveStudents').textContent = 'N/A';
+            document.getElementById('inactiveStudents').textContent = t('na');
         }
     } catch (error) {
         console.error("Failed to fetch dashboard stats:", error);
-        document.getElementById('inactiveStudents').textContent = 'N/A';
+        document.getElementById('inactiveStudents').textContent = t('na');
     }
     
     console.log('Updating dashboard for date:', today);
@@ -1011,12 +1011,12 @@ function toggleAlertDetails(index) {
     
     if (detailsElement.style.display === 'none') {
         detailsElement.style.display = 'block';
-        button.textContent = 'Hide Details';
+        button.textContent = t('hideDetails');
         button.classList.remove('primary');
         button.classList.add('secondary');
     } else {
         detailsElement.style.display = 'none';
-        button.textContent = 'View Details';
+        button.textContent = t('viewDetails');
         button.classList.remove('secondary');
         button.classList.add('primary');
     }

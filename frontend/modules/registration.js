@@ -916,6 +916,12 @@ function updateRegistrationTexts() {
         }
     });
     
+    // Update placeholders
+    const rollNumberInput = document.querySelector('#registrationForm input[id="rollNumber"]');
+    if (rollNumberInput) {
+        rollNumberInput.placeholder = t('enterRollNumberPlaceholder');
+    }
+    
     const submitBtn = document.querySelector('#studentForm button[type="submit"]');
     if (submitBtn) {
         // Clear existing content and append new content
