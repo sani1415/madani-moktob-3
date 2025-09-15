@@ -1897,7 +1897,7 @@ class MySQLDatabase:
             cursor = conn.cursor(dictionary=True)
             
             # Get user by username
-            cursor.execute('SELECT * FROM users_new WHERE username = %s AND is_active = TRUE', (username,))
+            cursor.execute('SELECT * FROM users_new WHERE username = %s AND is_active = 1', (username,))
             user = cursor.fetchone()
             
             if user:
@@ -2023,6 +2023,8 @@ class MySQLDatabase:
     def update_user(self, user_id, username=None, role=None, class_name=None, is_active=None):
         """Update user information"""
         try:
+            logger.info(f"Updating user {user_id} with: username={username}, role={role}, class_name={class_name}, is_active={is_active}")
+            
             conn = self.get_connection()
             cursor = conn.cursor()
             
@@ -2041,11 +2043,14 @@ class MySQLDatabase:
                 params.append(class_name)
             if is_active is not None:
                 updates.append("is_active = %s")
-                params.append(is_active)
+                # Convert boolean to integer for MySQL
+                is_active_value = 1 if is_active else 0
+                params.append(is_active_value)
             
             if updates:
                 params.append(user_id)
                 query = f"UPDATE users_new SET {', '.join(updates)} WHERE id = %s"
+                logger.info(f"Executing query: {query} with params: {params}")
                 cursor.execute(query, params)
                 
                 rows_affected = cursor.rowcount
@@ -2060,12 +2065,16 @@ class MySQLDatabase:
                     logger.warning(f"No user found to update: {user_id}")
                     return False
             else:
+                logger.info(f"No updates provided for user {user_id}")
                 cursor.close()
                 conn.close()
                 return True
                 
         except Error as e:
-            logger.error(f"Error updating user: {e}")
+            logger.error(f"Database error updating user {user_id}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error updating user {user_id}: {e}")
             raise
 
     def delete_user(self, user_id):
@@ -2075,7 +2084,7 @@ class MySQLDatabase:
             cursor = conn.cursor()
             
             # Don't allow deletion of the last admin user
-            cursor.execute("SELECT COUNT(*) FROM users_new WHERE role = 'admin' AND is_active = TRUE")
+            cursor.execute("SELECT COUNT(*) FROM users_new WHERE role = 'admin' AND is_active = 1")
             admin_count = cursor.fetchone()[0]
             
             if admin_count <= 1:

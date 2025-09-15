@@ -365,13 +365,15 @@ def update_user(user_id):
             return jsonify(response_data)
         else:
             logger.error(f"Failed to update user {user_id}")
-            error_response = {'error': 'Failed to update user'}
+            error_response = {'error': 'Failed to update user - user may not exist or no changes were made'}
             logger.info(f"Sending error response: {error_response}")
             return jsonify(error_response), 500
         
     except Exception as e:
-        logger.error(f"Update user error: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Update user error for user {user_id}: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
