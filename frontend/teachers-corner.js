@@ -1092,6 +1092,8 @@
             }
             
             const alerts = [];
+            // Store alerts globally so they can be accessed by the click handler
+            window.currentAlerts = alerts;
             
             // Check for students with low scores
             const lowScoreStudents = students.filter(s => {
@@ -1105,7 +1107,8 @@
                     title: 'নিম্ন হুসনুল খুলুক স্কোর',
                     message: `${lowScoreStudents.length} জন ছাত্রের স্কোর ${ALERT_CONFIG.LOW_SCORE_THRESHOLD} এর নিচে।`,
                     action: 'স্কোর দেখুন',
-                    onClick: () => showScoreManagement()
+                    onClick: () => showLowScoreStudents(lowScoreStudents),
+                    data: lowScoreStudents
                 });
             }
             
@@ -1126,7 +1129,8 @@
                     title: 'শিক্ষার অগ্রগতি প্রয়োজন',
                     message: `${studentsWithNoProgress.length} জন ছাত্রের শিক্ষার অগ্রগতি রেকর্ড করা হয়নি।`,
                     action: 'অগ্রগতি দেখুন',
-                    onClick: () => showBookModal()
+                    onClick: () => showStudentsWithNoProgress(studentsWithNoProgress),
+                    data: studentsWithNoProgress
                 });
             }
             
@@ -1145,7 +1149,8 @@
                     title: 'আজ অনুপস্থিত ছাত্র',
                     message: `${lowAttendanceStudents.length} জন ছাত্র আজ অনুপস্থিত।`,
                     action: 'উপস্থিতি দেখুন',
-                    onClick: () => showAttendanceModal()
+                    onClick: () => showAbsentStudents(lowAttendanceStudents),
+                    data: lowAttendanceStudents
                 });
             }
             
@@ -1162,7 +1167,8 @@
                     title: 'স্কোর হ্রাসের ঝুঁকি',
                     message: `${criticalScoreStudents.length} জন ছাত্রের স্কোর খুবই কম।`,
                     action: 'স্কোর দেখুন',
-                    onClick: () => showScoreManagement()
+                    onClick: () => showCriticalScoreStudents(criticalScoreStudents),
+                    data: criticalScoreStudents
                 });
             }
             
@@ -1180,7 +1186,8 @@
                     title: 'অনুসরণ প্রয়োজন',
                     message: `${importantLogs.length} টি গুরুত্বপূর্ণ নোট অনুসরণের অপেক্ষায়।`,
                     action: 'নোট দেখুন',
-                    onClick: () => showTeachersLogbook()
+                    onClick: () => showImportantLogs(importantLogs),
+                    data: importantLogs
                 });
             }
             
@@ -1217,7 +1224,7 @@
                                     <div class="text-xs ${config.text.replace('800', '600')}">${alert.message}</div>
                                 </div>
                             </div>
-                            <button onclick="${alert.onClick ? alert.onClick.toString().replace('function () {', '').replace('}', '') : 'void(0)'}" class="text-xs px-3 py-1 rounded ${config.bg.replace('50', '100')} ${config.text.replace('800', '700')} hover:${config.bg.replace('50', '200')}">${alert.action}</button>
+                            <button onclick="${alert.onClick ? 'handleAlertClick(' + alerts.indexOf(alert) + ')' : 'void(0)'}" class="text-xs px-3 py-1 rounded ${config.bg.replace('50', '100')} ${config.text.replace('800', '700')} hover:${config.bg.replace('50', '200')}">${alert.action}</button>
                         </div>
                     `;
                 }).join('');
@@ -3535,32 +3542,203 @@
         }
 
         // Helper functions for the improved alert system
-        function showScoreManagement() {
-            // Show score management modal or navigate to score section
-            console.log('📊 Opening score management...');
-            // You can implement this based on your UI needs
-            showModal('স্কোর ব্যবস্থাপনা', 'স্কোর ব্যবস্থাপনা সেকশন খোলা হচ্ছে...');
+        function showLowScoreStudents(students) {
+            console.log('📊 Showing low score students:', students);
+            const studentList = students.map(s => {
+                const score = getHusnulKhulukScore(s.id);
+                return `<div class="flex justify-between items-center p-3 bg-yellow-50 border-l-4 border-yellow-400 mb-2">
+                    <div>
+                        <div class="font-semibold text-gray-800">${s.name}</div>
+                        <div class="text-sm text-gray-600">রোল: ${s.rollNumber || 'N/A'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-red-600">${score}</div>
+                        <div class="text-xs text-gray-500">স্কোর</div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            showModal('নিম্ন স্কোরের ছাত্ররা', `
+                <div class="max-h-96 overflow-y-auto">
+                    ${studentList}
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    এই ছাত্রদের স্কোর ${ALERT_CONFIG.LOW_SCORE_THRESHOLD} এর নিচে। স্কোর উন্নতির জন্য পদক্ষেপ নিন।
+                </div>
+            `);
+        }
+        
+        function showCriticalScoreStudents(students) {
+            console.log('🚨 Showing critical score students:', students);
+            const studentList = students.map(s => {
+                const score = getHusnulKhulukScore(s.id);
+                return `<div class="flex justify-between items-center p-3 bg-red-50 border-l-4 border-red-400 mb-2">
+                    <div>
+                        <div class="font-semibold text-gray-800">${s.name}</div>
+                        <div class="text-sm text-gray-600">রোল: ${s.rollNumber || 'N/A'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-red-700">${score}</div>
+                        <div class="text-xs text-gray-500">স্কোর</div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            showModal('ঝুঁকিপূর্ণ স্কোরের ছাত্ররা', `
+                <div class="max-h-96 overflow-y-auto">
+                    ${studentList}
+                </div>
+                <div class="mt-4 text-sm text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    এই ছাত্রদের স্কোর খুবই কম (${ALERT_CONFIG.CRITICAL_SCORE_THRESHOLD} এর নিচে)। অবিলম্বে পদক্ষেপ প্রয়োজন।
+                </div>
+            `);
+        }
+        
+        function showStudentsWithNoProgress(students) {
+            console.log('📚 Showing students with no progress:', students);
+            const studentList = students.map(s => `
+                <div class="flex justify-between items-center p-3 bg-blue-50 border-l-4 border-blue-400 mb-2">
+                    <div>
+                        <div class="font-semibold text-gray-800">${s.name}</div>
+                        <div class="text-sm text-gray-600">রোল: ${s.rollNumber || 'N/A'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-blue-600">
+                            <i class="fas fa-book mr-1"></i>
+                            অগ্রগতি নেই
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            showModal('অগ্রগতি নেই এমন ছাত্ররা', `
+                <div class="max-h-96 overflow-y-auto">
+                    ${studentList}
+                </div>
+                <div class="mt-4 text-sm text-blue-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    এই ছাত্রদের শিক্ষার অগ্রগতি রেকর্ড করা হয়নি। শিক্ষার অগ্রগতি সেকশনে গিয়ে রেকর্ড করুন।
+                </div>
+            `);
+        }
+        
+        function showAbsentStudents(students) {
+            console.log('📅 Showing absent students:', students);
+            const today = new Date().toLocaleDateString('bn-BD');
+            const studentList = students.map(s => `
+                <div class="flex justify-between items-center p-3 bg-orange-50 border-l-4 border-orange-400 mb-2">
+                    <div>
+                        <div class="font-semibold text-gray-800">${s.name}</div>
+                        <div class="text-sm text-gray-600">রোল: ${s.rollNumber || 'N/A'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-orange-600">
+                            <i class="fas fa-calendar-times mr-1"></i>
+                            অনুপস্থিত
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            showModal(`আজ (${today}) অনুপস্থিত ছাত্ররা`, `
+                <div class="max-h-96 overflow-y-auto">
+                    ${studentList}
+                </div>
+                <div class="mt-4 text-sm text-orange-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    এই ছাত্ররা আজ অনুপস্থিত। উপস্থিতি সেকশনে গিয়ে কারণ রেকর্ড করুন।
+                </div>
+            `);
+        }
+        
+        function showImportantLogs(logs) {
+            console.log('📝 Showing important logs:', logs);
+            const logList = logs.map(log => {
+                // Check both possible date fields to match the main log display
+                let logDate = 'তারিখ নেই';
+                let dateField = log.date || log.created_at;
+                
+                if (dateField) {
+                    try {
+                        const date = new Date(dateField);
+                        // Format date in Bengali style like the main log display
+                        logDate = date.toLocaleDateString('bn-BD');
+                    } catch (e) {
+                        console.warn('Error formatting date:', e);
+                        logDate = 'তারিখ নেই';
+                    }
+                }
+                
+                const studentName = log.student_id ? getStudentNameById(log.student_id) : 'শ্রেণী লগ';
+                return `<div class="p-3 bg-red-50 border-l-4 border-red-400 mb-2">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="font-semibold text-gray-800">${studentName}</div>
+                        <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${logDate}
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-700 mb-2">${log.details}</div>
+                    <div class="text-xs text-red-600">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        অনুসরণ প্রয়োজন
+                    </div>
+                </div>`;
+            }).join('');
+            
+            showModal('গুরুত্বপূর্ণ নোট (অনুসরণ প্রয়োজন)', `
+                <div class="max-h-96 overflow-y-auto">
+                    ${logList}
+                </div>
+                <div class="mt-4 text-sm text-red-600">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    এই নোটগুলো অনুসরণের অপেক্ষায়। শিক্ষকের লগবুকে গিয়ে অনুসরণ সম্পন্ন করুন।
+                </div>
+            `);
         }
         
         function showAttendanceModal() {
             // Show attendance modal
             console.log('📅 Opening attendance modal...');
-            // You can implement this based on your UI needs
-            showModal('উপস্থিতি দেখুন', 'উপস্থিতি মডাল খোলা হচ্ছে...');
+            // Navigate to the attendance section
+            const attendanceLink = document.querySelector('a[onclick*="attendance"]');
+            if (attendanceLink) {
+                attendanceLink.click();
+            } else {
+                showModal('উপস্থিতি দেখুন', 'উপস্থিতি সেকশনে যান নেভিগেশন মেনু থেকে।');
+            }
         }
         
         function showClassAnalysis() {
             // Show class performance analysis
             console.log('📈 Opening class analysis...');
-            // You can implement this based on your UI needs
-            showModal('শ্রেণী বিশ্লেষণ', 'শ্রেণী বিশ্লেষণ সেকশন খোলা হচ্ছে...');
+            // Navigate to the class overview section
+            const classOverviewSection = document.getElementById('performance-chart');
+            if (classOverviewSection) {
+                classOverviewSection.scrollIntoView({ behavior: 'smooth' });
+                // Highlight the performance chart section
+                classOverviewSection.style.border = '2px solid #3b82f6';
+                setTimeout(() => {
+                    classOverviewSection.style.border = '';
+                }, 3000);
+            }
         }
         
         function showTeachersLogbook() {
             // Show teachers logbook
             console.log('📔 Opening teachers logbook...');
-            // You can implement this based on your UI needs
-            showModal('শিক্ষকের লগবুক', 'শিক্ষকের লগবুক সেকশন খোলা হচ্ছে...');
+            // Navigate to the teachers logbook section
+            const logbookSection = document.getElementById('logbook-display');
+            if (logbookSection) {
+                logbookSection.scrollIntoView({ behavior: 'smooth' });
+                // Highlight the logbook section
+                logbookSection.style.border = '2px solid #3b82f6';
+                setTimeout(() => {
+                    logbookSection.style.border = '';
+                }, 3000);
+            }
         }
         
         // Utility function to show modals
@@ -3580,12 +3758,37 @@
             document.body.appendChild(modal);
         }
 
+        // Handle alert button clicks
+        function handleAlertClick(alertIndex) {
+            console.log('🔘 Alert button clicked, index:', alertIndex);
+            console.log('🔘 Current alerts:', window.currentAlerts);
+            if (window.currentAlerts && window.currentAlerts[alertIndex] && window.currentAlerts[alertIndex].onClick) {
+                console.log('🔘 Executing alert onClick function');
+                window.currentAlerts[alertIndex].onClick();
+            } else {
+                console.error('❌ Alert onClick function not found for index:', alertIndex);
+            }
+        }
+
+        // Helper function to get student name by ID
+        function getStudentNameById(studentId) {
+            const allStudents = window.students || [];
+            const student = allStudents.find(s => s.id === studentId);
+            return student ? student.name : 'Unknown Student';
+        }
+
         // Make functions globally accessible
-        window.showScoreManagement = showScoreManagement;
+        window.showLowScoreStudents = showLowScoreStudents;
+        window.showCriticalScoreStudents = showCriticalScoreStudents;
+        window.showStudentsWithNoProgress = showStudentsWithNoProgress;
+        window.showAbsentStudents = showAbsentStudents;
+        window.showImportantLogs = showImportantLogs;
         window.showAttendanceModal = showAttendanceModal;
         window.showClassAnalysis = showClassAnalysis;
         window.showTeachersLogbook = showTeachersLogbook;
+        window.handleAlertClick = handleAlertClick;
         window.showModal = showModal;
+        window.getStudentNameById = getStudentNameById;
 
         // Alert System Configuration
         const ALERT_CONFIG = {
