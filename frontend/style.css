@@ -1589,6 +1589,35 @@ body {
     font-size: 12px;
 }
 
+/* Inline reason input styling */
+.inline-reason-input {
+    margin-left: 10px;
+    display: inline-block;
+}
+
+.reason-input-inline {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    width: 200px;
+    background: #fff;
+    color: #333;
+}
+
+.reason-input-inline:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.reason-display {
+    margin-left: 8px;
+    color: #dc3545;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
 /* Attendance List */
 .attendance-list {
     background: white;

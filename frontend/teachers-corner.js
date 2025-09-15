@@ -1149,7 +1149,7 @@
                     title: 'আজ অনুপস্থিত ছাত্র',
                     message: `${lowAttendanceStudents.length} জন ছাত্র আজ অনুপস্থিত।`,
                     action: 'উপস্থিতি দেখুন',
-                    onClick: () => showAbsentStudents(lowAttendanceStudents),
+                    onClick: () => showAbsentStudentsAlert(lowAttendanceStudents),
                     data: lowAttendanceStudents
                 });
             }
@@ -3624,7 +3624,7 @@
             `);
         }
         
-        function showAbsentStudents(students) {
+        function showAbsentStudentsAlert(students) {
             console.log('📅 Showing absent students:', students);
             const today = new Date().toLocaleDateString('bn-BD');
             const studentList = students.map(s => `
@@ -3781,7 +3781,7 @@
         window.showLowScoreStudents = showLowScoreStudents;
         window.showCriticalScoreStudents = showCriticalScoreStudents;
         window.showStudentsWithNoProgress = showStudentsWithNoProgress;
-        window.showAbsentStudents = showAbsentStudents;
+        window.showAbsentStudentsAlert = showAbsentStudentsAlert;
         window.showImportantLogs = showImportantLogs;
         window.showAttendanceModal = showAttendanceModal;
         window.showClassAnalysis = showClassAnalysis;

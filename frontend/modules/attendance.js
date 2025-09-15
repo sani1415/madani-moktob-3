@@ -128,7 +128,20 @@ async function loadAttendanceForDate() {
             <div class="student-row">
                 <div class="student-info-with-toggle">
                     <div class="student-info">
-                        <h4>Roll: ${student.rollNumber || 'N/A'} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name} বিন ${student.fatherName}</span></h4>
+                        <h4>Roll: ${student.rollNumber || 'N/A'} - <span class="clickable-name" onclick="showStudentDetail('${student.id}')">${student.name} বিন ${student.fatherName}</span>
+                        ${isAbsent ? `
+                            <span class="inline-reason-input">
+                                <input type="text" 
+                                       placeholder="${t('reasonForAbsence')}"
+                                       value="${studentAttendance.reason || ''}"
+                                       onchange="updateAbsenceReason('${student.id}', '${selectedDate}', this.value)"
+                                       class="reason-input-inline">
+                            </span>
+                        ` : ''}
+                        ${isAbsent && studentAttendance.reason ? `
+                            <span class="reason-display">(${studentAttendance.reason})</span>
+                        ` : ''}
+                        </h4>
                     </div>
                     <div class="attendance-toggle">
                         <div class="toggle-switch ${toggleClass}" 
@@ -137,14 +150,6 @@ async function loadAttendanceForDate() {
                         </div>
                     </div>
                 </div>
-                ${isAbsent ? `
-                    <div class="absence-reason">
-                        <input type="text" 
-                               placeholder="${t('reasonForAbsence')}"
-                               value="${studentAttendance.reason || ''}"
-                               onchange="updateAbsenceReason('${student.id}', '${selectedDate}', this.value)">
-                    </div>
-                ` : ''}
             </div>
         `;
     }).join('');
@@ -214,12 +219,7 @@ async function toggleAttendance(studentId, date, status) {
             reason: status === 'present' || status === 'neutral' ? '' : (attendance[date][studentId]?.reason || '')
         };
         
-        // Show message when marking as absent to remind about reason requirement
-        if (status === 'absent') {
-            const student = students.find(s => s.id === studentId);
-            const studentName = student ? student.name : studentId;
-            showModal(t('info'), `Please provide a reason for ${studentName}'s absence before saving.`);
-        }
+        // No modal needed - reason input will appear inline
     }
     
     // Refresh the display without saving to database
