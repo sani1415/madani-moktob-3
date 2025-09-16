@@ -353,19 +353,25 @@
         // Load student scores from database
         async function loadStudentScoresFromDatabase(className) {
             try {
-                const response = await fetch(`/api/students-with-scores?class=${encodeURIComponent(className)}`, {
+                // Load scores for all classes, not just the current class
+                // This ensures we have all scores available regardless of which class is selected
+                const response = await fetch(`/api/students-with-scores`, {
                     headers: {
                         'Cache-Control': 'no-cache'
                     }
                 });
                 if (response.ok) {
                     const studentsWithScores = await response.json();
-                    console.log(`✅ Loaded ${studentsWithScores.length} student scores for class: ${className}`);
+                    console.log(`✅ Loaded ${studentsWithScores.length} student scores from all classes`);
                     
-                    // Update local studentScores object
+                    // Update local studentScores object with all scores
                     studentsWithScores.forEach(student => {
                         studentScores[student.id] = student.current_score || 0;
                     });
+                    
+                    // Log scores for the specific class if requested
+                    const classScores = studentsWithScores.filter(s => s.class === className);
+                    console.log(`✅ Found ${classScores.length} students with scores in class: ${className}`);
                     
                     return true;
                 } else {

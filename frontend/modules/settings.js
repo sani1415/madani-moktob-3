@@ -1508,7 +1508,7 @@ async function confirmResetScores() {
         
         const result = await response.json();
         if (response.ok) {
-            closeModal();
+    closeModal();
             showModal('Success', result.message || 'All student scores and score history have been deleted from the database.');
             
             // Refresh any open Teachers Corner views
@@ -1531,7 +1531,7 @@ async function confirmResetScores() {
 
 async function confirmResetProgress() {
     try {
-        console.log('Resetting education progress...');
+    console.log('Resetting education progress...');
         console.log('Making API call to /api/education/all');
         
         const response = await fetch('/api/education/all', {
@@ -1545,7 +1545,7 @@ async function confirmResetProgress() {
         
         if (response.ok) {
             console.log('Education progress reset successful');
-            closeModal();
+    closeModal();
             showModal('Success', result.message || 'All education progress data has been deleted successfully.');
         } else if (response.status === 401) {
             console.log('Authentication required for education progress reset');
@@ -1558,7 +1558,7 @@ async function confirmResetProgress() {
         }
     } catch (error) {
         console.error('Error resetting education progress:', error);
-        closeModal();
+    closeModal();
         showModal('Error', 'Network error. Please try again.');
     }
 }
@@ -1572,7 +1572,7 @@ async function confirmResetBooks() {
         
         const result = await response.json();
         if (response.ok) {
-            closeModal();
+    closeModal();
             showModal('Success', result.message || 'All books have been reset successfully.');
             
             // Refresh books list if it exists
@@ -1580,7 +1580,7 @@ async function confirmResetBooks() {
                 await loadBooks();
             }
         } else {
-            closeModal();
+    closeModal();
             showModal('Error', result.error || 'Failed to reset all books');
         }
     } catch (error) {
@@ -1599,7 +1599,7 @@ async function confirmResetLogs() {
         
         const result = await response.json();
         if (response.ok) {
-            closeModal();
+    closeModal();
             showModal('Success', result.message || 'All teacher logs have been reset successfully.');
         } else {
             closeModal();

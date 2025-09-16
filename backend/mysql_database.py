@@ -317,16 +317,8 @@ class MySQLDatabase:
             except Error as e:
                 logger.warning(f"MySQLDatabase: Could not check/add total_pages column: {e}")
             
-            # Migrate existing students with score 70 to 0
-            try:
-                cursor.execute('SELECT COUNT(*) FROM students WHERE current_score = 70')
-                count_70 = cursor.fetchone()[0]
-                if count_70 > 0:
-                    logger.info(f"MySQLDatabase: Found {count_70} students with score 70, migrating to 0...")
-                    cursor.execute('UPDATE students SET current_score = 0, last_updated = CURRENT_TIMESTAMP WHERE current_score = 70')
-                    logger.info("MySQLDatabase: Score migration completed")
-            except Error as e:
-                logger.warning(f"MySQLDatabase: Could not migrate scores from 70 to 0: {e}")
+            # Migration completed - no longer needed
+            # (Previously migrated scores from 70 to 0 when changing default)
             
             # Create education progress table
             cursor.execute('''
@@ -2237,41 +2229,5 @@ class MySQLDatabase:
             logger.error(f"Unexpected error resetting all student scores: {e}")
             raise
 
-    def update_default_scores_to_zero(self):
-        """Update all students with score 70 to 0 (migration from old default)"""
-        try:
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            
-            # Find students with score 70 (old default)
-            cursor.execute('SELECT id, current_score FROM students WHERE current_score = 70')
-            students_with_70 = cursor.fetchall()
-            
-            if not students_with_70:
-                logger.info("No students found with score 70")
-                return True
-            
-            # Update scores from 70 to 0
-            cursor.execute('UPDATE students SET current_score = 0, last_updated = CURRENT_TIMESTAMP WHERE current_score = 70')
-            rows_affected = cursor.rowcount
-            
-            # Log the score changes in history
-            for student_id, old_score in students_with_70:
-                cursor.execute('''
-                    INSERT INTO score_change_history (student_id, old_score, new_score, change_reason)
-                    VALUES (%s, %s, %s, %s)
-                ''', (student_id, old_score, 0, 'Score migrated from old default (70) to new default (0)'))
-            
-            conn.commit()
-            cursor.close()
-            conn.close()
-            
-            logger.info(f"Updated {rows_affected} students from score 70 to 0")
-            return True
-            
-        except Error as e:
-            logger.error(f"Error updating default scores: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error updating default scores: {e}")
-            raise
+    # Migration function removed - no longer needed
+    # (Previously used to migrate scores from 70 to 0 when changing default)
