@@ -770,9 +770,17 @@ def edit_education_progress(progress_id):
 @app.route('/api/education/all', methods=['DELETE'])
 def delete_all_education_progress():
     try:
-        db.delete_all_education_progress()
-        return jsonify({'success': True, 'message': 'All education progress data deleted successfully'})
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        success = db.delete_all_education_progress()
+        if success:
+            return jsonify({'success': True, 'message': 'All education progress data deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete education progress data'}), 500
     except Exception as e:
+        logger.error(f"Error deleting all education progress: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/education/<int:progress_id>/history', methods=['GET'])

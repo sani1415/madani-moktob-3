@@ -1515,6 +1515,9 @@ async function confirmResetScores() {
             if (typeof window.refreshTeachersCorner === 'function') {
                 window.refreshTeachersCorner();
             }
+        } else if (response.status === 401) {
+            closeModal();
+            showModal('Error', 'You must be logged in as an admin to reset student scores.');
         } else {
             closeModal();
             showModal('Error', result.error || 'Failed to delete all score data');
@@ -1526,10 +1529,38 @@ async function confirmResetScores() {
     }
 }
 
-function confirmResetProgress() {
-    console.log('Resetting education progress...');
-    closeModal();
-    showModal('Success', 'Education progress has been reset successfully.');
+async function confirmResetProgress() {
+    try {
+        console.log('Resetting education progress...');
+        console.log('Making API call to /api/education/all');
+        
+        const response = await fetch('/api/education/all', {
+            method: 'DELETE'
+        });
+        
+        console.log('Response received:', response.status, response.statusText);
+        
+        const result = await response.json();
+        console.log('Response data:', result);
+        
+        if (response.ok) {
+            console.log('Education progress reset successful');
+            closeModal();
+            showModal('Success', result.message || 'All education progress data has been deleted successfully.');
+        } else if (response.status === 401) {
+            console.log('Authentication required for education progress reset');
+            closeModal();
+            showModal('Error', 'You must be logged in as an admin to reset education progress data.');
+        } else {
+            console.log('Education progress reset failed:', result.error);
+            closeModal();
+            showModal('Error', result.error || 'Failed to delete education progress data');
+        }
+    } catch (error) {
+        console.error('Error resetting education progress:', error);
+        closeModal();
+        showModal('Error', 'Network error. Please try again.');
+    }
 }
 
 
