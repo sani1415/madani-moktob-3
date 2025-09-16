@@ -189,8 +189,13 @@ class MySQLDatabase:
                 cursor.execute("SHOW COLUMNS FROM students LIKE 'current_score'")
                 if not cursor.fetchone():
                     logger.info("MySQLDatabase: Adding current_score column to students table...")
-                    cursor.execute('ALTER TABLE students ADD COLUMN current_score INT DEFAULT 70')
+                    cursor.execute('ALTER TABLE students ADD COLUMN current_score INT DEFAULT 0')
                     logger.info("MySQLDatabase: current_score column added successfully")
+                else:
+                    # Update existing column default to 0
+                    logger.info("MySQLDatabase: Updating current_score column default to 0...")
+                    cursor.execute('ALTER TABLE students ALTER COLUMN current_score SET DEFAULT 0')
+                    logger.info("MySQLDatabase: current_score column default updated to 0")
             except Error as e:
                 logger.warning(f"MySQLDatabase: Could not check/add current_score column: {e}")
             
@@ -311,6 +316,17 @@ class MySQLDatabase:
                     logger.info("MySQLDatabase: total_pages column added successfully")
             except Error as e:
                 logger.warning(f"MySQLDatabase: Could not check/add total_pages column: {e}")
+            
+            # Migrate existing students with score 70 to 0
+            try:
+                cursor.execute('SELECT COUNT(*) FROM students WHERE current_score = 70')
+                count_70 = cursor.fetchone()[0]
+                if count_70 > 0:
+                    logger.info(f"MySQLDatabase: Found {count_70} students with score 70, migrating to 0...")
+                    cursor.execute('UPDATE students SET current_score = 0, last_updated = CURRENT_TIMESTAMP WHERE current_score = 70')
+                    logger.info("MySQLDatabase: Score migration completed")
+            except Error as e:
+                logger.warning(f"MySQLDatabase: Could not migrate scores from 70 to 0: {e}")
             
             # Create education progress table
             cursor.execute('''
@@ -2141,4 +2157,121 @@ class MySQLDatabase:
                 
         except Error as e:
             logger.error(f"Error resetting password: {e}")
+            raise
+
+    # ===== BULK DELETE METHODS FOR DATA MANAGEMENT =====
+    
+    def delete_all_books(self):
+        """Delete all books and their related data"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Delete all books (this will cascade to related education_progress records due to foreign key constraints)
+            cursor.execute('DELETE FROM books')
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Deleted {rows_affected} books and their related data")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error deleting all books: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error deleting all books: {e}")
+            raise
+
+    def delete_all_teacher_logs(self):
+        """Delete all teacher log entries"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Delete all teacher logs
+            cursor.execute('DELETE FROM teacher_logs')
+            
+            rows_affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Deleted {rows_affected} teacher log entries")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error deleting all teacher logs: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error deleting all teacher logs: {e}")
+            raise
+
+    def reset_all_student_scores(self):
+        """Delete all score data from database - reset scores to 0 and clear all score history"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # First, delete all score change history
+            cursor.execute('DELETE FROM score_change_history')
+            history_deleted = cursor.rowcount
+            
+            # Then reset all student scores to 0
+            cursor.execute('UPDATE students SET current_score = 0, last_updated = CURRENT_TIMESTAMP WHERE status = "active"')
+            scores_reset = cursor.rowcount
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Deleted {history_deleted} score history entries and reset {scores_reset} student scores to 0")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error resetting all student scores: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error resetting all student scores: {e}")
+            raise
+
+    def update_default_scores_to_zero(self):
+        """Update all students with score 70 to 0 (migration from old default)"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Find students with score 70 (old default)
+            cursor.execute('SELECT id, current_score FROM students WHERE current_score = 70')
+            students_with_70 = cursor.fetchall()
+            
+            if not students_with_70:
+                logger.info("No students found with score 70")
+                return True
+            
+            # Update scores from 70 to 0
+            cursor.execute('UPDATE students SET current_score = 0, last_updated = CURRENT_TIMESTAMP WHERE current_score = 70')
+            rows_affected = cursor.rowcount
+            
+            # Log the score changes in history
+            for student_id, old_score in students_with_70:
+                cursor.execute('''
+                    INSERT INTO score_change_history (student_id, old_score, new_score, change_reason)
+                    VALUES (%s, %s, %s, %s)
+                ''', (student_id, old_score, 0, 'Score migrated from old default (70) to new default (0)'))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Updated {rows_affected} students from score 70 to 0")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error updating default scores: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error updating default scores: {e}")
             raise

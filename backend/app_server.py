@@ -15,6 +15,26 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Load environment variables from .env file if it exists
+def load_env_file():
+    """Load environment variables from .env file"""
+    # Look for .env file in parent directory (project root)
+    env_file = '../.env'
+    if os.path.exists(env_file):
+        logger.info(f"Loading environment variables from {env_file}")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+        logger.info("Environment variables loaded successfully")
+    else:
+        logger.info("No .env file found")
+
+# Load .env file at startup
+load_env_file()
+
 # Import MySQL database adapter
 def import_mysql():
     logger.info("Attempting to import MySQL database module...")
@@ -1285,6 +1305,59 @@ def delete_book(book_id):
         else:
             return jsonify({'error': 'Failed to delete book'}), 500
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== BULK DELETE ENDPOINTS FOR DATA MANAGEMENT =====
+
+@app.route('/api/books/all', methods=['DELETE'])
+def delete_all_books():
+    """Delete all books and their related data"""
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        success = db.delete_all_books()
+        if success:
+            return jsonify({'success': True, 'message': 'All books and their related data deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete all books'}), 500
+    except Exception as e:
+        logger.error(f"Error deleting all books: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/teacher-logs/all', methods=['DELETE'])
+def delete_all_teacher_logs():
+    """Delete all teacher log entries"""
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        success = db.delete_all_teacher_logs()
+        if success:
+            return jsonify({'success': True, 'message': 'All teacher logs deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete all teacher logs'}), 500
+    except Exception as e:
+        logger.error(f"Error deleting all teacher logs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/student-scores/reset-all', methods=['POST'])
+def reset_all_student_scores():
+    """Reset all student scores to 0"""
+    try:
+        admin_check = require_admin()
+        if admin_check:
+            return admin_check
+        
+        success = db.reset_all_student_scores()
+        if success:
+            return jsonify({'success': True, 'message': 'All student scores and score history have been deleted from the database'})
+        else:
+            return jsonify({'error': 'Failed to delete all score data'}), 500
+    except Exception as e:
+        logger.error(f"Error resetting all student scores: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/books/<int:book_id>', methods=['GET'])

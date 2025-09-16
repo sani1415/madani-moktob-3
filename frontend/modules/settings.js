@@ -1347,20 +1347,6 @@ function showResetProgressModal() {
     `);
 }
 
-function showResetTodayAttendanceModal() {
-    showModal('Reset Today\'s Attendance', `
-        <div class="text-center">
-            <i class="fas fa-calendar-day text-4xl text-warning mb-4"></i>
-            <h3 class="text-xl font-semibold mb-4">Reset Today's Attendance</h3>
-            <p class="text-gray-600 mb-6">This will clear all attendance records for today only.</p>
-            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="confirmResetTodayAttendance()" class="btn btn-danger">Reset Today's Attendance</button>
-            </div>
-        </div>
-    `);
-}
 
 function showResetBooksModal() {
     showModal('Reset All Books', `
@@ -1377,20 +1363,6 @@ function showResetBooksModal() {
     `);
 }
 
-function showResetClassesModal() {
-    showModal('Reset All Classes', `
-        <div class="text-center">
-            <i class="fas fa-school text-4xl text-warning mb-4"></i>
-            <h3 class="text-xl font-semibold mb-4">Reset All Classes</h3>
-            <p class="text-gray-600 mb-6">This will delete all classes and reassign students.</p>
-            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
-            <div class="flex gap-3 justify-center">
-                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="confirmResetClasses()" class="btn btn-danger">Reset All Classes</button>
-            </div>
-        </div>
-    `);
-}
 
 function showResetLogsModal() {
     showModal('Reset Teacher Logs', `
@@ -1525,10 +1497,33 @@ async function confirmResetStudents() {
     }
 }
 
-function confirmResetScores() {
-    console.log('Resetting all scores...');
-    closeModal();
-    showModal('Success', 'All scores have been reset successfully.');
+async function confirmResetScores() {
+    try {
+        const response = await fetch('/api/student-scores/reset-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            closeModal();
+            showModal('Success', result.message || 'All student scores and score history have been deleted from the database.');
+            
+            // Refresh any open Teachers Corner views
+            if (typeof window.refreshTeachersCorner === 'function') {
+                window.refreshTeachersCorner();
+            }
+        } else {
+            closeModal();
+            showModal('Error', result.error || 'Failed to delete all score data');
+        }
+    } catch (error) {
+        console.error('Error resetting scores:', error);
+        closeModal();
+        showModal('Error', 'Network error. Please try again.');
+    }
 }
 
 function confirmResetProgress() {
@@ -1537,28 +1532,53 @@ function confirmResetProgress() {
     showModal('Success', 'Education progress has been reset successfully.');
 }
 
-function confirmResetTodayAttendance() {
-    console.log('Resetting today\'s attendance...');
-    closeModal();
-    showModal('Success', 'Today\'s attendance has been reset successfully.');
+
+async function confirmResetBooks() {
+    try {
+        const response = await fetch('/api/books/all', {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            closeModal();
+            showModal('Success', result.message || 'All books have been reset successfully.');
+            
+            // Refresh books list if it exists
+            if (typeof loadBooks === 'function') {
+                await loadBooks();
+            }
+        } else {
+            closeModal();
+            showModal('Error', result.error || 'Failed to reset all books');
+        }
+    } catch (error) {
+        console.error('Error resetting books:', error);
+        closeModal();
+        showModal('Error', 'Network error. Please try again.');
+    }
 }
 
-function confirmResetBooks() {
-    console.log('Resetting all books...');
-    closeModal();
-    showModal('Success', 'All books have been reset successfully.');
-}
 
-function confirmResetClasses() {
-    console.log('Resetting all classes...');
-    closeModal();
-    showModal('Success', 'All classes have been reset successfully.');
-}
-
-function confirmResetLogs() {
-    console.log('Resetting all logs...');
-    closeModal();
-    showModal('Success', 'All teacher logs have been reset successfully.');
+async function confirmResetLogs() {
+    try {
+        const response = await fetch('/api/teacher-logs/all', {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            closeModal();
+            showModal('Success', result.message || 'All teacher logs have been reset successfully.');
+        } else {
+            closeModal();
+            showModal('Error', result.error || 'Failed to reset all teacher logs');
+        }
+    } catch (error) {
+        console.error('Error resetting teacher logs:', error);
+        closeModal();
+        showModal('Error', 'Network error. Please try again.');
+    }
 }
 
 function confirmResetUsers() {
@@ -2042,9 +2062,7 @@ export {
     showResetStudentsModal,
     showResetScoresModal,
     showResetProgressModal,
-    showResetTodayAttendanceModal,
     showResetBooksModal,
-    showResetClassesModal,
     showResetLogsModal,
     showResetUsersModal,
     showResetSettingsModal,
@@ -2071,9 +2089,7 @@ export {
     confirmResetStudents,
     confirmResetScores,
     confirmResetProgress,
-    confirmResetTodayAttendance,
     confirmResetBooks,
-    confirmResetClasses,
     confirmResetLogs,
     confirmResetUsers,
     confirmResetSettings,

@@ -364,7 +364,7 @@
                     
                     // Update local studentScores object
                     studentsWithScores.forEach(student => {
-                        studentScores[student.id] = student.current_score || 70;
+                        studentScores[student.id] = student.current_score || 0;
                     });
                     
                     return true;
@@ -762,7 +762,7 @@
             return studentScores[studentId];
         }
             // Return default score if not loaded yet
-            return 70;
+            return 0;
         }
         
 
