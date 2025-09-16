@@ -33,14 +33,9 @@ window.showSection = Misc.showSection;
 window.openSettingsTab = Misc.openSettingsTab;
 
 // Registration functions
-window.hideBulkImport = Registration.hideBulkImport;
-window.downloadAllStudentsCSV = Registration.downloadAllStudentsCSV;
-window.processExcelFile = Registration.processExcelFile;
 window.hideStudentRegistrationForm = Registration.hideStudentRegistrationForm;
 window.displayStudentsList = Registration.displayStudentsList;
 window.showStudentRegistrationForm = Registration.showStudentRegistrationForm;
-window.showBulkImport = Registration.showBulkImport;
-window.deleteAllStudents = Registration.deleteAllStudents;
 window.editStudent = Registration.editStudent;
 window.deleteStudent = Registration.deleteStudent;
 window.updateStudentStatus = Registration.updateStudentStatus;
@@ -127,6 +122,39 @@ window.closeEditUserModal = Settings.closeEditUserModal;
 window.deleteUser = Settings.deleteUser;
 window.resetUserPassword = Settings.resetUserPassword;
 window.refreshUsersList = Settings.refreshUsersList;
+
+// Data Management functions
+window.showResetStudentsModal = Settings.showResetStudentsModal;
+window.showResetScoresModal = Settings.showResetScoresModal;
+window.showResetProgressModal = Settings.showResetProgressModal;
+window.showResetTodayAttendanceModal = Settings.showResetTodayAttendanceModal;
+window.showResetBooksModal = Settings.showResetBooksModal;
+window.showResetClassesModal = Settings.showResetClassesModal;
+window.showResetLogsModal = Settings.showResetLogsModal;
+window.showResetUsersModal = Settings.showResetUsersModal;
+window.showResetSettingsModal = Settings.showResetSettingsModal;
+window.showCompleteResetModal = Settings.showCompleteResetModal;
+window.showBackupModal = Settings.showBackupModal;
+window.showBulkImport = Settings.showBulkImport;
+window.hideBulkImport = Settings.hideBulkImport;
+window.downloadAllStudentsCSV = Settings.downloadAllStudentsCSV;
+window.createBackup = Settings.createBackup;
+window.processExcelFile = Settings.processExcelFile;
+window.handleFileSelect = Settings.handleFileSelect;
+window.updateUploadZone = Settings.updateUploadZone;
+window.resetUploadZone = Settings.resetUploadZone;
+
+// Data Management confirmation functions
+window.confirmResetStudents = Settings.confirmResetStudents;
+window.confirmResetScores = Settings.confirmResetScores;
+window.confirmResetProgress = Settings.confirmResetProgress;
+window.confirmResetTodayAttendance = Settings.confirmResetTodayAttendance;
+window.confirmResetBooks = Settings.confirmResetBooks;
+window.confirmResetClasses = Settings.confirmResetClasses;
+window.confirmResetLogs = Settings.confirmResetLogs;
+window.confirmResetUsers = Settings.confirmResetUsers;
+window.confirmResetSettings = Settings.confirmResetSettings;
+window.confirmCompleteReset = Settings.confirmCompleteReset;
 
 // Note: testAddBookProgress function removed - Education Progress is now handled in Teachers Corner
 

@@ -101,13 +101,6 @@ function displayStudentsList() {
                         <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
                             <i class="fas fa-plus"></i> ${t('registerNewStudent')}
                         </button>
-                        <button onclick="showBulkImport()" class="btn btn-secondary">
-                            <i class="fas fa-upload"></i> ${t('bulkImport')}
-                        </button>
-                        <button onclick="deleteAllStudents()" class="btn btn-danger delete-all" title="${t('deleteAllStudents')}">
-                            <i class="fas fa-exclamation-triangle warning-icon"></i>
-                            <i class="fas fa-trash-alt"></i> ${t('deleteAllStudents')}
-                        </button>
                     </div>
                 </div>
             <div class="no-students-message">
@@ -140,13 +133,6 @@ function displayStudentsList() {
                 <div class="students-list-buttons">
                     <button onclick="showStudentRegistrationForm()" class="btn btn-primary">
                         <i class="fas fa-plus"></i> ${t('registerNewStudent')}
-                    </button>
-                    <button onclick="showBulkImport()" class="btn btn-secondary">
-                        <i class="fas fa-upload"></i> ${t('bulkImport')}
-                    </button>
-                    <button onclick="deleteAllStudents()" class="btn btn-danger delete-all" title="${t('deleteAllStudents')}">
-                        <i class="fas fa-exclamation-triangle warning-icon"></i>
-                        <i class="fas fa-trash-alt"></i> ${t('deleteAllStudents')}
                     </button>
                 </div>
             </div>
@@ -351,41 +337,6 @@ async function deleteStudent(studentId) {
     }
 }
 
-async function deleteAllStudents() {
-    if (students.length === 0) {
-        showModal(t('error'), 'No students to delete.');
-        return;
-    }
-    
-    // First confirmation
-    if (confirm(`${t('confirmDeleteAllStudents')}\n\n${t('actionCannotBeUndone')}`)) {
-        // Second confirmation with stronger warning
-        if (confirm(`${t('confirmDeleteAllStudentsFinal')}\n\n${t('finalDeleteAllWarning')}`)) {
-            try {
-                const response = await fetch('/api/students', {
-                    method: 'DELETE'
-                });
-                
-                if (response.ok) {
-                    // Get count before clearing
-                    const deletedCount = students.length;
-                    // Clear local array
-                    students = [];
-                    
-                    displayStudentsList();
-                    updateDashboard();
-                    showModal(t('success'), `All ${deletedCount} students have been deleted successfully.`);
-                } else {
-                    const error = await response.json();
-                    showModal(t('error'), error.error || 'Failed to delete all students');
-                }
-            } catch (error) {
-                console.error('Delete all error:', error);
-                showModal(t('error'), 'Network error. Please try again.');
-            }
-        }
-    }
-}
 
 function resetStudentForm() {
     const form = document.getElementById('studentForm');
@@ -1076,4 +1027,4 @@ function showInactiveStudentsList() {
     if(classFilterReg) classFilterReg.value = '';
 }
 
-export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, deleteAllStudents, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts, updateStudentStatus, updateStudentStatusWithBackdating, showBackdatingModal, closeBackdatingModal, confirmBackdating, showInactiveStudentsList }
+export { studentFilters, generateStudentId, registerStudent, displayStudentsList, showStudentRegistrationForm, hideStudentRegistrationForm, editStudent, updateStudent, deleteStudent, resetStudentForm, applyStudentFilters, updateStudentFilter, clearStudentFilters, updateStudentTableBody, updateClassFilterOptions, showBulkImport, hideBulkImport, handleFileSelect, updateUploadZone, resetUploadZone, showImportProgress, updateProgress, hideImportProgress, showImportResults, resetBulkImport, downloadAllStudentsCSV, processExcelFile, updateRegistrationTexts, updateStudentStatus, updateStudentStatusWithBackdating, showBackdatingModal, closeBackdatingModal, confirmBackdating, showInactiveStudentsList }

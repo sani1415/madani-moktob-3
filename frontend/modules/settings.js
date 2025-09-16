@@ -1294,21 +1294,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Data Reset Functions
 function showResetStudentsModal() {
-    showModal('Reset All Students', `
+    showModal('Delete All Students', `
         <div class="text-center">
-            <i class="fas fa-users text-4xl text-warning mb-4"></i>
-            <h3 class="text-xl font-semibold mb-4">Reset All Students</h3>
-            <p class="text-gray-600 mb-6">This will delete all student data including:</p>
+            <i class="fas fa-users text-4xl text-danger mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Delete All Students</h3>
+            <p class="text-gray-600 mb-6">This will permanently delete all student data including:</p>
             <ul class="text-left text-gray-600 mb-6 space-y-2">
                 <li>• Student personal information</li>
                 <li>• All attendance records</li>
                 <li>• All scores and progress</li>
                 <li>• All teacher logs for students</li>
             </ul>
-            <p class="text-red-600 font-semibold mb-4">This action cannot be undone!</p>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p class="text-red-600 font-semibold mb-2">⚠️ WARNING: This action is irreversible!</p>
+                <p class="text-red-600 text-sm">This will completely reset your student database. All data will be permanently lost.</p>
+            </div>
             <div class="flex gap-3 justify-center">
                 <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
-                <button onclick="confirmResetStudents()" class="btn btn-danger">Reset All Students</button>
+                <button onclick="confirmResetStudents()" class="btn btn-danger">Delete All Students</button>
             </div>
         </div>
     `);
@@ -1475,10 +1478,51 @@ function showBackupModal() {
 }
 
 // Confirmation functions (to be implemented)
-function confirmResetStudents() {
-    console.log('Resetting all students...');
-    closeModal();
-    showModal('Success', 'All students have been reset successfully.');
+async function confirmResetStudents() {
+    // Check if students exist
+    if (typeof window.students === 'undefined' || window.students.length === 0) {
+        closeModal();
+        showModal('No Data', 'No students found to delete.');
+        return;
+    }
+    
+    // First confirmation
+    if (confirm('Are you sure you want to delete ALL students?\n\nThis action cannot be undone.')) {
+        // Second confirmation with stronger warning
+        if (confirm('Are you absolutely sure you want to delete ALL students?\n\nThis will permanently delete ALL students and their attendance records. This action is irreversible and will completely reset your student database.')) {
+            try {
+                const response = await fetch('/api/students', {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // Get count before clearing
+                    const deletedCount = window.students.length;
+                    // Clear local array
+                    window.students = [];
+                    
+                    // Refresh UI
+                    if (typeof displayStudentsList === 'function') {
+                        displayStudentsList();
+                    }
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
+                    closeModal();
+                    showModal('Success', `All ${deletedCount} students have been deleted successfully.`);
+                } else {
+                    const error = await response.json();
+                    closeModal();
+                    showModal('Error', error.error || 'Failed to delete all students');
+                }
+            } catch (error) {
+                console.error('Delete all error:', error);
+                closeModal();
+                showModal('Error', 'Network error. Please try again.');
+            }
+        }
+    }
 }
 
 function confirmResetScores() {
@@ -1535,10 +1579,423 @@ function confirmCompleteReset() {
     showModal('Success', 'Complete reset has been performed successfully.');
 }
 
+function showBulkImport() {
+    // Show the bulk import section in data management
+    const bulkImportSection = document.getElementById('bulkImportSection');
+    const dataManagementContent = document.querySelector('#data .reset-list, #data .danger-zone, #data .setting-group');
+    
+    if (bulkImportSection && dataManagementContent) {
+        // Hide other content
+        dataManagementContent.style.display = 'none';
+        // Show bulk import section
+        bulkImportSection.style.display = 'block';
+        
+        // Setup file input listener
+        const fileInput = document.getElementById('excelFile');
+        if (fileInput) {
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+    }
+}
+
+function hideBulkImport() {
+    // Hide bulk import section and show other content
+    const bulkImportSection = document.getElementById('bulkImportSection');
+    const dataManagementContent = document.querySelector('#data .reset-list, #data .danger-zone, #data .setting-group');
+    
+    if (bulkImportSection && dataManagementContent) {
+        bulkImportSection.style.display = 'none';
+        dataManagementContent.style.display = 'block';
+        
+        // Reset file input
+        const fileInput = document.getElementById('excelFile');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Hide import results
+        const importResults = document.getElementById('importResults');
+        if (importResults) {
+            importResults.style.display = 'none';
+        }
+    }
+}
+
+function downloadAllStudentsCSV() {
+    // Export all students data as CSV in the exact format expected by import
+    if (typeof window.students === 'undefined' || window.students.length === 0) {
+        showModal('No Data', 'No students found to export.');
+        return;
+    }
+    
+    try {
+        // Create CSV content with headers that match the import format exactly
+        const headers = ['id', 'name', 'fathername', 'rollnumber', 'mobilenumber', 'district', 'upazila', 'class', 'registrationdate'];
+        const csvContent = [
+            headers.join(','),
+            ...window.students.map(student => [
+                student.id || '',
+                `"${student.name || ''}"`,
+                `"${student.fatherName || ''}"`,
+                student.rollNumber || '',
+                student.mobileNumber || '',
+                `"${student.district || ''}"`,
+                `"${student.upazila || ''}"`,
+                `"${student.class || ''}"`,
+                student.registrationDate || ''
+            ].join(','))
+        ].join('\n');
+        
+        // Download CSV file with UTF-8 BOM for proper Bengali text support
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showModal('Success', 'Students data exported successfully! The file is ready for re-import.');
+    } catch (error) {
+        console.error('Export error:', error);
+        showModal('Export Error', 'Failed to export data. Please try again.');
+    }
+}
+
 function createBackup() {
     console.log('Creating backup...');
     closeModal();
     showModal('Success', 'Backup created successfully.');
+}
+
+// Bulk import helper functions (imported from registration.js functionality)
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    if (file) {
+        updateUploadZone(file.name);
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+        }
+    } else {
+        resetUploadZone();
+        if (uploadBtn) {
+            uploadBtn.disabled = true;
+        }
+    }
+}
+
+function updateUploadZone(fileName) {
+    const dropZone = document.querySelector('.upload-drop-zone');
+    if (dropZone) {
+        dropZone.innerHTML = `
+            <i class="fas fa-file-csv text-success"></i>
+            <p><strong>Selected:</strong> ${fileName}</p>
+            <p class="file-types">Click to select a different file</p>
+        `;
+    }
+}
+
+function resetUploadZone() {
+    const dropZone = document.querySelector('.upload-drop-zone');
+    if (dropZone) {
+        dropZone.innerHTML = `
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click to select CSV file</p>
+            <p class="file-types">Supports .csv files (Excel saved as CSV)</p>
+        `;
+    }
+}
+
+// Import the bulk import functions from registration.js
+async function processExcelFile() {
+    const fileInput = document.getElementById('excelFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showModal('Error', 'Please select a CSV file first');
+        return;
+    }
+    
+    // Show progress
+    showImportProgress();
+    
+    try {
+        // Read Excel file
+        const studentsData = await readExcelFile(file);
+        
+        if (studentsData.length === 0) {
+            showModal('Error', 'No student data found in the CSV file. Please check the format.');
+            hideImportProgress();
+            return;
+        }
+        
+        // Validate and import students
+        await importStudentsBatch(studentsData);
+        
+    } catch (error) {
+        console.error('Import error:', error);
+        hideImportProgress();
+        
+        // Show better error message for encoding issues
+        if (error.message.includes('এনকোডিং') || error.message.includes('encoding')) {
+            showEncodingErrorModal(error.message);
+        } else {
+            showModal('Import Error', error.message);
+        }
+    }
+}
+
+function showImportProgress() {
+    const resultsDiv = document.getElementById('importResults');
+    if (resultsDiv) {
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = `
+            <div class="import-progress">
+                <h4>📤 Processing CSV File...</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <p id="progressText">Preparing to read file...</p>
+            </div>
+        `;
+    }
+}
+
+function updateProgress(percentage, text) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressFill) progressFill.style.width = percentage + '%';
+    if (progressText) progressText.textContent = text;
+}
+
+function hideImportProgress() {
+    const progressDiv = document.querySelector('.import-progress');
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
+}
+
+async function readExcelFile(file) {
+    updateProgress(10, 'Reading CSV file...');
+    
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                updateProgress(30, 'Parsing CSV data...');
+                
+                const text = e.target.result;
+                
+                // Split into lines and remove empty lines
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                
+                if (lines.length < 2) {
+                    reject(new Error('CSV file must have at least a header row and one data row'));
+                    return;
+                }
+                
+                // Parse header row
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                
+                // Expected headers
+                const expectedHeaders = ['id', 'name', 'fathername', 'rollnumber', 'mobilenumber', 'district', 'upazila', 'class', 'registrationdate'];
+                
+                // Check if all required headers are present
+                const missingHeaders = expectedHeaders.filter(h => !headers.includes(h));
+                if (missingHeaders.length > 0) {
+                    reject(new Error(`Missing required headers: ${missingHeaders.join(', ')}. Please check your CSV format.`));
+                    return;
+                }
+                
+                // Parse data rows
+                const fileStudents = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                    
+                    if (values.length !== headers.length) {
+                        console.warn(`Row ${i + 1} has ${values.length} columns but expected ${headers.length}. Skipping.`);
+                        continue;
+                    }
+                    
+                    const student = {};
+                    headers.forEach((header, index) => {
+                        student[header] = values[index] || '';
+                    });
+                    
+                    // Validate required fields
+                    if (!student.name || !student.fathername || !student.rollnumber || !student.class) {
+                        console.warn(`Row ${i + 1} is missing required fields. Skipping.`);
+                        continue;
+                    }
+                    
+                    fileStudents.push(student);
+                }
+                
+                updateProgress(50, `Found ${fileStudents.length} students in file`);
+                resolve(fileStudents);
+                
+            } catch (error) {
+                reject(new Error(`Error parsing CSV file: ${error.message}`));
+            }
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Error reading file. Please make sure the file is not corrupted and try again.'));
+        };
+        
+        reader.readAsText(file, 'UTF-8');
+    });
+}
+
+async function importStudentsBatch(studentsData) {
+    const total = studentsData.length;
+    updateProgress(60, `Uploading ${total} students for validation...`);
+    
+    // We need to map the headers from the CSV (lowercase) to the database schema (camelCase)
+    const formattedStudentsData = studentsData.map(student => ({
+        id: student.id || generateStudentId(), // Assign new ID if missing
+        name: student.name,
+        fatherName: student.fathername,
+        rollNumber: student.rollnumber,
+        mobileNumber: student.mobilenumber,
+        district: student.district,
+        upazila: student.upazila,
+        class: student.class,
+        registrationDate: student.registrationdate || new Date().toISOString().split('T')[0]
+    }));
+
+    try {
+        const response = await fetch('/api/students/bulk-import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formattedStudentsData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            updateProgress(100, 'Import complete!');
+            showImportResults(total, total, 0, 0, 0, []); // Simplified results
+            
+            // Refresh local student data
+            const studentsResponse = await fetch('/api/students');
+            if (studentsResponse.ok) {
+                window.students = await studentsResponse.json();
+            }
+        } else {
+            // Handle the specific class validation error
+            if (response.status === 400 && result.invalid_classes) {
+                const errorMessage = `${result.error}: ${result.invalid_classes.join(', ')}. Please add them in Settings before uploading.`;
+                showModal('Upload Failed', errorMessage);
+            } else {
+                showModal('Import Error', result.error || 'An unknown error occurred.');
+            }
+            
+            // Reset progress on failure
+            document.getElementById('importResults').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Bulk import error:', error);
+        showModal('Network Error', 'Could not connect to the server.');
+        document.getElementById('importResults').style.display = 'none';
+    } finally {
+        hideImportProgress();
+        
+        // Refresh the student list and dashboard regardless of outcome
+        if (typeof displayStudentsList === 'function') {
+            displayStudentsList();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    }
+}
+
+function showImportResults(total, successful, failed, updated, duplicateRolls, errors) {
+    const resultsDiv = document.getElementById('importResults');
+    if (!resultsDiv) return;
+    
+    const summaryHTML = `
+        <div class="import-summary">
+            <div class="summary-item success">
+                <h4>${successful}</h4>
+                <p>Successfully Imported</p>
+            </div>
+            <div class="summary-item error">
+                <h4>${failed}</h4>
+                <p>Failed</p>
+            </div>
+            <div class="summary-item info">
+                <h4>${updated}</h4>
+                <p>Updated</p>
+            </div>
+            <div class="summary-item warning">
+                <h4>${duplicateRolls}</h4>
+                <p>Duplicate Roll Numbers</p>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = `
+        <div class="import-results-content">
+            <h4>📊 Import Results</h4>
+            ${summaryHTML}
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="hideBulkImport()" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Back to Data Management
+                </button>
+                <button onclick="resetBulkImport()" class="btn btn-secondary">
+                    <i class="fas fa-upload"></i> Import Another File
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function resetBulkImport() {
+    // Reset the form
+    const fileInput = document.getElementById('excelFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const importResults = document.getElementById('importResults');
+    
+    if (fileInput) fileInput.value = '';
+    if (uploadBtn) uploadBtn.disabled = true;
+    if (importResults) importResults.style.display = 'none';
+    
+    resetUploadZone();
+}
+
+function generateStudentId() {
+    return 'ST' + String(Date.now()).slice(-6);
+}
+
+function showEncodingErrorModal(message) {
+    showModal('Encoding Error', `
+        <div style="text-align: left;">
+            <p><strong>Bengali/Unicode Text Issue Detected:</strong></p>
+            <p>${message}</p>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196f3;">
+                <p style="margin: 0; color: #1565c0; font-weight: 600;">💡 Solution:</p>
+                <p style="margin: 5px 0 0 0; color: #1565c0;">Save your Excel file as <strong>"CSV UTF-8 (Comma delimited) (*.csv)"</strong> format</p>
+            </div>
+            <p><strong>Steps:</strong></p>
+            <ol style="text-align: left; margin: 10px 0;">
+                <li>Open your Excel file</li>
+                <li>Go to File → Save As</li>
+                <li>Choose "CSV UTF-8 (Comma delimited) (*.csv)"</li>
+                <li>Save and try uploading again</li>
+            </ol>
+        </div>
+    `);
 }
 
 // Export all functions
@@ -1592,5 +2049,33 @@ export {
     showResetUsersModal,
     showResetSettingsModal,
     showCompleteResetModal,
-    showBackupModal
+    showBackupModal,
+    showBulkImport,
+    hideBulkImport,
+    downloadAllStudentsCSV,
+    createBackup,
+    handleFileSelect,
+    updateUploadZone,
+    resetUploadZone,
+    processExcelFile,
+    showImportProgress,
+    updateProgress,
+    hideImportProgress,
+    readExcelFile,
+    importStudentsBatch,
+    showImportResults,
+    resetBulkImport,
+    generateStudentId,
+    showEncodingErrorModal,
+    // Confirmation functions
+    confirmResetStudents,
+    confirmResetScores,
+    confirmResetProgress,
+    confirmResetTodayAttendance,
+    confirmResetBooks,
+    confirmResetClasses,
+    confirmResetLogs,
+    confirmResetUsers,
+    confirmResetSettings,
+    confirmCompleteReset
 }
