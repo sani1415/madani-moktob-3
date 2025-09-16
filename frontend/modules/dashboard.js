@@ -1,4 +1,5 @@
 import { getTodayString, parseInactivationDate } from './utils.js';
+import { t } from '../translations.js';
 
 async function updateDashboard() {
     // Use local date methods to avoid timezone issues (same as attendance module)
@@ -723,9 +724,9 @@ async function updateMainDashboardAlerts() {
             alerts.push({
                 type: 'danger',
                 icon: 'fas fa-exclamation-triangle',
-                title: 'Critical Students',
-                message: `${criticalScoreStudents.length} students have scores below ${alertConfig.CRITICAL_SCORE_THRESHOLD}`,
-                action: 'View Details',
+                title: t('critical_students'),
+                message: `${criticalScoreStudents.length} ${t('students_have_scores_below')} ${alertConfig.CRITICAL_SCORE_THRESHOLD}`,
+                action: t('view_details'),
                 students: criticalScoreStudents,
                 alertType: 'critical'
             });
@@ -736,9 +737,9 @@ async function updateMainDashboardAlerts() {
             alerts.push({
                 type: 'warning',
                 icon: 'fas fa-user-times',
-                title: 'Low Score Students',
-                message: `${lowScoreStudents.length} students have scores below ${alertConfig.LOW_SCORE_THRESHOLD}`,
-                action: 'View Details',
+                title: t('low_score_students'),
+                message: `${lowScoreStudents.length} ${t('students_have_scores_below')} ${alertConfig.LOW_SCORE_THRESHOLD}`,
+                action: t('view_details'),
                 students: lowScoreStudents,
                 alertType: 'low'
             });
@@ -877,11 +878,11 @@ function renderAlertDetails(alert) {
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-2 text-left">Roll</th>
-                            <th class="px-4 py-2 text-left">Name</th>
-                            <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-center">Score</th>
-                            <th class="px-4 py-2 text-center">Action</th>
+                            <th class="px-4 py-2 text-left">${t('roll')}</th>
+                            <th class="px-4 py-2 text-left">${t('name')}</th>
+                            <th class="px-4 py-2 text-left">${t('class')}</th>
+                            <th class="px-4 py-2 text-center">${t('score')}</th>
+                            <th class="px-4 py-2 text-center">${t('action')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -895,7 +896,7 @@ function renderAlertDetails(alert) {
                                 </td>
                                 <td class="px-4 py-2 text-center">
                                     <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
-                                        View Details
+                                        ${t('view_details')}
                                     </button>
                                 </td>
                             </tr>
@@ -913,7 +914,7 @@ function renderAlertDetails(alert) {
                             <th class="px-4 py-2 text-left">Roll</th>
                             <th class="px-4 py-2 text-left">Name</th>
                             <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-left">Reason</th>
+                            <th class="px-4 py-2 text-left">${t('reason')}</th>
                             <th class="px-4 py-2 text-center">Action</th>
                         </tr>
                     </thead>
@@ -929,7 +930,7 @@ function renderAlertDetails(alert) {
                                     <td class="px-4 py-2 text-gray-600">${reason}</td>
                                     <td class="px-4 py-2 text-center">
                                         <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline text-sm">
-                                            View Details
+                                            ${t('view_details')}
                                         </button>
                                     </td>
                                 </tr>
@@ -1157,7 +1158,7 @@ function showLowScoreStudents(students, type) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     
-    const title = type === 'critical' ? 'Critical Score Students' : 'Low Score Students';
+    const title = type === 'critical' ? t('critical_students') : t('low_score_students');
     const color = type === 'critical' ? '#ef4444' : '#f59e0b';
     
     modal.innerHTML = `
@@ -1173,11 +1174,11 @@ function showLowScoreStudents(students, type) {
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-2 text-left">Roll</th>
-                            <th class="px-4 py-2 text-left">Name</th>
-                            <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-center">Score</th>
-                            <th class="px-4 py-2 text-center">Action</th>
+                            <th class="px-4 py-2 text-left">${t('roll')}</th>
+                            <th class="px-4 py-2 text-left">${t('name')}</th>
+                            <th class="px-4 py-2 text-left">${t('class')}</th>
+                            <th class="px-4 py-2 text-center">${t('score')}</th>
+                            <th class="px-4 py-2 text-center">${t('action')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1191,7 +1192,7 @@ function showLowScoreStudents(students, type) {
                                 </td>
                                 <td class="px-4 py-2 text-center">
                                     <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline">
-                                        View Details
+                                        ${t('view_details')}
                                     </button>
                                 </td>
                             </tr>
@@ -1232,7 +1233,7 @@ function showAbsentStudents(students, todayAttendance) {
                             <th class="px-4 py-2 text-left">Roll</th>
                             <th class="px-4 py-2 text-left">Name</th>
                             <th class="px-4 py-2 text-left">Class</th>
-                            <th class="px-4 py-2 text-left">Reason</th>
+                            <th class="px-4 py-2 text-left">${t('reason')}</th>
                             <th class="px-4 py-2 text-center">Action</th>
                         </tr>
                     </thead>
@@ -1248,7 +1249,7 @@ function showAbsentStudents(students, todayAttendance) {
                                     <td class="px-4 py-2 text-gray-600">${reason}</td>
                                     <td class="px-4 py-2 text-center">
                                         <button onclick="window.showStudentProfile('${student.id}')" class="text-blue-600 hover:text-blue-800 underline">
-                                            View Details
+                                            ${t('view_details')}
                                         </button>
                                     </td>
                                 </tr>

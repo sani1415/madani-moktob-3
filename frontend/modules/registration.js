@@ -140,8 +140,8 @@ function displayStudentsList() {
                 <table class="students-table">
                     <thead>
                         <tr>
-                            <th>${t('rollNo')}</th>
-                            <th>${t('fullName')}</th>
+                            <th>${t('rollno')}</th>
+                            <th>${t('fullname')}</th>
                             <th>${t('class')}</th>
                             <th>${t('mobile')}</th>
                             <th>${t('actions')}</th>

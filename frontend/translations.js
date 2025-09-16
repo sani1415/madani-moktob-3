@@ -3,7 +3,7 @@ const translations = {
     en: {
         // Header
         appTitle: "Madani Maktab",
-        appSubtitle: "Student Attendance Management System",
+        appSubtitle: "Student Management System",
         
         // Navigation
         dashboard: "Dashboard",
@@ -30,8 +30,31 @@ const translations = {
         absentStudents: "Absent Students:",
         noReasonProvided: "No reason provided",
         
+        // Dashboard Alerts and Tables
+        institution_alerts: "Institution Alerts",
+        class_wise_information: "Class-wise Information",
+        loading_class_statistics: "Loading class statistics...",
+        class: "Class",
+        total: "Total",
+        rate: "Rate",
+        avg_score: "Avg Score",
+        mustaid: "Mustaid",
+        mutawassit: "Mutawassit",
+        mujtahid: "Mujtahid",
+        roll: "Roll",
+        name: "Name",
+        score: "Score",
+        action: "Action",
+        reason: "Reason",
+        view_details: "View Details",
+        critical_students: "Critical Students",
+        low_score_students: "Low Score Students",
+        students_have_scores_below: "students have scores below",
+        
         // Student Registration
         studentRegistration: "Student Registration",
+        allRegisteredStudents: "All Registered Students",
+        registerNewStudent: "Register New Student",
         studentName: "Student Name",
         fatherName: "Father's Name",
         rollNumber: "Roll Number",
@@ -44,13 +67,22 @@ const translations = {
         selectClass: "Select Class",
         registerStudentBtn: "Register Student",
         required: "*",
+        rollno: "Roll No",
+        fullname: "Full Name",
+        mobile: "Mobile",
+        actions: "Actions",
         
         // Daily Attendance
         dailyAttendanceTitle: "Daily Attendance",
         date: "Date:",
         filterByClass: "Filter by Class:",
         allClasses: "All Classes",
+        markAllPresent: "Mark All Present",
+        markAllAbsent: "Mark All Absent", 
+        markAllNeutral: "Mark All Neutral",
+        copyPreviousDay: "Copy Previous Day",
         saveAttendance: "Save Attendance",
+        students: "students",
         pleaseSelectDate: "Please select a date.",
         noStudentsFound: "No students found for the selected criteria.",
         noStudentsFoundRegister: "No students found. Please register students first.",
@@ -64,6 +96,9 @@ const translations = {
         generateReport: "Generate Report",
         fromBeginningReport: "From Beginning Report",
         fromBeginningReportDesc: "Generate report from academic year start to today",
+        showAttendanceTrackingCalendar: "Show Attendance Tracking Calendar",
+        viewAttendanceStatistics: "View Attendance Statistics",
+        selectDateRangeToGenerate: "Select date range to generate report",
         attendanceReport: "Attendance Report",
         period: "Period:",
         studentNameCol: "Student Name",
@@ -84,6 +119,22 @@ const translations = {
         
         // Settings
         settingsTitle: "Settings",
+        general: "General",
+        academic: "Academic", 
+        bookManagement: "Book Management",
+        alerts: "Alerts",
+        dataManagement: "Data Management",
+        userManagement: "User Management",
+        welcome: "Welcome",
+        logout: "Logout",
+        hijriDateAdjustment: "Hijri Date Adjustment",
+        hijriDateAdjustmentDesc: "Adjust the calculated Hijri date for local moon sightings.",
+        day: "Day",
+        behind: "Behind",
+        ahead: "Ahead",
+        currentDatePreview: "Current Date Preview:",
+        gregorian: "Gregorian:",
+        hijri: "Hijri:",
         academicYearSettings: "Academic Year Settings",
         academicYearStartDate: "Academic Year Start Date",
         academicYearStartDateDesc: "Select the starting date for your academic year",
@@ -106,6 +157,7 @@ const translations = {
         applicationSettings: "Application Settings",
         applicationName: "Application Name",
         appNamePlaceholder: "Enter application name",
+        appNameDescription: "Change the name displayed in the header and title.",
         updateAppNameBtn: "Update Name",
         enterAppName: "Please enter an application name.",
         appNameUpdated: "Application name updated successfully.",
@@ -441,7 +493,7 @@ const translations = {
     bn: {
         // Header
         appTitle: "মাদানী মক্তব",
-        appSubtitle: "ছাত্র উপস্থিতি ব্যবস্থাপনা সিস্টেম",
+        appSubtitle: "ছাত্র ব্যবস্থাপনা সিস্টেম",
         
         // Navigation
         dashboard: "ড্যাশবোর্ড",
@@ -469,6 +521,28 @@ const translations = {
         absentStudents: "অনুপস্থিত ছাত্রগণ:",
         noReasonProvided: "কোন কারণ দেওয়া হয়নি",
         
+        // Dashboard Alerts and Tables
+        institution_alerts: "প্রতিষ্ঠানের সতর্কতা",
+        class_wise_information: "শ্রেণীভিত্তিক তথ্য",
+        loading_class_statistics: "শ্রেণীর পরিসংখ্যান লোড হচ্ছে...",
+        class: "শ্রেণী",
+        total: "মোট",
+        rate: "হার",
+        avg_score: "গড় স্কোর",
+        mustaid: "মুস্তায়িদ",
+        mutawassit: "মুতাওয়াসসিত",
+        mujtahid: "মুজতাহিদ",
+        roll: "রোল",
+        name: "নাম",
+        score: "স্কোর",
+        action: "কর্ম",
+        reason: "কারণ",
+        view_details: "বিস্তারিত দেখুন",
+        critical_students: "জরুরি ছাত্র",
+        low_score_students: "নিম্ন স্কোরের ছাত্র",
+        students_have_scores_below: "ছাত্রের স্কোর এর নিচে",
+        inactive: "নিষ্ক্রিয়",
+        
         // Student Registration
         studentRegistration: "ছাত্র নিবন্ধন",
         studentName: "ছাত্রের নাম",
@@ -483,13 +557,24 @@ const translations = {
         selectClass: "শ্রেণী নির্বাচন করুন",
         registerStudentBtn: "ছাত্র নিবন্ধন করুন",
         required: "*",
+        allRegisteredStudents: "সকল নিবন্ধিত ছাত্র",
+        registerNewStudent: "নতুন ছাত্র নিবন্ধন",
+        rollno: "রোল নম্বর",
+        fullname: "পূর্ণ নাম",
+        mobile: "মোবাইল",
+        actions: "কর্ম",
         
         // Daily Attendance
         dailyAttendanceTitle: "দৈনিক উপস্থিতি",
         date: "তারিখ:",
         filterByClass: "শ্রেণী অনুযায়ী ফিল্টার:",
         allClasses: "সকল শ্রেণী",
+        markAllPresent: "সবাইকে উপস্থিত চিহ্নিত করুন",
+        markAllAbsent: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
+        markAllNeutral: "সবাইকে নিরপেক্ষ চিহ্নিত করুন",
+        copyPreviousDay: "পূর্ববর্তী দিন কপি করুন",
         saveAttendance: "উপস্থিতি সংরক্ষণ করুন",
+        students: "ছাত্র",
         pleaseSelectDate: "অনুগ্রহ করে একটি তারিখ নির্বাচন করুন।",
         noStudentsFound: "নির্বাচিত মানদণ্ডের জন্য কোন ছাত্র পাওয়া যায়নি।",
         noStudentsFoundRegister: "কোন ছাত্র পাওয়া যায়নি। অনুগ্রহ করে প্রথমে ছাত্র নিবন্ধন করুন।",
@@ -503,6 +588,9 @@ const translations = {
         generateReport: "রিপোর্ট তৈরি করুন",
         fromBeginningReport: "শুরু থেকে রিপোর্ট",
         fromBeginningReportDesc: "শিক্ষাবর্ষের শুরু থেকে আজ পর্যন্ত রিপোর্ট তৈরি করুন",
+        showAttendanceTrackingCalendar: "উপস্থিতি ট্র্যাকিং ক্যালেন্ডার দেখান",
+        viewAttendanceStatistics: "উপস্থিতির পরিসংখ্যান দেখুন",
+        selectDateRangeToGenerate: "রিপোর্ট তৈরি করতে তারিখের পরিসর নির্বাচন করুন",
         attendanceReport: "উপস্থিতির রিপোর্ট",
         period: "সময়কাল:",
         studentNameCol: "ছাত্রের নাম",
@@ -523,6 +611,22 @@ const translations = {
         
         // Settings
         settingsTitle: "সেটিংস",
+        general: "সাধারণ",
+        academic: "শিক্ষাবিষয়ক",
+        bookManagement: "বই ব্যবস্থাপনা",
+        alerts: "সতর্কতা",
+        dataManagement: "তথ্য ব্যবস্থাপনা",
+        userManagement: "ব্যবহারকারী ব্যবস্থাপনা",
+        welcome: "স্বাগতম",
+        logout: "লগআউট",
+        hijriDateAdjustment: "হিজরি তারিখ সমন্বয়",
+        hijriDateAdjustmentDesc: "স্থানীয় চাঁদ দেখা অনুযায়ী গণনা করা হিজরি তারিখ সমন্বয় করুন।",
+        day: "দিন",
+        behind: "পিছনে",
+        ahead: "এগিয়ে",
+        currentDatePreview: "বর্তমান তারিখের পূর্বরূপ:",
+        gregorian: "গ্রেগরিয়ান:",
+        hijri: "হিজরি:",
         academicYearSettings: "শিক্ষাবর্ষের সেটিংস",
         academicYearStartDate: "শিক্ষাবর্ষের শুরুর তারিখ",
         academicYearStartDateDesc: "আপনার শিক্ষাবর্ষের শুরুর তারিখ নির্বাচন করুন",
@@ -545,6 +649,7 @@ const translations = {
         applicationSettings: "অ্যাপ সেটিংস",
         applicationName: "অ্যাপের নাম",
         appNamePlaceholder: "অ্যাপের নাম লিখুন",
+        appNameDescription: "হেডার এবং শিরোনামে প্রদর্শিত নাম পরিবর্তন করুন।",
         updateAppNameBtn: "নাম আপডেট করুন",
         enterAppName: "অনুগ্রহ করে অ্যাপের নাম লিখুন।",
         appNameUpdated: "অ্যাপের নাম সফলভাবে আপডেট করা হয়েছে।",
@@ -792,33 +897,79 @@ function updateAllTexts() {
     updateSettingsTexts();
     updateStudentListTexts();
     updateTeachersCornerTexts();
+    updateDashboardTableTexts();
+    updateWelcomeText();
+    
+    // Update Hijri preview if available
+    if (window.updateHijriPreview) {
+        window.updateHijriPreview();
+    }
 }
 
 // Update header texts
 async function updateHeaderTexts() {
-    let savedName = t('appTitle'); // Default fallback
+    let savedName = 'Student Management System'; // Generic fallback
     
     try {
         const response = await fetch('/api/settings/appName');
         if (response.ok) {
             const data = await response.json();
-            savedName = data.value || t('appTitle');
+            savedName = data.value || 'Student Management System';
         } else {
             // Fallback to localStorage
-            savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+            savedName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
         }
     } catch (error) {
         console.error('Error loading app name from database:', error);
         // Fallback to localStorage
-        savedName = localStorage.getItem('madaniMaktabAppName') || t('appTitle');
+        savedName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
     }
     
-    document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${savedName}`;
+    // Update main header
+    const headerAppName = document.getElementById('headerAppName');
+    if (headerAppName) {
+        headerAppName.textContent = savedName;
+    } else {
+        // Fallback for old structure
+        document.querySelector('.header h1').innerHTML = `<i class="fas fa-graduation-cap"></i> ${savedName}`;
+    }
+    
     document.querySelector('.header p').textContent = t('appSubtitle');
-    document.title = `${savedName} - ${t('appSubtitle')}`;
-    const footer = document.querySelector('.footer p');
-    if (footer) {
-        footer.innerHTML = `&copy; 2024 ${savedName}. All rights reserved.`;
+    
+    // Update page title
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) {
+        pageTitle.textContent = `${savedName} - ${t('appSubtitle')}`;
+    } else {
+        document.title = `${savedName} - ${t('appSubtitle')}`;
+    }
+    
+    // Update footer
+    const footerAppName = document.getElementById('footerAppName');
+    if (footerAppName) {
+        footerAppName.textContent = savedName;
+    } else {
+        const footer = document.querySelector('.footer p');
+        if (footer) {
+            footer.innerHTML = `&copy; 2024 ${savedName}. All rights reserved.`;
+        }
+    }
+    
+    // Update loading screen
+    const loadingAppName = document.getElementById('loadingAppName');
+    if (loadingAppName) {
+        loadingAppName.textContent = savedName;
+    }
+    
+    // Update welcome text if user is logged in
+    updateWelcomeText();
+}
+
+function updateWelcomeText() {
+    const currentUserElement = document.getElementById('currentUser');
+    if (currentUserElement && window.currentUser) {
+        const welcomeText = t('welcome');
+        currentUserElement.textContent = `${welcomeText}, ${window.currentUser.username}`;
     }
 }
 
@@ -1159,6 +1310,16 @@ function updateSectionContent(sectionId) {
             updateStudentDetailTexts();
             break;
     }
+}
+
+// Update dashboard table texts
+function updateDashboardTableTexts() {
+    // Update elements with data-translate attributes
+    const elements = document.querySelectorAll('[data-translate]');
+    elements.forEach(element => {
+        const key = element.getAttribute('data-translate');
+        element.textContent = t(key);
+    });
 }
 
 // Export the translation function

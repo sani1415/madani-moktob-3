@@ -3,10 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Madani Maktab - Student Attendance Management</title>
+    <title id="pageTitle">Loading... - Student Management System</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Load app name immediately to prevent flash on loading screen
+        (async function() {
+            let appName = 'Loading...'; // Show loading state instead of hardcoded name
+            
+            try {
+                const response = await fetch('/api/settings/appName');
+                if (response.ok) {
+                    const data = await response.json();
+                    appName = data.value || 'Student Management System'; // Generic fallback
+                } else {
+                    // Try localStorage as backup
+                    appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+                }
+            } catch (error) {
+                console.log('Using fallback app name');
+                appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+            }
+            
+            // Update loading screen elements immediately
+            const loadingAppName = document.getElementById('loadingAppName');
+            if (loadingAppName) {
+                loadingAppName.textContent = appName;
+            }
+            
+            // Update page title
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) {
+                        pageTitle.textContent = `${appName} - Student Management System`;
+            }
+            
+            // Save to localStorage for consistency
+            localStorage.setItem('madaniMaktabAppName', appName);
+        })();
+    </script>
     <style>
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -45,7 +80,7 @@
                 margin: 0 auto 20px;
             "></div>
             <h2 style="margin: 0 0 10px 0; font-size: 24px; font-weight: 300;">
-                <i class="fas fa-graduation-cap"></i> Madani Maktab
+                <i class="fas fa-graduation-cap"></i> <span id="loadingAppName">Loading...</span>
             </h2>
             <p style="margin: 0; font-size: 16px; opacity: 0.8;">
                 Loading your dashboard...
@@ -61,9 +96,9 @@
             <div class="header-content">
                 <div class="header-text">
                     <h1 onclick="showSection('dashboard')" style="cursor: pointer;" title="Go to Dashboard">
-                        <i class="fas fa-graduation-cap"></i> Madani Maktab
+                        <i class="fas fa-graduation-cap"></i> <span id="headerAppName">Loading...</span>
                     </h1>
-                    <p>Student Attendance Management System</p>
+                    <p>Student Management System</p>
                 </div>
                 <div class="header-controls">
                     <div class="language-selector">
@@ -76,7 +111,7 @@
                     <div class="user-info">
                         <span id="currentUser" style="margin-right: 15px; color: #fff; font-weight: 500;"></span>
                         <button onclick="logout()" class="logout-btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;">
-                            <i class="fas fa-sign-out-alt"></i> Logout
+                            <i class="fas fa-sign-out-alt"></i> <span data-translate="logout">Logout</span>
                         </button>
                     </div>
                 </div>
@@ -163,15 +198,15 @@
                         <div class="performance-tiers">
                             <div class="tier mustaid">
                                 <span class="tier-count" id="mustaidCount">0</span>
-                                <span class="tier-label">Mustaid</span>
+                                <span class="tier-label" data-translate="mustaid">Mustaid</span>
                             </div>
                             <div class="tier mutawassit">
                                 <span class="tier-count" id="mutawassitCount">0</span>
-                                <span class="tier-label">Mutawassit</span>
+                                <span class="tier-label" data-translate="mutawassit">Mutawassit</span>
                             </div>
                             <div class="tier mujtahid">
                                 <span class="tier-count" id="mujtahidCount">0</span>
-                                <span class="tier-label">Mujtahid</span>
+                                <span class="tier-label" data-translate="mujtahid">Mujtahid</span>
                             </div>
                         </div>
                     </div>
@@ -179,7 +214,7 @@
                 
                 <!-- Main Dashboard Alerts -->
                 <div id="main-dashboard-alerts" class="dashboard-alerts-section" style="display: none;">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Institution Alerts</h3>
+                    <h3><i class="fas fa-exclamation-triangle"></i> <span data-translate="institution_alerts">Institution Alerts</span></h3>
                     <div id="main-alerts-content" class="alerts-content">
                         <!-- Alerts will be rendered here -->
                     </div>
@@ -187,25 +222,25 @@
                 
                 <!-- Class-wise Stats -->
                 <div class="class-wise-stats">
-                    <h3>Class-wise Information</h3>
+                    <h3><span data-translate="class_wise_information">Class-wise Information</span></h3>
                     <div class="class-stats-table-container">
                         <div id="classStatsLoading" class="loading-indicator">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <span>Loading class statistics...</span>
+                            <span data-translate="loading_class_statistics">Loading class statistics...</span>
                         </div>
                         <table class="class-stats-table" id="classStatsTable" style="display: none;">
                             <thead>
                                 <tr>
-                                    <th>Class</th>
-                                    <th>Total</th>
-                                    <th>Present</th>
-                                    <th>Absent</th>
-                                    <th>Rate</th>
-                                    <th>Inactive</th>
-                                    <th>Avg Score</th>
-                                    <th>Mustaid</th>
-                                    <th>Mutawassit</th>
-                                    <th>Mujtahid</th>
+                                    <th data-translate="class">Class</th>
+                                    <th data-translate="total">Total</th>
+                                    <th data-translate="present">Present</th>
+                                    <th data-translate="absent">Absent</th>
+                                    <th data-translate="rate">Rate</th>
+                                    <th data-translate="inactive">Inactive</th>
+                                    <th data-translate="avg_score">Avg Score</th>
+                                    <th data-translate="mustaid">Mustaid</th>
+                                    <th data-translate="mutawassit">Mutawassit</th>
+                                    <th data-translate="mujtahid">Mujtahid</th>
                                 </tr>
                             </thead>
                             <tbody id="classWiseTableBody">
@@ -312,16 +347,16 @@
                     </div>
                     <div class="bulk-actions">
                         <button onclick="markAllPresent()" class="btn btn-success btn-sm">
-                            <i class="fas fa-check-double"></i> Mark All Present
+                            <i class="fas fa-check-double"></i> <span data-translate="markAllPresent">Mark All Present</span>
                         </button>
                         <button onclick="showMarkAllAbsentModal()" class="btn btn-danger btn-sm">
-                            <i class="fas fa-user-slash"></i> Mark All Absent
+                            <i class="fas fa-user-slash"></i> <span data-translate="markAllAbsent">Mark All Absent</span>
                         </button>
                         <button onclick="markAllNeutral()" class="btn btn-warning btn-sm">
                             <i class="fas fa-eraser"></i> <span data-translate="markAllNeutral">Clear All</span>
                         </button>
                         <button onclick="copyPreviousDayAttendance()" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-copy"></i> Copy Previous Day
+                            <i class="fas fa-copy"></i> <span data-translate="copyPreviousDay">Copy Previous Day</span>
                         </button>
                         <button onclick="saveAttendance()" class="btn btn-primary btn-sm btn-save-attendance">
                             <i class="fas fa-save"></i> Save Attendance
@@ -368,7 +403,7 @@
                         <i class="fas fa-chart-bar"></i> Generate Report
                     </button>
                     <button onclick="generateFromBeginningReport()" class="btn btn-success" style="margin-left: 10px;">
-                        <i class="fas fa-calendar-alt"></i> From Beginning Report
+                        <i class="fas fa-calendar-alt"></i> <span data-translate="fromBeginningReport">From Beginning Report</span>
                     </button>
                 </div>
                 <div id="reportResults" class="report-results">
@@ -487,22 +522,22 @@
                 
                 <div class="settings-tabs">
                     <button class="tab-button active" onclick="openSettingsTab(event, 'general')">
-                        <i class="fas fa-cogs"></i> General
+                        <i class="fas fa-cogs"></i> <span data-translate="general">General</span>
                     </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'academic')">
-                        <i class="fas fa-school"></i> Academic
+                        <i class="fas fa-school"></i> <span data-translate="academic">Academic</span>
                     </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'books')">
-                        <i class="fas fa-book"></i> Book Management
+                        <i class="fas fa-book"></i> <span data-translate="bookManagement">Book Management</span>
                     </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'alerts')">
-                        <i class="fas fa-exclamation-triangle"></i> Alerts
+                        <i class="fas fa-exclamation-triangle"></i> <span data-translate="alerts">Alerts</span>
                     </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'data')">
-                        <i class="fas fa-database"></i> Data Management
+                        <i class="fas fa-database"></i> <span data-translate="dataManagement">Data Management</span>
                     </button>
                     <button class="tab-button" onclick="openSettingsTab(event, 'users')">
-                        <i class="fas fa-users"></i> User Management
+                        <i class="fas fa-users"></i> <span data-translate="userManagement">User Management</span>
                     </button>
                 </div>
 
@@ -511,9 +546,9 @@
                     <h3>Application Settings</h3>
                     <div class="setting-group">
                         <label for="appNameInput">Application Name</label>
-                        <p class="help-text">Change the name displayed in the header and title.</p>
+                        <p class="help-text" data-translate="appNameDescription">Change the name displayed in the header and title.</p>
                         <div class="input-group">
-                            <input type="text" id="appNameInput" value="Madani Maktab">
+                            <input type="text" id="appNameInput" value="" placeholder="Enter application name">
                             <button class="btn btn-primary" onclick="saveAppName()">
                                 <i class="fas fa-save"></i> Save
                             </button>
@@ -522,15 +557,15 @@
                     
                     <h3>Hijri Date Settings</h3>
                     <div class="setting-group">
-                        <label for="hijriAdjustment">Hijri Date Adjustment</label>
-                        <p class="help-text">Adjust the calculated Hijri date for local moon sightings.</p>
+                        <label for="hijriAdjustment" data-translate="hijriDateAdjustment">Hijri Date Adjustment</label>
+                        <p class="help-text" data-translate="hijriDateAdjustmentDesc">Adjust the calculated Hijri date for local moon sightings.</p>
                         <select id="hijriAdjustment" onchange="updateHijriAdjustment()">
                             <option value="0">No Adjustment (Default)</option>
-                            <option value="1">+1 Day (Ahead)</option>
-                            <option value="-1">-1 Day (Behind)</option>
+                            <option value="1">+1 <span data-translate="day">Day</span> (<span data-translate="ahead">Ahead</span>)</option>
+                            <option value="-1">-1 <span data-translate="day">Day</span> (<span data-translate="behind">Behind</span>)</option>
                         </select>
                         <div class="hijri-preview" style="margin-top: 15px;">
-                            <strong>Current Date Preview:</strong>
+                            <strong data-translate="currentDatePreview">Current Date Preview:</strong>
                             <div id="hijriPreview" class="hijri-date-display"></div>
                         </div>
                     </div>
@@ -953,7 +988,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Madani Maktab. All rights reserved.</p>
+            <p>&copy; 2024 <span id="footerAppName">Loading...</span>. All rights reserved.</p>
         </div>
     </footer>
     
@@ -1287,7 +1322,9 @@
                 if (response.ok) {
                     currentUser = await response.json();
                     window.currentUser = currentUser;  // Make it globally accessible
-                    document.getElementById('currentUser').textContent = `Welcome, ${currentUser.username}`;
+                    // Use fallback text initially, will be updated by translation system
+                    const welcomeText = window.t ? window.t('welcome') : 'Welcome';
+                    document.getElementById('currentUser').textContent = `${welcomeText}, ${currentUser.username}`;
                     
                     // Apply role-based UI restrictions
                     applyRoleBasedUI(currentUser);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Madani Maktab - Login</title>
+    <title id="loginPageTitle">Loading... - Login</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -130,8 +130,8 @@
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <h1><i class="fas fa-graduation-cap"></i> Madani Maktab</h1>
-                <p>Student Attendance Management System</p>
+                <h1><i class="fas fa-graduation-cap"></i> <span id="loginAppName">Loading...</span></h1>
+                <p id="loginAppSubtitle">Student Management System</p>
             </div>
             
             <div id="errorMessage" class="error-message"></div>
@@ -216,8 +216,30 @@
             }
         });
         
-        // Check if user is already logged in
+        // Load app name and check if user is already logged in
         window.addEventListener('load', async function() {
+            // Load app name
+            try {
+                const response = await fetch('/api/settings/appName');
+                if (response.ok) {
+                    const data = await response.json();
+                    const appName = data.value || 'Student Management System';
+                    document.getElementById('loginAppName').textContent = appName;
+                    document.getElementById('loginPageTitle').textContent = appName + ' - Login';
+                } else {
+                    // Try localStorage as backup
+                    const appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+                    document.getElementById('loginAppName').textContent = appName;
+                    document.getElementById('loginPageTitle').textContent = appName + ' - Login';
+                }
+            } catch (error) {
+                console.log('Using fallback app name');
+                const appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+                document.getElementById('loginAppName').textContent = appName;
+                document.getElementById('loginPageTitle').textContent = appName + ' - Login';
+            }
+            
+            // Check if user is already logged in
             try {
                 const response = await fetch('/api/auth/user');
                 if (response.ok) {

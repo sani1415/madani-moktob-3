@@ -4,6 +4,8 @@
  * Based on Tabular Islamic Calendar with local adjustment support
  */
 
+import { t } from '../translations.js';
+
 class HijriCalendar {
     constructor() {
         // Hijri month names in Arabic and Bengali
@@ -390,13 +392,13 @@ function updateHijriPreview() {
         
         if (currentLang === 'bn') {
             previewElement.innerHTML = `
-                <div><strong>গ্রেগরিয়ান:</strong> ${gregorianString}</div>
-                <div><strong>হিজরি:</strong> ${hijriString}</div>
+                <div><strong>${t('gregorian')}:</strong> ${gregorianString}</div>
+                <div><strong>${t('hijri')}:</strong> ${hijriString}</div>
             `;
         } else {
             previewElement.innerHTML = `
-                <div><strong>Gregorian:</strong> ${gregorianString}</div>
-                <div><strong>Hijri:</strong> ${hijriString}</div>
+                <div><strong>${t('gregorian')}:</strong> ${gregorianString}</div>
+                <div><strong>${t('hijri')}:</strong> ${hijriString}</div>
             `;
         }
         

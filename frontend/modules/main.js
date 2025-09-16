@@ -449,6 +449,9 @@ async function initializeApp() {
             });
         }
         
+        // Load app name immediately to prevent flash
+        await loadAppNameImmediately();
+        
         // Initialize language system to load app name and other settings
         if (typeof initializeLanguage === 'function') {
             initializeLanguage();
@@ -862,6 +865,47 @@ async function saveAlertThreshold() {
         localStorage.setItem('alertConfig', JSON.stringify(config));
         showModal('Warning', 'Alert thresholds saved locally!');
     }
+}
+
+// Load app name immediately to prevent flash
+async function loadAppNameImmediately() {
+    let appName = 'Student Management System'; // Generic fallback
+    
+    try {
+        const response = await fetch('/api/settings/appName');
+        if (response.ok) {
+            const data = await response.json();
+            appName = data.value || 'Student Management System';
+        } else {
+            // Try localStorage as backup
+            appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+        }
+    } catch (error) {
+        console.log('Using fallback app name for immediate load');
+        appName = localStorage.getItem('madaniMaktabAppName') || 'Student Management System';
+    }
+    
+    // Update all app name elements immediately
+    const elements = [
+        'headerAppName',
+        'loadingAppName', 
+        'footerAppName',
+        'pageTitle'
+    ];
+    
+    elements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            if (id === 'pageTitle') {
+                element.textContent = `${appName} - Student Management System`;
+            } else {
+                element.textContent = appName;
+            }
+        }
+    });
+    
+    // Also save to localStorage for consistency
+    localStorage.setItem('madaniMaktabAppName', appName);
 }
 
 // Load current app name into the input field
