@@ -9,6 +9,7 @@ import * as Misc from './misc.js';
 import * as Calendar from './calendar.js';
 import * as Settings from './settings.js';
 import * as Hijri from './hijri.js';
+import * as ExamManagement from './exam-management.js';
 import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../translations.js';
 
 // Debug: Check if Settings module is loaded
@@ -115,6 +116,28 @@ window.deleteClass = Settings.deleteClass;
 window.editBook = Settings.editBook;
 window.deleteBook = Settings.deleteBook;
 // Note: Education Progress functions removed - Progress tracking is now handled in Teachers Corner
+
+// Exam Management functions
+window.initClassExamManagement = ExamManagement.initClassExamManagement;
+window.loadClassExams = ExamManagement.loadClassExams;
+window.renderClassExamSection = ExamManagement.renderClassExamSection;
+window.updateClassExamStats = ExamManagement.updateClassExamStats;
+window.renderClassExamList = ExamManagement.renderClassExamList;
+window.createNewClassExam = ExamManagement.createNewClassExam;
+window.showExamCreationModal = ExamManagement.showExamCreationModal;
+window.closeExamCreationModal = ExamManagement.closeExamCreationModal;
+window.proceedToBookSelection = ExamManagement.proceedToBookSelection;
+window.showBookSelectionModal = ExamManagement.showBookSelectionModal;
+window.selectBookForExam = ExamManagement.selectBookForExam;
+window.closeBookSelectionModal = ExamManagement.closeBookSelectionModal;
+window.createExamWithBooks = ExamManagement.createExamWithBooks;
+window.openClassExam = ExamManagement.openClassExam;
+window.editClassExam = ExamManagement.editClassExam;
+window.viewClassExamResults = ExamManagement.viewClassExamResults;
+window.duplicateClassExam = ExamManagement.duplicateClassExam;
+window.viewAllClassExams = ExamManagement.viewAllClassExams;
+window.exportClassResults = ExamManagement.exportClassResults;
+window.classExamAnalytics = ExamManagement.classExamAnalytics;
 
 // User Management functions
 window.loadUsers = Settings.loadUsers;

@@ -40,7 +40,7 @@ function updateClassDropdowns() {
             window.classes.forEach(cls => {
                 // Special handling for attendance classFilter - use cls.name as value
                 if (id === 'classFilter') {
-                    dropdown.options.add(new Option(cls.name, cls.name));
+                dropdown.options.add(new Option(cls.name, cls.name));
                 } else {
                     // Use cls.id for value and cls.name for display text for other dropdowns
                     dropdown.options.add(new Option(cls.name, cls.id));
@@ -493,12 +493,12 @@ async function saveAcademicYearStart() {
         });
         
         if (response.ok) {
-            window.academicYearStartDate = startDate;
+    window.academicYearStartDate = startDate;
             // Also save to localStorage as backup
-            localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
-            
-            updateDateRestrictions();
-            showModal('Success', 'Academic year start date updated successfully');
+    localStorage.setItem('madaniMaktabAcademicYearStart', startDate);
+    
+    updateDateRestrictions();
+    showModal('Success', 'Academic year start date updated successfully');
         } else {
             console.error('Failed to save academic year start to database');
             // Fallback to localStorage only
@@ -528,13 +528,13 @@ async function clearAcademicYearStart() {
             });
             
             if (response.ok) {
-                window.academicYearStartDate = null;
-                localStorage.removeItem('madaniMaktabAcademicYearStart');
-                
-                clearDateRestrictions();
-                displayAcademicYearStart();
-                
-                showModal('Success', 'Academic year start date cleared successfully');
+        window.academicYearStartDate = null;
+        localStorage.removeItem('madaniMaktabAcademicYearStart');
+        
+        clearDateRestrictions();
+        displayAcademicYearStart();
+        
+        showModal('Success', 'Academic year start date cleared successfully');
             } else {
                 console.error('Failed to clear academic year start from database');
                 // Fallback to localStorage only
@@ -571,13 +571,13 @@ async function initializeAcademicYearStart() {
             }
         } else {
             // Fallback to localStorage
-            const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
-            if (savedStartDate) {
-                window.academicYearStartDate = savedStartDate;
+    const savedStartDate = localStorage.getItem('madaniMaktabAcademicYearStart');
+    if (savedStartDate) {
+        window.academicYearStartDate = savedStartDate;
                 console.log('Loaded academic year start date from localStorage:', window.academicYearStartDate);
-                
-                updateDateRestrictions();
-                displayAcademicYearStart();
+        
+        updateDateRestrictions();
+        displayAcademicYearStart();
             }
         }
     } catch (error) {
@@ -709,20 +709,20 @@ async function saveAppName() {
         
         if (response.ok) {
             // Also save to localStorage as backup
-            localStorage.setItem('madaniMaktabAppName', newAppName);
-            document.title = newAppName;
-            
-            const appNameDisplay = document.getElementById('appNameDisplay');
-            if (appNameDisplay) {
-                appNameDisplay.textContent = newAppName;
-            }
+    localStorage.setItem('madaniMaktabAppName', newAppName);
+    document.title = newAppName;
+    
+    const appNameDisplay = document.getElementById('appNameDisplay');
+    if (appNameDisplay) {
+        appNameDisplay.textContent = newAppName;
+    }
             
             // Update all header texts to reflect the new app name
             if (typeof updateHeaderTexts === 'function') {
                 updateHeaderTexts();
-            }
-            
-            showModal('Success', 'App name updated successfully');
+    }
+    
+    showModal('Success', 'App name updated successfully');
         } else {
             console.error('Failed to save app name to database');
             // Fallback to localStorage only

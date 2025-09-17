@@ -2,6 +2,8 @@
         // Students will be loaded from main application database
         let allStudents = [];
         
+        // Exam management functions imported via main.js
+        
         // Utility function to get today's date in YYYY-MM-DD format (same as main dashboard)
         function getTodayString() {
             const today = new Date();
@@ -554,15 +556,9 @@
                         <div id="class-education-progress" class="space-y-3 max-h-80 overflow-y-auto"></div>
                     </div>
                     
-                    <!-- Progress History Summary -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-semibold text-gray-700">অগ্রগতির সারসংক্ষেপ</h3>
-                            <div class="text-sm text-gray-500">
-                                <i class="fas fa-chart-line mr-1"></i>শ্রেণীর সামগ্রিক অগ্রগতি
-                            </div>
-                        </div>
-                        <div id="progress-summary" class="space-y-4"></div>
+                    <!-- Exam Management Section -->
+                    <div id="class-exam-management-section">
+                        <!-- Exam management content will be inserted here -->
                     </div>
                 </div>
             `;
@@ -731,7 +727,27 @@
                 console.log('🎨 Starting to render dashboard components...');
             renderTodaySummary(activeStudentsInClass);
             renderClassStudentList(activeStudentsInClass);
-            renderClassEducationProgress(className); // This now also calls renderProgressSummary
+            renderClassEducationProgress(className);
+            
+            // Initialize and render exam management for this class
+            if (typeof window.initClassExamManagement === 'function') {
+                await window.initClassExamManagement(className);
+                
+                // Insert exam management HTML into the designated section
+                const examSectionElement = document.getElementById('class-exam-management-section');
+                if (examSectionElement && typeof window.renderClassExamSection === 'function') {
+                    examSectionElement.innerHTML = window.renderClassExamSection(className);
+                    // Update exam statistics and list
+                    if (typeof window.updateClassExamStats === 'function') {
+                        window.updateClassExamStats(className);
+                    }
+                    if (typeof window.renderClassExamList === 'function') {
+                        window.renderClassExamList(className);
+                    }
+                }
+            } else {
+                console.warn('⚠️ Exam management functions not available yet');
+            }
             renderClassOverview(activeStudentsInClass);
             renderTeachersLogbook();
             renderDashboardAlerts(activeStudentsInClass);
@@ -1299,11 +1315,7 @@
             if (!allEducationProgress || allEducationProgress.length === 0) {
                 console.log(`⚠️ No education progress data available for class: ${className}`);
                 progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
-                // Still render the progress summary even when there are no books
-                console.log(`🔍 renderClassEducationProgress - No books, but still calling renderProgressSummary for class: ${className}`);
-                const targetClassName = currentClass || className;
-                console.log(`🔍 renderClassEducationProgress - Final targetClassName for no books case: ${targetClassName}`);
-                renderProgressSummary(targetClassName);
+                // Progress summary removed - replaced with exam management
                 return;
             }
             
@@ -1319,11 +1331,7 @@
             
             if (classProgress.length === 0) {
                 progressEl.innerHTML = `<p class="text-sm text-gray-500">এই শ্রেণীর জন্য কোন বই যুক্ত করা হয়নি।</p>`;
-                // Still render the progress summary even when there are no books for this class
-                console.log(`🔍 renderClassEducationProgress - No books for class ${className}, but still calling renderProgressSummary`);
-                const targetClassName = currentClass || className;
-                console.log(`🔍 renderClassEducationProgress - Final targetClassName for filtered no books case: ${targetClassName}`);
-                renderProgressSummary(targetClassName);
+                // Progress summary removed - replaced with exam management
                 return;
             }
             
@@ -1369,164 +1377,10 @@
                 `;
             }).join('');
             
-            // Also render the progress summary
-            console.log(`🔍 renderClassEducationProgress - Calling renderProgressSummary with className: ${className}`);
-            console.log(`🔍 renderClassEducationProgress - Current currentClass: ${currentClass}`);
-            console.log(`🔍 renderClassEducationProgress - Ensuring className matches currentClass`);
-            
-            // Ensure we're using the current class name
-            const targetClassName = currentClass || className;
-            console.log(`🔍 renderClassEducationProgress - Final targetClassName: ${targetClassName}`);
-            renderProgressSummary(targetClassName);
+            // Progress summary removed - replaced with exam management
                 }
         
-        function renderProgressSummary(className) {
-            console.log(`🚀 renderProgressSummary called with className: ${className}`);
-            console.log(`🔍 Current currentClass: ${currentClass}`);
-            
-            const summaryEl = document.getElementById('progress-summary');
-            if (!summaryEl) {
-                console.error('❌ progress-summary element not found');
-                return;
-            }
-            
-            // Clear any previous content first to ensure fresh rendering
-            console.log(`🧹 Clearing previous progress summary content for class: ${className}`);
-            summaryEl.innerHTML = '';
-            
-            // Validate that we're working with the correct class
-            if (currentClass && currentClass !== className) {
-                console.warn(`⚠️ Class mismatch: currentClass (${currentClass}) !== className (${className})`);
-            }
-            
-            // Filter progress data by the specific class
-            const classProgress = allEducationProgress.filter(p => p.class_name === className);
-            
-            // Debug: Log the filtering process
-            console.log(`🔍 Filtering allEducationProgress (${allEducationProgress.length} items) for class: ${className}`);
-            console.log(`🔍 allEducationProgress class names:`, allEducationProgress.map(p => p.class_name));
-            console.log(`🔍 Filtered classProgress (${classProgress.length} items):`, classProgress);
-            
-            console.log(`📊 Rendering progress summary for class: ${className}`);
-            console.log(`📚 Class progress data for ${className}:`, classProgress);
-            
-            if (classProgress.length === 0) {
-                console.log(`⚠️ No progress data found for class: ${className} - showing empty state`);
-                // Clear the progress summary completely and show empty state
-                summaryEl.innerHTML = `
-                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-2xl font-bold text-gray-600">0%</div>
-                                <div class="text-sm text-gray-700">সামগ্রিক অগ্রগতি</div>
-                            </div>
-                            <div class="text-gray-500 text-3xl">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                        </div>
-                        <div class="text-xs text-gray-600 mt-2">
-                            এই শ্রেণীর জন্য কোনো অগ্রগতি তথ্য নেই
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-2xl font-bold text-gray-600">0</div>
-                                <div class="text-sm text-gray-700">মোট বই</div>
-                            </div>
-                            <div class="text-gray-500 text-3xl">
-                                <i class="fas fa-book"></i>
-                            </div>
-                        </div>
-                        <div class="text-xs text-gray-600 mt-2">
-                            কোনো বই যুক্ত করা হয়নি
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400 col-span-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-2xl font-bold text-gray-600">0</div>
-                                <div class="text-sm text-gray-700">সাম্প্রতিক আপডেট</div>
-                            </div>
-                            <div class="text-gray-500 text-3xl">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                        </div>
-                        <div class="text-xs text-gray-600 mt-2">
-                            কোনো আপডেট নেই
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Calculate summary statistics
-            const totalBooks = classProgress.length;
-            const totalPages = classProgress.reduce((sum, p) => sum + (p.total_pages || 0), 0);
-            const completedPages = classProgress.reduce((sum, p) => sum + (p.completed_pages || 0), 0);
-            const overallPercentage = totalPages > 0 ? Math.round((completedPages / totalPages) * 100) : 0;
-            
-            // Count books with recent updates (last 7 days)
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const recentUpdates = classProgress.filter(p => {
-                if (!p.progressHistory || p.progressHistory.length === 0) return false;
-                const lastUpdate = new Date(p.progressHistory[p.progressHistory.length - 1].date);
-                return lastUpdate >= sevenDaysAgo;
-            }).length;
-            
-            // Count books with notes
-            const booksWithNotes = classProgress.filter(p => p.notes && p.notes.trim()).length;
-            
-            summaryEl.innerHTML = `
-                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-2xl font-bold text-blue-600">${overallPercentage}%</div>
-                            <div class="text-sm text-blue-700">সামগ্রিক অগ্রগতি</div>
-                        </div>
-                        <div class="text-blue-500 text-3xl">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-blue-600 mt-2">
-                        ${completedPages}/${totalPages} পৃষ্ঠা সম্পন্ন
-                    </div>
-                </div>
-                
-                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-2xl font-bold text-green-600">${totalBooks}</div>
-                            <div class="text-sm text-green-700">মোট বই</div>
-                        </div>
-                        <div class="text-green-500 text-3xl">
-                            <i class="fas fa-book"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-green-600 mt-2">
-                        ${booksWithNotes} টি বইতে নোট আছে
-                    </div>
-                </div>
-                
-                <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-2xl font-bold text-purple-600">${recentUpdates}</div>
-                            <div class="text-sm text-purple-700">সাম্প্রতিক আপডেট</div>
-                        </div>
-                        <div class="text-purple-500 text-3xl">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-purple-600 mt-2">
-                        গত ৭ দিনে আপডেট
-                    </div>
-                </div>
-            `;
-        }
+        // Progress summary function removed - replaced with exam management
 
         function renderTeachersLogbook() {
             const displayEl = document.getElementById('logbook-display');
@@ -3402,7 +3256,7 @@
             window.renderClassOverview = renderClassOverview;
             window.renderTeachersLogbook = renderTeachersLogbook;
             window.renderDashboardAlerts = renderDashboardAlerts;
-            window.renderProgressSummary = renderProgressSummary;
+            // renderProgressSummary removed - replaced with exam management
             window.showAddLogModal = showAddLogModal;
             window.closeLogModal = closeLogModal;
             window.saveLogEntry = saveLogEntry;

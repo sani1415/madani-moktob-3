@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Exam Management - Madani Maktab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, 'Noto Sans Bengali', sans-serif; background-color: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #2c3e50, #3498db); }
+        .nav { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .section h2 { color: #2c3e50; border-bottom: 3px solid #3498db; }
+        .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 200; animation: fadeIn 0.3s; }
+        .modal-content { animation: slideIn 0.3s; max-height: 90vh; overflow-y: auto; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .results-table input { text-align: center; border: 1px solid #ccc; border-radius: 4px; width: 60px; padding: 4px; }
+        .results-table input:focus { outline: 2px solid #3498db; }
+        .rank-badge { font-size: 1.1em; font-weight: bold; padding: 2px 8px; border-radius: 4px; color: white; }
+        .rank-1 { background-color: #f1c40f; } .rank-2 { background-color: #bdc3c7; } .rank-3 { background-color: #d35400; }
+        .step-indicator { display: flex; align-items: center; margin-bottom: 2rem; }
+        .step { flex: 1; text-align: center; position: relative; }
+        .step-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
+        .step.active .step-circle { background: #3498db; color: white; }
+        .step.completed .step-circle { background: #27ae60; color: white; }
+        .step.pending .step-circle { background: #bdc3c7; color: white; }
+        .step-line { position: absolute; top: 20px; left: 50%; width: 100%; height: 2px; background: #bdc3c7; z-index: -1; }
+        .step.completed .step-line { background: #27ae60; }
+        .book-item { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; background: white; }
+        .book-item.selected { border-color: #3498db; background: #f0f8ff; }
+        .exam-session-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: white; cursor: pointer; transition: all 0.3s; }
+        .exam-session-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .exam-session-card.active { border-color: #3498db; background: #f0f8ff; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .status-draft { background: #fef3cd; color: #856404; }
+        .status-published { background: #d1ecf1; color: #0c5460; }
+        .status-completed { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header & Navigation -->
+    <header class="header text-white p-5 shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold"><i class="fas fa-graduation-cap"></i> মাদানী মক্তব - পরীক্ষা ব্যবস্থাপনা</h1>
+        </div>
+    </header>
+    <nav class="nav">
+        <div class="container mx-auto">
+            <ul class="flex justify-center items-center list-none">
+                <li><a href="#" onclick="showSection('main-dashboard')" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500">ড্যাশবোর্ড</a></li>
+                <li><a href="#" onclick="showSection('exam-management-section')" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500 font-semibold"><i class="fas fa-poll"></i> পরীক্ষা ব্যবস্থাপনা</a></li>
+                <li><a href="#" onclick="showSection('saved-exams-section')" class="nav-link block px-6 py-4 text-gray-600 hover:text-blue-500"><i class="fas fa-history"></i> সংরক্ষিত পরীক্ষা</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-6">
+        <!-- Main Dashboard -->
+        <section id="main-dashboard" class="section">
+            <h2 class="text-2xl font-bold mb-6 pb-2">পরীক্ষা ব্যবস্থাপনা ড্যাশবোর্ড</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl text-blue-500 mb-4"><i class="fas fa-plus-circle"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">নতুন পরীক্ষা তৈরি করুন</h3>
+                    <p class="text-gray-600 mb-4">নতুন পরীক্ষার সেশন তৈরি করুন এবং বই নির্বাচন করুন</p>
+                    <button onclick="showSection('exam-management-section')" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">শুরু করুন</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl text-green-500 mb-4"><i class="fas fa-list-alt"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">সংরক্ষিত পরীক্ষা</h3>
+                    <p class="text-gray-600 mb-4">পূর্বের পরীক্ষার ফলাফল দেখুন এবং সম্পাদনা করুন</p>
+                    <button onclick="showSection('saved-exams-section')" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700">দেখুন</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <div class="text-4xl text-purple-500 mb-4"><i class="fas fa-chart-line"></i></div>
+                    <h3 class="text-xl font-semibold mb-2">পারফরম্যান্স বিশ্লেষণ</h3>
+                    <p class="text-gray-600 mb-4">ছাত্রদের পরীক্ষার ফলাফল বিশ্লেষণ করুন</p>
+                    <button class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700">বিশ্লেষণ</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Exam Management Section -->
+        <section id="exam-management-section" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 pb-2">নতুন পরীক্ষা তৈরি করুন</h2>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" id="step-1">
+                    <div class="step-circle">1</div>
+                    <div class="step-title">পরীক্ষা সেশন</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step pending" id="step-2">
+                    <div class="step-circle">2</div>
+                    <div class="step-title">বই নির্বাচন</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step pending" id="step-3">
+                    <div class="step-circle">3</div>
+                    <div class="step-title">ফলাফল এন্ট্রি</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step pending" id="step-4">
+                    <div class="step-circle">4</div>
+                    <div class="step-title">সংরক্ষণ</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Exam Session Creation -->
+            <div id="step-1-content" class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-cog"></i> পরীক্ষা সেশন তৈরি করুন</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="exam-year" class="block text-sm font-medium text-gray-700 mb-1">শিক্ষাবর্ষ</label>
+                        <select id="exam-year" class="w-full border-gray-300 rounded-md shadow-sm p-2"></select>
+                    </div>
+                    <div>
+                        <label for="exam-term" class="block text-sm font-medium text-gray-700 mb-1">টার্ম/সেমিস্টার</label>
+                        <select id="exam-term" class="w-full border-gray-300 rounded-md shadow-sm p-2"></select>
+                    </div>
+                    <div>
+                        <label for="exam-class" class="block text-sm font-medium text-gray-700 mb-1">শ্রেণী</label>
+                        <select id="exam-class" class="w-full border-gray-300 rounded-md shadow-sm p-2"></select>
+                    </div>
+                    <div>
+                        <label for="exam-name" class="block text-sm font-medium text-gray-700 mb-1">পরীক্ষার নাম</label>
+                        <input type="text" id="exam-name" class="w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="যেমন: মাসিক পরীক্ষা">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="proceedToBookSelection()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-arrow-right"></i> বই নির্বাচনে যান
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Book Selection & Configuration -->
+            <div id="step-2-content" class="bg-white p-6 rounded-lg shadow-md mb-8 hidden">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-book"></i> পরীক্ষার বই নির্বাচন ও কনফিগারেশন</h3>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-semibold text-gray-600">উপলব্ধ বই সমূহ</h4>
+                        <button onclick="showAddBookModal()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
+                            <i class="fas fa-plus"></i> নতুন বই যোগ করুন
+                        </button>
+                    </div>
+                    <div id="available-books-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-600 mb-4">নির্বাচিত বই সমূহ</h4>
+                    <div id="selected-books-list" class="space-y-3"></div>
+                </div>
+
+                <div class="flex justify-between">
+                    <button onclick="goBackToStep1()" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-arrow-left"></i> পূর্ববর্তী
+                    </button>
+                    <button onclick="proceedToResultEntry()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-arrow-right"></i> ফলাফল এন্ট্রিতে যান
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Results Entry -->
+            <div id="step-3-content" class="hidden space-y-8">
+                <!-- Analytics Dashboard -->
+                <div id="analytics-summary" class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2"><i class="fas fa-chart-line text-purple-500"></i> শ্রেণীর পারফরম্যান্স বিশ্লেষণ</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-semibold text-gray-600 mb-3">বিষয়ভিত্তিক পারফরম্যান্স</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm border-collapse border border-gray-300">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-gray-300 px-3 py-2 text-left">বইয়ের নাম</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">গড় নম্বর</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">সর্বোচ্চ</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">সর্বনিম্ন</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">পাস রেট</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="subject-analytics-table">
+                                        <!-- Dynamic content will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-600 text-center mb-2">গ্রেড বিতরণ</h4>
+                            <canvas id="grade-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-700">ফলাফল টেবিল</h3>
+                        <div class="flex gap-2">
+                            <button onclick="openImportModal()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition duration-300 flex items-center gap-2 text-sm">
+                                <i class="fas fa-file-csv"></i> CSV ইম্পোর্ট করুন
+                            </button>
+                            <button onclick="autoSaveResults()" class="bg-yellow-600 text-white font-bold py-2 px-4 rounded-md hover:bg-yellow-700 transition duration-300 flex items-center gap-2 text-sm">
+                                <i class="fas fa-save"></i> অটো সেভ
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-600 results-table">
+                            <thead id="results-table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0"></thead>
+                            <tbody id="results-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <button onclick="goBackToStep2()" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-arrow-left"></i> পূর্ববর্তী
+                    </button>
+                    <button onclick="proceedToSave()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-arrow-right"></i> সংরক্ষণে যান
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Save Results -->
+            <div id="step-4-content" class="bg-white p-6 rounded-lg shadow-md mb-8 hidden">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-save"></i> পরীক্ষার ফলাফল সংরক্ষণ</h3>
+                
+                <div id="exam-summary" class="bg-gray-50 p-4 rounded-md mb-6"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="font-semibold mb-2">সংরক্ষণ অপশন</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2">
+                                <input type="radio" name="save-option" value="draft" checked>
+                                <span>খসড়া হিসেবে সংরক্ষণ (পরে সম্পাদনা করা যাবে)</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="radio" name="save-option" value="published">
+                                <span>চূড়ান্ত ফলাফল হিসেবে প্রকাশ</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">অতিরিক্ত অপশন</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="add-to-student-profile">
+                                <span>ছাত্রদের প্রোফাইলে যোগ করুন</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="generate-report-cards">
+                                <span>রিপোর্ট কার্ড তৈরি করুন</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <button onclick="goBackToStep3()" class="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-arrow-left"></i> পূর্ববর্তী
+                    </button>
+                    <button onclick="saveExamResults()" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 flex items-center gap-2">
+                        <i class="fas fa-check"></i> পরীক্ষা সংরক্ষণ করুন
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Saved Exams Section -->
+        <section id="saved-exams-section" class="section hidden">
+            <h2 class="text-2xl font-bold mb-6 pb-2">সংরক্ষিত পরীক্ষা সমূহ</h2>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">ফিল্টার</h3>
+                    <button onclick="loadSavedExams()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-refresh"></i> রিফ্রেশ
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <select id="filter-year" class="border-gray-300 rounded-md shadow-sm p-2">
+                        <option value="">সকল বছর</option>
+                    </select>
+                    <select id="filter-term" class="border-gray-300 rounded-md shadow-sm p-2">
+                        <option value="">সকল টার্ম</option>
+                    </select>
+                    <select id="filter-class" class="border-gray-300 rounded-md shadow-sm p-2">
+                        <option value="">সকল শ্রেণী</option>
+                    </select>
+                    <select id="filter-status" class="border-gray-300 rounded-md shadow-sm p-2">
+                        <option value="">সকল স্ট্যাটাস</option>
+                        <option value="draft">খসড়া</option>
+                        <option value="published">প্রকাশিত</option>
+                        <option value="completed">সম্পন্ন</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="saved-exams-list" class="space-y-4"></div>
+        </section>
+    </main>
+    
+    <!-- Modals -->
+    
+    <!-- Add Book Modal -->
+    <div id="add-book-modal" class="modal-backdrop justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:w-1/2">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">নতুন বই যোগ করুন</h3>
+                <button onclick="closeAddBookModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="new-book-name" class="block text-sm font-medium text-gray-700 mb-1">বইয়ের নাম</label>
+                    <input type="text" id="new-book-name" class="w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="যেমন: কায়দা, আমপারা">
+                </div>
+                <div>
+                    <label for="new-book-marks" class="block text-sm font-medium text-gray-700 mb-1">মোট নম্বর</label>
+                    <input type="number" id="new-book-marks" class="w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="100" min="1" max="1000">
+                </div>
+                <div>
+                    <label for="new-book-description" class="block text-sm font-medium text-gray-700 mb-1">বিবরণ (ঐচ্ছিক)</label>
+                    <textarea id="new-book-description" class="w-full border-gray-300 rounded-md shadow-sm p-2" rows="3" placeholder="বইয়ের সম্পর্কে অতিরিক্ত তথ্য"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeAddBookModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md">বাতিল</button>
+                <button onclick="addNewBook()" class="bg-green-600 text-white px-4 py-2 rounded-md">বই যোগ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div id="import-modal" class="modal-backdrop justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:w-2/3">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">CSV থেকে ফলাফল ইম্পোর্ট করুন</h3>
+                <button onclick="closeImportModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="csv-file" class="block text-sm font-medium text-gray-700 mb-1">CSV ফাইল</label>
+                    <input type="file" id="csv-file" accept=".csv" class="w-full border-gray-300 rounded-md">
+                </div>
+                <button onclick="previewImport()" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">প্রিভিউ দেখুন</button>
+                <div id="import-preview-area" class="hidden mt-4">
+                    <h4 class="font-semibold mb-2">ইম্পোর্ট প্রিভিউ</h4>
+                    <p id="import-validation-summary" class="text-sm mb-2 p-2 rounded-md"></p>
+                    <div id="import-preview-table" class="max-h-60 overflow-auto border rounded-md"></div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeImportModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md">বাতিল</button>
+                <button id="finalize-import-btn" onclick="finalizeImport()" class="bg-green-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400" disabled>ইম্পোর্ট চূড়ান্ত করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Results Modal -->
+    <div id="student-results-modal" class="modal-backdrop justify-center items-center">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="student-modal-title" class="text-xl font-semibold text-gray-800"></h3>
+                <button onclick="closeStudentModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div id="student-modal-body" class="p-6"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- ENHANCED DATA STORE ---
+        const allStudents = [
+            { id: 'ST001', name: 'আব্দুল্লাহ রহমান', roll: '101', class: 'প্রথম শ্রেণী' },
+            { id: 'ST002', name: 'মোহাম্মদ আলী', roll: '102', class: 'প্রথম শ্রেণী' },
+            { id: 'ST003', name: 'হাসান মাহমুদ', roll: '103', class: 'প্রথম শ্রেণী' },
+            { id: 'ST004', name: 'ফাতিমা খাতুন', roll: '201', class: 'দ্বিতীয় শ্রেণী' },
+            { id: 'ST005', name: 'আয়েশা সিদ্দিকা', roll: '202', class: 'দ্বিতীয় শ্রেণী' },
+        ];
+
+        let availableBooks = [
+            { id: 'B01', name: 'কায়দা', totalMarks: 100, description: 'কুরআন পড়ার প্রাথমিক বই' },
+            { id: 'B02', name: 'আমপারা', totalMarks: 100, description: 'কুরআনের ৩০তম পারা' },
+            { id: 'B03', name: 'আখলাক', totalMarks: 50, description: 'ইসলামী আদব-কায়দা' },
+            { id: 'B04', name: 'নাজেরা', totalMarks: 100, description: 'কুরআন তিলাওয়াত' },
+            { id: 'B05', name: 'মাসনুন দোয়া', totalMarks: 50, description: 'দৈনন্দিন দোয়া সমূহ' },
+        ];
+
+        let currentExamSession = {
+            year: '',
+            term: '',
+            class: '',
+            name: '',
+            selectedBooks: [],
+            status: 'draft',
+            createdDate: '',
+            id: ''
+        };
+
+        let examSessions = JSON.parse(localStorage.getItem('examSessions')) || [
+            // Sample data to demonstrate multi-year, multi-term functionality
+            {
+                id: 'EX001',
+                year: '2024',
+                term: 'Term 1',
+                class: 'প্রথম শ্রেণী',
+                name: 'প্রথম ত্রৈমাসিক পরীক্ষা',
+                selectedBooks: [
+                    { id: 'B01', name: 'কায়দা', totalMarks: 100 },
+                    { id: 'B02', name: 'আমপারা', totalMarks: 100 }
+                ],
+                status: 'published',
+                createdDate: '2024-03-15T10:00:00.000Z'
+            },
+            {
+                id: 'EX002', 
+                year: '2024',
+                term: 'Term 2',
+                class: 'প্রথম শ্রেণী',
+                name: 'দ্বিতীয় ত্রৈমাসিক পরীক্ষা',
+                selectedBooks: [
+                    { id: 'B01', name: 'কায়দা', totalMarks: 100 },
+                    { id: 'B03', name: 'আখলাক', totalMarks: 50 }
+                ],
+                status: 'published',
+                createdDate: '2024-06-15T10:00:00.000Z'
+            },
+            {
+                id: 'EX003',
+                year: '2025', 
+                term: 'Term 1',
+                class: 'প্রথম শ্রেণী',
+                name: 'প্রথম ত্রৈমাসিক পরীক্ষা',
+                selectedBooks: [
+                    { id: 'B01', name: 'কায়দা', totalMarks: 100 },
+                    { id: 'B02', name: 'আমপারা', totalMarks: 100 },
+                    { id: 'B03', name: 'আখলাক', totalMarks: 50 }
+                ],
+                status: 'draft',
+                createdDate: '2025-01-15T10:00:00.000Z'
+            }
+        ];
+        let examResults = JSON.parse(localStorage.getItem('examResults')) || {
+            // Sample results data
+            '2024-Term 1-প্রথম শ্রেণী-EX001': {
+                'ST001': { 'B01': 85, 'B02': 92 },
+                'ST002': { 'B01': 78, 'B02': 88 },
+                'ST003': { 'B01': 90, 'B02': 95 }
+            },
+            '2024-Term 2-প্রথম শ্রেণী-EX002': {
+                'ST001': { 'B01': 88, 'B03': 45 },
+                'ST002': { 'B01': 82, 'B03': 42 },
+                'ST003': { 'B01': 93, 'B03': 48 }
+            }
+        };
+        let gradeChart = null;
+        let importPreviewData = [];
+        let currentStep = 1;
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateControls();
+            showSection('main-dashboard');
+            loadSavedExams();
+        });
+
+        function populateControls() {
+            const yearSelect = document.getElementById('exam-year');
+            const termSelect = document.getElementById('exam-term');
+            const classSelect = document.getElementById('exam-class');
+            
+            // Populate Year
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear + 1; i >= currentYear - 2; i--) {
+                yearSelect.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+            
+            // Populate Term
+            ['Term 1', 'Term 2', 'Mid-term', 'Final'].forEach(term => 
+                termSelect.innerHTML += `<option value="${term}">${term}</option>`);
+            
+            // Populate Class
+            [...new Set(allStudents.map(s => s.class))].forEach(c => 
+                classSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            
+            // Populate filter dropdowns
+            populateFilterDropdowns();
+        }
+
+        function populateFilterDropdowns() {
+            const filterYear = document.getElementById('filter-year');
+            const filterTerm = document.getElementById('filter-term');
+            const filterClass = document.getElementById('filter-class');
+            
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear + 1; i >= currentYear - 2; i--) {
+                filterYear.innerHTML += `<option value="${i}">${i}</option>`;
+            }
+            
+            ['Term 1', 'Term 2', 'Mid-term', 'Final'].forEach(term => 
+                filterTerm.innerHTML += `<option value="${term}">${term}</option>`);
+            
+            [...new Set(allStudents.map(s => s.class))].forEach(c => 
+                filterClass.innerHTML += `<option value="${c}">${c}</option>`);
+        }
+
+        // --- STEP NAVIGATION ---
+        function updateStepIndicator(activeStep) {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}`);
+                const content = document.getElementById(`step-${i}-content`);
+                
+                if (i < activeStep) {
+                    step.className = 'step completed';
+                } else if (i === activeStep) {
+                    step.className = 'step active';
+                } else {
+                    step.className = 'step pending';
+                }
+                
+                if (content) {
+                    content.classList.toggle('hidden', i !== activeStep);
+                }
+            }
+            currentStep = activeStep;
+        }
+
+        function proceedToBookSelection() {
+            // Validate step 1
+            const year = document.getElementById('exam-year').value;
+            const term = document.getElementById('exam-term').value;
+            const className = document.getElementById('exam-class').value;
+            const examName = document.getElementById('exam-name').value;
+            
+            if (!year || !term || !className || !examName) {
+                alert('অনুগ্রহ করে সকল ক্ষেত্র পূরণ করুন।');
+                return;
+            }
+            
+            // Save session data
+            currentExamSession = {
+                year, term, class: className, name: examName,
+                selectedBooks: [],
+                status: 'draft',
+                createdDate: new Date().toISOString(),
+                id: generateExamId()
+            };
+            
+            populateAvailableBooks();
+            updateStepIndicator(2);
+        }
+
+        function populateAvailableBooks() {
+            const booksList = document.getElementById('available-books-list');
+            booksList.innerHTML = availableBooks.map(book => `
+                <div class="book-item" onclick="selectBook('${book.id}')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold">${book.name}</h4>
+                            <p class="text-sm text-gray-600">${book.description}</p>
+                            <p class="text-sm font-medium text-blue-600">মোট নম্বর: ${book.totalMarks}</p>
+                        </div>
+                        <button class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-plus-circle text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateSelectedBooksList();
+        }
+
+        function selectBook(bookId) {
+            const book = availableBooks.find(b => b.id === bookId);
+            if (book && !currentExamSession.selectedBooks.find(b => b.id === bookId)) {
+                currentExamSession.selectedBooks.push({...book});
+                updateSelectedBooksList();
+            }
+        }
+
+        function removeSelectedBook(bookId) {
+            currentExamSession.selectedBooks = currentExamSession.selectedBooks.filter(b => b.id !== bookId);
+            updateSelectedBooksList();
+        }
+
+        function updateSelectedBooksList() {
+            const selectedList = document.getElementById('selected-books-list');
+            if (currentExamSession.selectedBooks.length === 0) {
+                selectedList.innerHTML = '<p class="text-gray-500 text-center py-8">কোন বই নির্বাচিত হয়নি</p>';
+                return;
+            }
+            
+            selectedList.innerHTML = currentExamSession.selectedBooks.map(book => `
+                <div class="book-item selected">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-semibold">${book.name}</h4>
+                            <p class="text-sm text-gray-600">${book.description}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm">
+                                <label class="block text-gray-600">নম্বর:</label>
+                                <input type="number" value="${book.totalMarks}" 
+                                       onchange="updateBookMarks('${book.id}', this.value)"
+                                       class="w-20 border-gray-300 rounded-md text-center">
+                            </div>
+                            <button onclick="removeSelectedBook('${book.id}')" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-times-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateBookMarks(bookId, newMarks) {
+            const book = currentExamSession.selectedBooks.find(b => b.id === bookId);
+            if (book) {
+                book.totalMarks = parseInt(newMarks) || 0;
+            }
+        }
+
+        function proceedToResultEntry() {
+            if (currentExamSession.selectedBooks.length === 0) {
+                alert('অনুগ্রহ করে কমপক্ষে একটি বই নির্বাচন করুন।');
+                return;
+            }
+            
+            updateStepIndicator(3);
+            renderResultsTable();
+        }
+
+        function proceedToSave() {
+            updateStepIndicator(4);
+            displayExamSummary();
+        }
+
+        function displayExamSummary() {
+            const summary = document.getElementById('exam-summary');
+            const sessionKey = getSessionKey();
+            const studentsInClass = allStudents.filter(s => s.class === currentExamSession.class);
+            
+            let completedResults = 0;
+            studentsInClass.forEach(student => {
+                if (examResults[sessionKey] && examResults[sessionKey][student.id]) {
+                    const studentResults = examResults[sessionKey][student.id];
+                    const hasAllMarks = currentExamSession.selectedBooks.every(book => 
+                        studentResults[book.id] !== undefined && studentResults[book.id] !== null && studentResults[book.id] !== '');
+                    if (hasAllMarks) completedResults++;
+                }
+            });
+            
+            summary.innerHTML = `
+                <h4 class="font-semibold mb-3">পরীক্ষার সারসংক্ষেপ</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div><span class="font-medium">বছর:</span> ${currentExamSession.year}</div>
+                    <div><span class="font-medium">টার্ম:</span> ${currentExamSession.term}</div>
+                    <div><span class="font-medium">শ্রেণী:</span> ${currentExamSession.class}</div>
+                    <div><span class="font-medium">পরীক্ষা:</span> ${currentExamSession.name}</div>
+                    <div><span class="font-medium">বই সংখ্যা:</span> ${currentExamSession.selectedBooks.length}</div>
+                    <div><span class="font-medium">ছাত্র সংখ্যা:</span> ${studentsInClass.length}</div>
+                    <div><span class="font-medium">সম্পূর্ণ ফলাফল:</span> ${completedResults}/${studentsInClass.length}</div>
+                    <div><span class="font-medium">অগ্রগতি:</span> ${Math.round((completedResults/studentsInClass.length)*100)}%</div>
+                </div>
+            `;
+        }
+
+        // Navigation functions
+        function goBackToStep1() { updateStepIndicator(1); }
+        function goBackToStep2() { updateStepIndicator(2); }
+        function goBackToStep3() { updateStepIndicator(3); }
+
+        // --- BOOK MANAGEMENT ---
+        function showAddBookModal() {
+            document.getElementById('add-book-modal').style.display = 'flex';
+        }
+
+        function closeAddBookModal() {
+            document.getElementById('add-book-modal').style.display = 'none';
+            document.getElementById('new-book-name').value = '';
+            document.getElementById('new-book-marks').value = '';
+            document.getElementById('new-book-description').value = '';
+        }
+
+        function addNewBook() {
+            const name = document.getElementById('new-book-name').value.trim();
+            const marks = parseInt(document.getElementById('new-book-marks').value);
+            const description = document.getElementById('new-book-description').value.trim();
+            
+            if (!name || !marks) {
+                alert('অনুগ্রহ করে বইয়ের নাম এবং নম্বর দিন।');
+                return;
+            }
+            
+            const newBook = {
+                id: 'B' + (Date.now().toString().slice(-6)),
+                name,
+                totalMarks: marks,
+                description: description || `${name} বই`
+            };
+            
+            availableBooks.push(newBook);
+            closeAddBookModal();
+            populateAvailableBooks();
+            
+            // Save to localStorage
+            localStorage.setItem('availableBooks', JSON.stringify(availableBooks));
+        }
+
+        // --- EXAM SESSION MANAGEMENT ---
+        function generateExamId() {
+            return 'EX' + Date.now().toString(36).toUpperCase();
+        }
+
+        function getSessionKey() {
+            return `${currentExamSession.year}-${currentExamSession.term}-${currentExamSession.class}-${currentExamSession.id}`;
+        }
+
+        function saveExamResults() {
+            const saveOption = document.querySelector('input[name="save-option"]:checked').value;
+            const addToProfile = document.getElementById('add-to-student-profile').checked;
+            const generateReports = document.getElementById('generate-report-cards').checked;
+            
+            currentExamSession.status = saveOption;
+            currentExamSession.savedDate = new Date().toISOString();
+            
+            // Save exam session
+            const existingIndex = examSessions.findIndex(session => session.id === currentExamSession.id);
+            if (existingIndex >= 0) {
+                examSessions[existingIndex] = currentExamSession;
+            } else {
+                examSessions.push(currentExamSession);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('examSessions', JSON.stringify(examSessions));
+            localStorage.setItem('examResults', JSON.stringify(examResults));
+            
+            let message = `পরীক্ষার ফলাফল সফলভাবে ${saveOption === 'draft' ? 'খসড়া হিসেবে সংরক্ষণ' : 'প্রকাশ'} করা হয়েছে।`;
+            
+            if (addToProfile) {
+                message += '\nছাত্রদের প্রোফাইলে যোগ করা হবে।';
+            }
+            
+            if (generateReports) {
+                message += '\nরিপোর্ট কার্ড তৈরি করা হবে।';
+            }
+            
+            alert(message);
+            
+            // Reset and go to saved exams
+            resetExamSession();
+            showSection('saved-exams-section');
+            loadSavedExams();
+        }
+
+        function resetExamSession() {
+            currentExamSession = {
+                year: '', term: '', class: '', name: '',
+                selectedBooks: [], status: 'draft', createdDate: '', id: ''
+            };
+            updateStepIndicator(1);
+        }
+
+        // --- SAVED EXAMS MANAGEMENT ---
+        function loadSavedExams() {
+            const examsList = document.getElementById('saved-exams-list');
+            const filteredExams = getFilteredExams();
+            
+            if (filteredExams.length === 0) {
+                examsList.innerHTML = '<div class="text-center py-12 text-gray-500"><i class="fas fa-inbox text-4xl mb-4"></i><p>কোন সংরক্ষিত পরীক্ষা পাওয়া যায়নি।</p></div>';
+                return;
+            }
+            
+            examsList.innerHTML = filteredExams.map(session => {
+                const sessionKey = `${session.year}-${session.term}-${session.class}-${session.id}`;
+                const studentsInClass = allStudents.filter(s => s.class === session.class);
+                const results = examResults[sessionKey] || {};
+                const completedCount = Object.keys(results).length;
+                
+                return `
+                    <div class="exam-session-card" onclick="loadExamSession('${session.id}')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">${session.name}</h3>
+                                <p class="text-gray-600">${session.year} - ${session.term} - ${session.class}</p>
+                                <p class="text-sm text-gray-500">তৈরি: ${new Date(session.createdDate).toLocaleDateString('bn-BD')}</p>
+                                <p class="text-sm text-gray-500">বই: ${session.selectedBooks.length}টি | ছাত্র: ${studentsInClass.length}জন</p>
+                                <p class="text-sm text-gray-500">ফলাফল এন্ট্রি: ${completedCount}/${studentsInClass.length}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="status-badge status-${session.status}">${getStatusText(session.status)}</span>
+                                <div class="mt-2 flex gap-2">
+                                    <button onclick="editExamSession('${session.id}', event)" class="text-blue-600 hover:text-blue-800" title="সম্পাদনা">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="viewExamResults('${session.id}', event)" class="text-green-600 hover:text-green-800" title="ফলাফল দেখুন">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button onclick="deleteExamSession('${session.id}', event)" class="text-red-600 hover:text-red-800" title="মুছে দিন">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getFilteredExams() {
+            const filterYear = document.getElementById('filter-year').value;
+            const filterTerm = document.getElementById('filter-term').value;
+            const filterClass = document.getElementById('filter-class').value;
+            const filterStatus = document.getElementById('filter-status').value;
+            
+            return examSessions.filter(session => {
+                return (!filterYear || session.year === filterYear) &&
+                       (!filterTerm || session.term === filterTerm) &&
+                       (!filterClass || session.class === filterClass) &&
+                       (!filterStatus || session.status === filterStatus);
+            });
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'draft': 'খসড়া',
+                'published': 'প্রকাশিত',
+                'completed': 'সম্পন্ন'
+            };
+            return statusMap[status] || status;
+        }
+
+        function loadExamSession(sessionId) {
+            const session = examSessions.find(s => s.id === sessionId);
+            if (!session) return;
+            
+            currentExamSession = {...session};
+            showSection('exam-management-section');
+            
+            // Populate form fields
+            document.getElementById('exam-year').value = session.year;
+            document.getElementById('exam-term').value = session.term;
+            document.getElementById('exam-class').value = session.class;
+            document.getElementById('exam-name').value = session.name;
+            
+            // Go directly to results entry
+            updateStepIndicator(3);
+            renderResultsTable();
+        }
+
+        function editExamSession(sessionId, event) {
+            event.stopPropagation();
+            loadExamSession(sessionId);
+        }
+
+        function viewExamResults(sessionId, event) {
+            event.stopPropagation();
+            loadExamSession(sessionId);
+        }
+
+        function deleteExamSession(sessionId, event) {
+            event.stopPropagation();
+            
+            if (!confirm('আপনি কি নিশ্চিত যে এই পরীক্ষা মুছে দিতে চান? এটি পূর্বাবস্থায় ফেরানো যাবে না।')) {
+                return;
+            }
+            
+            // Remove from examSessions
+            examSessions = examSessions.filter(s => s.id !== sessionId);
+            
+            // Remove related results
+            const sessionKey = Object.keys(examResults).find(key => key.includes(sessionId));
+            if (sessionKey) {
+                delete examResults[sessionKey];
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('examSessions', JSON.stringify(examSessions));
+            localStorage.setItem('examResults', JSON.stringify(examResults));
+            
+            loadSavedExams();
+            alert('পরীক্ষা সফলভাবে মুছে ফেলা হয়েছে।');
+        }
+
+        // --- AUTO SAVE FUNCTIONALITY ---
+        let autoSaveInterval;
+
+        function startAutoSave() {
+            autoSaveInterval = setInterval(autoSaveResults, 30000); // Auto-save every 30 seconds
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+        }
+
+        function autoSaveResults() {
+            if (currentStep === 3) {
+                localStorage.setItem('examResults', JSON.stringify(examResults));
+                console.log('Auto-saved exam results');
+                
+                // Show brief notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50';
+                notification.innerHTML = '<i class="fas fa-check"></i> অটো সেভ সম্পন্ন';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 2000);
+            }
+        }
+
+        // --- RESULTS TABLE (Reusing existing functions with enhancements) ---
+        function renderResultsTable() {
+            const sessionKey = getSessionKey();
+            const selectedBookIds = currentExamSession.selectedBooks.map(b => b.id);
+            const selectedClass = currentExamSession.class;
+            const studentsInClass = allStudents.filter(s => s.class === selectedClass);
+            const booksInExam = currentExamSession.selectedBooks;
+
+            // Initialize results for session if not present
+            if (!examResults[sessionKey]) examResults[sessionKey] = {};
+
+            // Render Table Head
+            const tableHead = document.getElementById('results-table-head');
+            let headHTML = '<tr><th class="px-4 py-3">ছাত্রের নাম</th><th class="px-4 py-3">রোল</th>';
+            booksInExam.forEach(book => headHTML += `<th class="px-4 py-3 text-center">${book.name}<br><small>(${book.totalMarks})</small></th>`);
+            headHTML += '<th class="px-4 py-3 text-center">মোট</th><th class="px-4 py-3 text-center">%</th><th class="px-4 py-3 text-center">গ্রেড</th><th class="px-4 py-3 text-center">র‍্যাঙ্ক</th></tr>';
+            tableHead.innerHTML = headHTML;
+
+            // Calculate Ranks
+            const studentRanks = calculateClassRanks(sessionKey, selectedBookIds);
+
+            // Render Table Body
+            const tableBody = document.getElementById('results-table-body');
+            tableBody.innerHTML = studentsInClass.map(student => {
+                const studentResults = examResults[sessionKey][student.id] || {};
+                const { total, percentage, grade } = calculateStudentTotals(student.id, sessionKey, selectedBookIds);
+                const rank = studentRanks[student.id];
+                
+                let rowHTML = `<tr class="border-b"><td class="px-4 py-2 font-medium text-blue-600 hover:underline cursor-pointer" onclick="showStudentResults('${student.id}')">${student.name}</td><td class="px-4 py-2">${student.roll}</td>`;
+                booksInExam.forEach(book => {
+                    const mark = studentResults[book.id] || '';
+                    const colorClass = getMarkColor(mark, book.totalMarks);
+                    rowHTML += `<td class="px-4 py-2 ${colorClass}"><input type="number" value="${mark}" oninput="updateMark('${student.id}', '${book.id}', this.value)" max="${book.totalMarks}" min="0"></td>`;
+                });
+                rowHTML += `<td class="px-4 py-2 text-center font-semibold" id="total-${student.id}">${total}</td>`;
+                rowHTML += `<td class="px-4 py-2 text-center font-semibold" id="perc-${student.id}">${percentage}%</td>`;
+                rowHTML += `<td class="px-4 py-2 text-center font-bold" id="grade-${student.id}">${grade}</td>`;
+                rowHTML += `<td class="px-4 py-2 text-center" id="rank-${student.id}">${getRankHTML(rank)}</td></tr>`;
+                return rowHTML;
+            }).join('');
+            
+            updateAnalytics();
+            startAutoSave(); // Start auto-save when results table is loaded
+        }
+
+        function updateMark(studentId, bookId, value) {
+            const sessionKey = getSessionKey();
+            const mark = value === '' ? null : parseInt(value);
+            
+            if (!examResults[sessionKey][studentId]) examResults[sessionKey][studentId] = {};
+            examResults[sessionKey][studentId][bookId] = mark;
+
+            // Recalculate and update totals for this student
+            const { total, percentage, grade } = calculateStudentTotals(studentId, sessionKey, currentExamSession.selectedBooks.map(b => b.id));
+            document.getElementById(`total-${studentId}`).innerText = total;
+            document.getElementById(`perc-${studentId}`).innerText = `${percentage}%`;
+            document.getElementById(`grade-${studentId}`).innerText = grade;
+            
+            // Recalculate ranks for the whole class and update
+            const studentRanks = calculateClassRanks(sessionKey, currentExamSession.selectedBooks.map(b => b.id));
+            Object.keys(studentRanks).forEach(sId => {
+                const rankElement = document.getElementById(`rank-${sId}`);
+                if (rankElement) {
+                    rankElement.innerHTML = getRankHTML(studentRanks[sId]);
+                }
+            });
+
+            // Update cell color
+            const book = currentExamSession.selectedBooks.find(b => b.id === bookId);
+            const inputElement = event.target;
+            inputElement.parentElement.className = `px-4 py-2 ${getMarkColor(mark, book.totalMarks)}`;
+            
+            updateAnalytics();
+        }
+
+        // --- CALCULATIONS & ANALYTICS (Enhanced from original) ---
+        const getGrade = (p) => {
+            if (p >= 80) return 'A+'; if (p >= 70) return 'A'; if (p >= 60) return 'A-';
+            if (p >= 50) return 'B'; if (p >= 40) return 'C'; if (p >= 33) return 'D'; return 'F';
+        };
+
+        function calculateStudentTotals(studentId, sessionKey, bookIds) {
+            const studentResults = examResults[sessionKey]?.[studentId] || {};
+            let totalObtained = 0;
+            let totalPossibleMarks = 0;
+            
+            bookIds.forEach(bookId => {
+                const book = currentExamSession.selectedBooks.find(b => b.id === bookId);
+                if (book) {
+                    const obtainedMarks = studentResults[bookId] || 0;
+                    totalObtained += obtainedMarks;
+                    // Only count towards total if student has marks for this book
+                    if (obtainedMarks > 0 || studentResults[bookId] === 0) {
+                        totalPossibleMarks += book.totalMarks;
+                    }
+                }
+            });
+            
+            const percentage = totalPossibleMarks > 0 ? Math.round((totalObtained / totalPossibleMarks) * 100) : 0;
+            const grade = getGrade(percentage);
+            return { total: totalObtained, percentage, grade, totalPossible: totalPossibleMarks };
+        }
+
+        function calculateClassRanks(sessionKey, bookIds) {
+            const selectedClass = currentExamSession.class;
+            const studentsInClass = allStudents.filter(s => s.class === selectedClass);
+            const studentTotals = studentsInClass.map(student => ({
+                id: student.id,
+                total: calculateStudentTotals(student.id, sessionKey, bookIds).total
+            }));
+            studentTotals.sort((a, b) => b.total - a.total);
+            const ranks = {};
+            let rank = 1;
+            for (let i = 0; i < studentTotals.length; i++) {
+                if (i > 0 && studentTotals[i].total < studentTotals[i - 1].total) {
+                    rank = i + 1;
+                }
+                ranks[studentTotals[i].id] = rank;
+            }
+            return ranks;
+        }
+
+        function updateAnalytics() {
+            const sessionKey = getSessionKey();
+            const selectedBookIds = currentExamSession.selectedBooks.map(b => b.id);
+            const selectedClass = currentExamSession.class;
+            const studentsInClass = allStudents.filter(s => s.class === selectedClass);
+            const booksInExam = currentExamSession.selectedBooks;
+            
+            // Subject Analytics - Table Format
+            const subjectAnalyticsTable = document.getElementById('subject-analytics-table');
+            subjectAnalyticsTable.innerHTML = booksInExam.map(book => {
+                const marks = studentsInClass.map(s => examResults[sessionKey]?.[s.id]?.[book.id]).filter(m => m != null && m !== '');
+                const average = marks.length > 0 ? (marks.reduce((a, b) => a + b, 0) / marks.length).toFixed(1) : 'N/A';
+                const highest = marks.length > 0 ? Math.max(...marks) : 'N/A';
+                const lowest = marks.length > 0 ? Math.min(...marks) : 'N/A';
+                
+                // Calculate pass rate (assuming 40% is pass)
+                const passMarks = Math.ceil(book.totalMarks * 0.4);
+                const passedStudents = marks.filter(m => m >= passMarks).length;
+                const passRate = marks.length > 0 ? Math.round((passedStudents / marks.length) * 100) : 0;
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-3 py-2 font-medium">${book.name}</td>
+                        <td class="border border-gray-300 px-3 py-2 text-center">${average}</td>
+                        <td class="border border-gray-300 px-3 py-2 text-center text-green-600 font-semibold">${highest}</td>
+                        <td class="border border-gray-300 px-3 py-2 text-center text-red-600 font-semibold">${lowest}</td>
+                        <td class="border border-gray-300 px-3 py-2 text-center">
+                            <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${passRate >= 80 ? 'bg-green-100 text-green-800' : passRate >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                                ${passRate}%
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Grade Distribution
+            const gradeCounts = { 'A+': 0, 'A': 0, 'A-': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
+            studentsInClass.forEach(student => {
+                const { grade } = calculateStudentTotals(student.id, sessionKey, selectedBookIds);
+                gradeCounts[grade]++;
+            });
+            
+            const ctx = document.getElementById('grade-distribution-chart').getContext('2d');
+            if (gradeChart) gradeChart.destroy();
+            gradeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(gradeCounts),
+                    datasets: [{
+                        label: 'ছাত্র সংখ্যা',
+                        data: Object.values(gradeCounts),
+                        backgroundColor: ['#27ae60', '#2980b9', '#8e44ad', '#f39c12', '#d35400', '#c0392b', '#e74c3c'],
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- UI HELPERS ---
+        const getMarkColor = (m, t) => {
+            if (m === null || m === '') return '';
+            const p = (m / t) * 100;
+            if (p >= 80) return 'bg-green-100'; if (p >= 60) return 'bg-blue-100';
+            if (p >= 40) return 'bg-yellow-100'; return 'bg-red-100';
+        };
+        const getRankHTML = (r) => {
+            if (!r) return '-';
+            if (r <= 3) return `<span class="rank-badge rank-${r}">${r}</span>`;
+            return r;
+        };
+        const showSection = (id) => {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
+        
+        // Helper functions for student results display
+        function getGradeColor(grade) {
+            const gradeColors = {
+                'A+': 'text-green-600',
+                'A': 'text-blue-600',
+                'A-': 'text-indigo-600',
+                'B': 'text-yellow-600',
+                'C': 'text-orange-600',
+                'D': 'text-red-600',
+                'F': 'text-red-800'
+            };
+            return gradeColors[grade] || 'text-gray-600';
+        }
+        
+        function getPerformanceComment(percentage) {
+            if (percentage === '-' || percentage === null) return 'অনুপস্থিত';
+            if (percentage >= 90) return 'অসাধারণ';
+            if (percentage >= 80) return 'চমৎকার';
+            if (percentage >= 70) return 'ভাল';
+            if (percentage >= 60) return 'গ্রহণযোগ্য';
+            if (percentage >= 40) return 'উন্নতি প্রয়োজন';
+            return 'দুর্বল';
+        }
+        
+        function getCommentColor(percentage) {
+            if (percentage === '-' || percentage === null) return 'text-gray-500';
+            if (percentage >= 80) return 'text-green-600';
+            if (percentage >= 60) return 'text-blue-600';
+            if (percentage >= 40) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        // --- MODAL LOGIC ---
+        function openImportModal() { document.getElementById('import-modal').style.display = 'flex'; }
+        function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; }
+        function showStudentResults(studentId) {
+            const student = allStudents.find(s => s.id === studentId);
+            
+            document.getElementById('student-modal-title').innerText = `${student.name} - সকল পরীক্ষার ফলাফল`;
+            const body = document.getElementById('student-modal-body');
+            
+            // Get all exam sessions for this student's class
+            const studentExamSessions = examSessions.filter(session => session.class === student.class);
+            const availableYears = [...new Set(studentExamSessions.map(s => s.year))].sort().reverse();
+            const availableTerms = [...new Set(studentExamSessions.map(s => s.term))];
+            
+            body.innerHTML = `
+                <!-- Filter Controls -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="student-result-year" class="block text-sm font-medium text-gray-700 mb-1">শিক্ষাবর্ষ</label>
+                            <select id="student-result-year" onchange="filterStudentResults('${studentId}')" class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                                <option value="">সকল বছর</option>
+                                ${availableYears.map(year => `<option value="${year}">${year}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="student-result-term" class="block text-sm font-medium text-gray-700 mb-1">টার্ম</label>
+                            <select id="student-result-term" onchange="filterStudentResults('${studentId}')" class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                                <option value="">সকল টার্ম</option>
+                                ${availableTerms.map(term => `<option value="${term}">${term}</option>`).join('')}
+                            </select>
+                        </div>
+                        <button onclick="filterStudentResults('${studentId}')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            <i class="fas fa-filter"></i> ফিল্টার করুন
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Results Display Area -->
+                <div id="student-results-display">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            `;
+            
+            // Load all results initially
+            filterStudentResults(studentId);
+            document.getElementById('student-results-modal').style.display = 'flex';
+        }
+        
+        function filterStudentResults(studentId) {
+            const student = allStudents.find(s => s.id === studentId);
+            const selectedYear = document.getElementById('student-result-year').value;
+            const selectedTerm = document.getElementById('student-result-term').value;
+            
+            // Filter exam sessions based on selected criteria
+            let filteredSessions = examSessions.filter(session => 
+                session.class === student.class &&
+                (!selectedYear || session.year === selectedYear) &&
+                (!selectedTerm || session.term === selectedTerm)
+            );
+            
+            // Sort by year and term
+            filteredSessions.sort((a, b) => {
+                if (a.year !== b.year) return b.year.localeCompare(a.year); // Newest year first
+                return a.term.localeCompare(b.term); // Term alphabetical
+            });
+            
+            const resultsDisplay = document.getElementById('student-results-display');
+            
+            if (filteredSessions.length === 0) {
+                resultsDisplay.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-4"></i>
+                        <p>নির্বাচিত মানদণ্ডে কোন পরীক্ষার ফলাফল পাওয়া যায়নি।</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Generate results for each exam session
+            resultsDisplay.innerHTML = filteredSessions.map(session => {
+                const sessionKey = `${session.year}-${session.term}-${session.class}-${session.id}`;
+                const studentResults = examResults[sessionKey]?.[studentId] || {};
+                const selectedBookIds = session.selectedBooks.map(b => b.id);
+                const { total, percentage, grade, totalPossible } = calculateStudentTotals(studentId, sessionKey, selectedBookIds);
+                const rank = calculateClassRanks(sessionKey, selectedBookIds)[studentId];
+                
+                // Check if student has any results for this exam
+                const hasResults = Object.keys(studentResults).length > 0;
+                
+                return `
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
+                        <!-- Exam Header -->
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b">
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800">${session.name}</h4>
+                                <p class="text-sm text-gray-600">${session.year} - ${session.term}</p>
+                                <span class="inline-block mt-1 px-2 py-1 rounded-full text-xs font-semibold status-badge status-${session.status}">
+                                    ${getStatusText(session.status)}
+                                </span>
+                            </div>
+                            ${hasResults ? `
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-blue-600">${percentage}%</div>
+                                    <div class="text-sm text-gray-500">সামগ্রিক ফলাফল</div>
+                                </div>
+                            ` : `
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-clock text-2xl"></i>
+                                    <div class="text-sm">ফলাফল এন্ট্রি হয়নি</div>
+                                </div>
+                            `}
+                        </div>
+                        
+                        ${hasResults ? `
+                            <!-- Summary Cards -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div class="bg-blue-50 p-3 rounded-lg text-center">
+                                    <div class="text-xl font-bold text-blue-700">${total}/${totalPossible}</div>
+                                    <div class="text-xs text-blue-600">প্রাপ্ত/মোট</div>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-lg text-center">
+                                    <div class="text-xl font-bold text-green-700">${percentage}%</div>
+                                    <div class="text-xs text-green-600">শতাংশ</div>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded-lg text-center">
+                                    <div class="text-xl font-bold text-purple-700">${grade}</div>
+                                    <div class="text-xs text-purple-600">গ্রেড</div>
+                                </div>
+                                <div class="bg-yellow-50 p-3 rounded-lg text-center">
+                                    <div class="text-xl font-bold text-yellow-700">${rank || 'N/A'}</div>
+                                    <div class="text-xs text-yellow-600">র‍্যাঙ্ক</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Subject-wise Results Table -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm border-collapse border border-gray-300">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-gray-300 px-3 py-2 text-left">বইয়ের নাম</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">প্রাপ্ত নম্বর</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">মোট নম্বর</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">শতাংশ</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">গ্রেড</th>
+                                            <th class="border border-gray-300 px-3 py-2 text-center">মন্তব্য</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${session.selectedBooks.map(book => {
+                                            const mark = studentResults[book.id];
+                                            const isAttempted = mark !== undefined && mark !== null && mark !== '';
+                                            const displayMark = isAttempted ? mark : '-';
+                                            const perc = isAttempted && book.totalMarks > 0 ? Math.round((mark / book.totalMarks) * 100) : '-';
+                                            const bookGrade = isAttempted ? getGrade(perc) : '-';
+                                            const comment = getPerformanceComment(perc);
+                                            
+                                            return `<tr class="border-b hover:bg-gray-50">
+                                                <td class="border border-gray-300 px-3 py-2 font-medium">${book.name}</td>
+                                                <td class="border border-gray-300 px-3 py-2 text-center ${isAttempted ? 'font-semibold' : 'text-gray-400'}">${displayMark}</td>
+                                                <td class="border border-gray-300 px-3 py-2 text-center">${book.totalMarks}</td>
+                                                <td class="border border-gray-300 px-3 py-2 text-center ${isAttempted ? 'font-semibold' : 'text-gray-400'}">${perc}${isAttempted ? '%' : ''}</td>
+                                                <td class="border border-gray-300 px-3 py-2 text-center font-bold ${getGradeColor(bookGrade)}">${bookGrade}</td>
+                                                <td class="border border-gray-300 px-3 py-2 text-center text-xs ${getCommentColor(perc)}">${comment}</td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : `
+                            <div class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                                <i class="fas fa-edit text-3xl mb-3"></i>
+                                <p class="font-medium">এই পরীক্ষার ফলাফল এখনো এন্ট্রি করা হয়নি</p>
+                                <p class="text-sm">ফলাফল এন্ট্রি করতে পরীক্ষা সম্পাদনা করুন</p>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('student-results-modal').style.display = 'flex';
+        }
+        function closeStudentModal() { document.getElementById('student-results-modal').style.display = 'none'; }
+        
+        // --- CSV IMPORT LOGIC (Enhanced from original) ---
+        function previewImport() {
+            const file = document.getElementById('csv-file').files[0];
+            if (!file) { alert("Please select a file."); return; }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const csv = event.target.result;
+                const lines = csv.split('\n').map(l => l.trim()).filter(l => l);
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const rollIndex = headers.indexOf('roll');
+                
+                if (rollIndex === -1) { alert("CSV must contain a 'roll' column."); return; }
+
+                const selectedClass = currentExamSession.class;
+                const studentsInClass = allStudents.filter(s => s.class === selectedClass);
+                importPreviewData = [];
+                let validCount = 0, notFoundCount = 0;
+
+                let previewHTML = '<table class="w-full text-xs"><thead><tr class="bg-gray-200">';
+                headers.forEach(h => previewHTML += `<th class="p-1">${h}</th>`);
+                previewHTML += '</tr></thead><tbody>';
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    const roll = values[rollIndex].trim();
+                    const student = studentsInClass.find(s => s.roll === roll);
+                    
+                    const rowData = {};
+                    headers.forEach((h, idx) => rowData[h] = values[idx]?.trim());
+
+                    if (student) {
+                        validCount++;
+                        previewHTML += `<tr class="bg-green-50">`;
+                        importPreviewData.push({ status: 'valid', data: rowData });
+                    } else {
+                        notFoundCount++;
+                        previewHTML += `<tr class="bg-red-50">`;
+                        importPreviewData.push({ status: 'invalid', data: rowData });
+                    }
+                    values.forEach(v => previewHTML += `<td class="p-1 border">${v}</td>`);
+                    previewHTML += '</tr>';
+                }
+                previewHTML += '</tbody></table>';
+
+                const summaryDiv = document.getElementById('import-validation-summary');
+                summaryDiv.innerHTML = `<strong>${validCount}</strong> টি সারি বৈধ। <strong>${notFoundCount}</strong> টি ছাত্র পাওয়া যায়নি।`;
+                summaryDiv.className = notFoundCount > 0 ? 'text-sm mb-2 p-2 rounded-md bg-yellow-100 text-yellow-800' : 'text-sm mb-2 p-2 rounded-md bg-green-100 text-green-800';
+                
+                document.getElementById('import-preview-table').innerHTML = previewHTML;
+                document.getElementById('import-preview-area').classList.remove('hidden');
+                document.getElementById('finalize-import-btn').disabled = validCount === 0;
+            };
+            reader.readAsText(file);
+        }
+
+        function finalizeImport() {
+            const sessionKey = getSessionKey();
+            const validEntries = importPreviewData.filter(item => item.status === 'valid');
+            const booksInDb = currentExamSession.selectedBooks.map(b => ({ id: b.id, name: b.name.toLowerCase() }));
+
+            validEntries.forEach(entry => {
+                const student = allStudents.find(s => s.roll === entry.data.roll);
+                if (!student) return;
+
+                if (!examResults[sessionKey][student.id]) examResults[sessionKey][student.id] = {};
+                
+                Object.keys(entry.data).forEach(header => {
+                    const book = booksInDb.find(b => b.name === header);
+                    if (book) {
+                        const mark = parseInt(entry.data[header]);
+                        if (!isNaN(mark)) {
+                            examResults[sessionKey][student.id][book.id] = mark;
+                        }
+                    }
+                });
+            });
+            
+            alert(`${validEntries.length} জন ছাত্রের ফলাফল সফলভাবে ইম্পোর্ট করা হয়েছে।`);
+            closeImportModal();
+            renderResultsTable();
+        }
+
+        // Load saved books on startup
+        const savedBooks = localStorage.getItem('availableBooks');
+        if (savedBooks) {
+            availableBooks = JSON.parse(savedBooks);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopAutoSave();
+        });
+
+    </script>
+</body>
+</html>
