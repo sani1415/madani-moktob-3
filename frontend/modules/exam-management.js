@@ -1268,16 +1268,323 @@ function editClassExam(examId, event) {
     console.log(`✏️ Editing exam: ${examId}`);
     const examSession = getCurrentExamSession(examId);
     if (examSession) {
-        // Open book selection modal for editing
-        window.currentExamSession = examSession;
-        // Pre-populate selected books from the exam
-        selectedBooksForExam = examSession.selectedBooks.map(book => ({
-            id: book.id,
-            name: book.name,
-            totalMarks: book.totalMarks
-        }));
-        showBookSelectionModal(examSession);
+        showExamEditModal(examSession);
     }
+}
+
+function showExamEditModal(examSession) {
+    const modal = document.createElement('div');
+    modal.id = 'exam-edit-modal';
+    modal.className = 'modal-backdrop justify-center items-center';
+    modal.style.display = 'flex';
+    
+    const currentYear = new Date().getFullYear();
+    const availableYears = [currentYear - 1, currentYear, currentYear + 1];
+    const availableTerms = ['Term 1', 'Term 2', 'Mid-term', 'Final', 'Monthly'];
+    
+    modal.innerHTML = `
+        <div class="modal-content bg-white rounded-lg shadow-xl w-11/12 md:w-2/3 lg:w-1/2">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">পরীক্ষা সম্পাদনা - ${examSession.class}</h3>
+                <button onclick="closeExamEditModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-exam-year" class="block text-sm font-medium text-gray-700 mb-1">শিক্ষাবর্ষ</label>
+                        <select id="edit-exam-year" class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            ${availableYears.map(year => `<option value="${year}" ${year == examSession.year ? 'selected' : ''}>${year}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-exam-term" class="block text-sm font-medium text-gray-700 mb-1">টার্ম/সেমিস্টার</label>
+                        <select id="edit-exam-term" class="w-full border-gray-300 rounded-md shadow-sm p-2">
+                            ${availableTerms.map(term => `<option value="${term}" ${term === examSession.term ? 'selected' : ''}>${term}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="edit-exam-name" class="block text-sm font-medium text-gray-700 mb-1">পরীক্ষার নাম</label>
+                    <input type="text" id="edit-exam-name" value="${examSession.name}" class="w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="যেমন: মাসিক পরীক্ষা, ত্রৈমাসিক পরীক্ষা">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">পরীক্ষার ধরন</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <label class="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="edit-exam-type" value="monthly" class="text-blue-600" ${examSession.type === 'monthly' ? 'checked' : ''}>
+                            <span class="text-sm">মাসিক</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="edit-exam-type" value="quarterly" class="text-blue-600" ${examSession.type === 'quarterly' ? 'checked' : ''}>
+                            <span class="text-sm">ত্রৈমাসিক</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="edit-exam-type" value="annual" class="text-blue-600" ${examSession.type === 'annual' ? 'checked' : ''}>
+                            <span class="text-sm">বার্ষিক</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Book Management Section -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-semibold text-gray-700">নির্বাচিত বই সমূহ (<span id="edit-selected-books-count">${examSession.selectedBooks.length}</span>টি)</h4>
+                        <button onclick="toggleAvailableBooksInEdit('${examSession.class}')" id="toggle-books-btn" class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700">
+                            <i class="fas fa-plus"></i> বই যোগ/বিয়োগ
+                        </button>
+                    </div>
+                    
+                    <!-- Selected Books List -->
+                    <div id="edit-selected-books-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        ${examSession.selectedBooks.map(book => `
+                            <div class="bg-white p-3 rounded border" id="edit-book-${book.id}">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex-1">
+                                        <div class="font-medium">${book.name}</div>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <label class="text-xs text-gray-600">মোট নম্বর:</label>
+                                            <input type="number" value="${book.totalMarks}" 
+                                                   onchange="updateBookMarksInEdit('${book.id}', this.value)"
+                                                   class="w-16 border-gray-300 rounded text-center text-xs" 
+                                                   min="1" max="1000">
+                                        </div>
+                                    </div>
+                                    <button onclick="removeBookFromEdit('${book.id}')" class="text-red-600 hover:text-red-800 ml-2">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Available Books Section (Initially Hidden) -->
+                    <div id="available-books-section" class="hidden">
+                        <div class="border-t border-blue-200 pt-3">
+                            <h5 class="font-medium text-gray-600 mb-2">উপলব্ধ বই সমূহ:</h5>
+                            <div id="available-books-list" class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                <!-- Available books will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeExamEditModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">বাতিল</button>
+                <button onclick="saveExamEdits('${examSession.id}')" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                    <i class="fas fa-save"></i> সংরক্ষণ করুন
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Initialize edit modal selected books
+    editModalSelectedBooks = examSession.selectedBooks.map(book => ({
+        id: book.id,
+        name: book.name,
+        totalMarks: book.totalMarks
+    }));
+    
+    // Store current exam session for book editing
+    window.currentExamSession = examSession;
+}
+
+function closeExamEditModal() {
+    const modal = document.getElementById('exam-edit-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Store books for editing within the modal
+let editModalSelectedBooks = [];
+
+async function toggleAvailableBooksInEdit(className) {
+    const availableSection = document.getElementById('available-books-section');
+    const toggleBtn = document.getElementById('toggle-books-btn');
+    
+    if (availableSection.classList.contains('hidden')) {
+        // Show available books
+        availableSection.classList.remove('hidden');
+        toggleBtn.innerHTML = '<i class="fas fa-minus"></i> লুকান';
+        
+        // Load available books
+        await loadAvailableBooksForEdit(className);
+    } else {
+        // Hide available books
+        availableSection.classList.add('hidden');
+        toggleBtn.innerHTML = '<i class="fas fa-plus"></i> বই যোগ/বিয়োগ';
+    }
+}
+
+async function loadAvailableBooksForEdit(className) {
+    const availableBooksList = document.getElementById('available-books-list');
+    if (!availableBooksList) return;
+    
+    try {
+        // Load books from API
+        let allBooks = [];
+        const response = await fetch('/api/books');
+        if (response.ok) {
+            allBooks = await response.json();
+        } else {
+            // Fallback to window.books
+            allBooks = window.books || [];
+        }
+        
+        // Filter books for this class
+        const currentClassId = window.getClassIdByName ? window.getClassIdByName(className) : null;
+        const availableBooks = allBooks.filter(book => 
+            book.class_id === null || book.class_id === currentClassId
+        );
+        
+        // Get currently selected book IDs
+        const selectedBookIds = editModalSelectedBooks.map(b => b.id);
+        
+        // Show only books that are not already selected
+        const unselectedBooks = availableBooks.filter(book => !selectedBookIds.includes(book.id));
+        
+        if (unselectedBooks.length === 0) {
+            availableBooksList.innerHTML = `
+                <div class="col-span-2 text-center py-4 text-gray-500">
+                    <p class="text-sm">সব উপলব্ধ বই ইতিমধ্যে নির্বাচিত</p>
+                </div>
+            `;
+        } else {
+            availableBooksList.innerHTML = unselectedBooks.map(book => `
+                <div class="bg-white p-2 rounded border cursor-pointer hover:bg-green-50" onclick="addBookToEdit('${book.id}', '${book.book_name}')">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-medium text-sm">${book.book_name}</div>
+                            <div class="text-xs text-gray-500">${book.class_id ? 'শ্রেণী নির্দিষ্ট' : 'সকল শ্রেণী'}</div>
+                        </div>
+                        <i class="fas fa-plus-circle text-green-600"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading books for edit:', error);
+        availableBooksList.innerHTML = `
+            <div class="col-span-2 text-center py-4 text-red-500">
+                <p class="text-sm">বই লোড করতে সমস্যা হয়েছে</p>
+            </div>
+        `;
+    }
+}
+
+function addBookToEdit(bookId, bookName) {
+    // Check if book is already selected
+    if (editModalSelectedBooks.find(b => b.id === bookId)) {
+        return;
+    }
+    
+    // Add book to selected list
+    const newBook = {
+        id: bookId,
+        name: bookName,
+        totalMarks: 100 // Default marks
+    };
+    
+    editModalSelectedBooks.push(newBook);
+    updateEditSelectedBooksDisplay();
+    
+    // Refresh available books list
+    const currentExamSession = window.currentExamSession;
+    if (currentExamSession) {
+        loadAvailableBooksForEdit(currentExamSession.class);
+    }
+}
+
+function removeBookFromEdit(bookId) {
+    editModalSelectedBooks = editModalSelectedBooks.filter(b => b.id !== bookId);
+    updateEditSelectedBooksDisplay();
+    
+    // Refresh available books list
+    const currentExamSession = window.currentExamSession;
+    if (currentExamSession) {
+        loadAvailableBooksForEdit(currentExamSession.class);
+    }
+}
+
+function updateBookMarksInEdit(bookId, newMarks) {
+    const book = editModalSelectedBooks.find(b => b.id === bookId);
+    if (book) {
+        book.totalMarks = parseInt(newMarks) || 100;
+    }
+}
+
+function updateEditSelectedBooksDisplay() {
+    const selectedBooksList = document.getElementById('edit-selected-books-list');
+    const countElement = document.getElementById('edit-selected-books-count');
+    
+    if (countElement) {
+        countElement.textContent = editModalSelectedBooks.length;
+    }
+    
+    if (!selectedBooksList) return;
+    
+    selectedBooksList.innerHTML = editModalSelectedBooks.map(book => `
+        <div class="bg-white p-3 rounded border" id="edit-book-${book.id}">
+            <div class="flex justify-between items-center">
+                <div class="flex-1">
+                    <div class="font-medium">${book.name}</div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <label class="text-xs text-gray-600">মোট নম্বর:</label>
+                        <input type="number" value="${book.totalMarks}" 
+                               onchange="updateBookMarksInEdit('${book.id}', this.value)"
+                               class="w-16 border-gray-300 rounded text-center text-xs" 
+                               min="1" max="1000">
+                    </div>
+                </div>
+                <button onclick="removeBookFromEdit('${book.id}')" class="text-red-600 hover:text-red-800 ml-2">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function saveExamEdits(examId) {
+    const examSession = getCurrentExamSession(examId);
+    if (!examSession) {
+        alert('পরীক্ষা পাওয়া যায়নি।');
+        return;
+    }
+    
+    // Get updated values
+    const newYear = document.getElementById('edit-exam-year').value;
+    const newTerm = document.getElementById('edit-exam-term').value;
+    const newName = document.getElementById('edit-exam-name').value.trim();
+    const newType = document.querySelector('input[name="edit-exam-type"]:checked')?.value;
+    
+    if (!newName) {
+        alert('অনুগ্রহ করে পরীক্ষার নাম দিন।');
+        return;
+    }
+    
+    // Update exam session with new details
+    examSession.year = newYear;
+    examSession.term = newTerm;
+    examSession.name = newName;
+    examSession.type = newType;
+    examSession.lastModified = new Date().toISOString();
+    
+    // Update selected books if they were modified
+    if (editModalSelectedBooks.length > 0) {
+        examSession.selectedBooks = [...editModalSelectedBooks];
+    }
+    
+    // Save the updated exam
+    saveExamSession(examSession);
+    
+    // Close modal and reset edit state
+    closeExamEditModal();
+    editModalSelectedBooks = [];
+    
+    showQuickNotification(`✅ পরীক্ষা "${newName}" সফলভাবে আপডেট হয়েছে`, 'success');
 }
 
 function viewClassExamResults(examId, event) {
@@ -2508,25 +2815,8 @@ function loadStudentExamResults(studentId) {
         });
     });
     
-    // Create a compact spreadsheet-like table
-    let resultsHTML = `
-        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-3 py-2 text-left font-semibold text-gray-700 border-r">পরীক্ষা</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">বছর</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">টার্ম</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">মোট</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">%</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">গ্রেড</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700 border-r">স্ট্যাটাস</th>
-                            <th class="px-3 py-2 text-center font-semibold text-gray-700">বিস্তারিত</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
+    // Create separate spreadsheet tables for each exam
+    let resultsHTML = '';
     
     // Flatten all exams and sort by date (newest first)
     const allExams = [];
@@ -2541,81 +2831,107 @@ function loadStudentExamResults(studentId) {
     allExams.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
     
     if (allExams.length === 0) {
-        resultsHTML += `
-            <tr>
-                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                    <i class="fas fa-graduation-cap text-4xl mb-3"></i>
-                    <p class="font-medium">কোন পরীক্ষার ফলাফল পাওয়া যায়নি</p>
-                    <p class="text-sm">এই ছাত্রের জন্য এখনো কোন পরীক্ষা নেওয়া হয়নি</p>
-                </td>
-            </tr>
+        resultsHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-graduation-cap text-6xl mb-4"></i>
+                <p class="text-lg font-medium">কোন পরীক্ষার ফলাফল পাওয়া যায়নি</p>
+                <p class="text-sm">এই ছাত্রের জন্য এখনো কোন পরীক্ষা নেওয়া হয়নি</p>
+            </div>
         `;
     } else {
-        allExams.forEach(exam => {
-            const rowBgColor = exam.hasResults ? '' : 'bg-gray-50';
-            const statusBadge = `<span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${getExamStatusClass(exam.status)}">${getExamStatusText(exam.status)}</span>`;
-            
+        // Create a separate spreadsheet table for each exam
+        allExams.forEach((exam, examIndex) => {
             resultsHTML += `
-                <tr class="border-b hover:bg-blue-50 ${rowBgColor}">
-                    <td class="px-3 py-2 font-medium text-gray-800 border-r">${exam.name}</td>
-                    <td class="px-3 py-2 text-center border-r">${exam.year}</td>
-                    <td class="px-3 py-2 text-center border-r">${exam.term}</td>
+                <div class="mb-6">
+                    <!-- Exam Header -->
+                    <h5 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-blue-500"></i>
+                        ${exam.name} 
+                        <span class="text-sm font-normal text-gray-500">(${exam.year} - ${exam.term})</span>
+                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${getExamStatusClass(exam.status)}">
+                            ${getExamStatusText(exam.status)}
+                        </span>
+                    </h5>
+                    
                     ${exam.hasResults ? `
-                        <td class="px-3 py-2 text-center font-semibold border-r">${exam.total}</td>
-                        <td class="px-3 py-2 text-center font-semibold border-r">${exam.percentage}%</td>
-                        <td class="px-3 py-2 text-center font-bold ${getGradeColorClass(exam.grade)} border-r">${exam.grade}</td>
+                        <!-- Spreadsheet Table for This Exam -->
+                        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                            <table class="w-full text-sm">
+                                <!-- Book Names Row -->
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        ${exam.selectedBooks.map(book => 
+                                            `<th class="px-4 py-2 text-center font-semibold text-gray-700 border-r">${book.name}</th>`
+                                        ).join('')}
+                                        <th class="px-4 py-2 text-center font-semibold text-gray-700 border-r">মোট</th>
+                                        <th class="px-4 py-2 text-center font-semibold text-gray-700">গ্রেড</th>
+                                    </tr>
+                                </thead>
+                                <!-- Results Row -->
+                                <tbody>
+                                    <tr class="bg-white">
+                                        ${exam.selectedBooks.map(book => {
+                                            const mark = exam.studentResults[book.id] || 0;
+                                            const percentage = Math.round((mark / book.totalMarks) * 100);
+                                            const colorClass = getResultCellColor(mark, book.totalMarks);
+                                            
+                                            return `
+                                                <td class="px-4 py-3 text-center border-r ${colorClass}">
+                                                    <div class="font-semibold text-base">${mark}/${book.totalMarks}</div>
+                                                    <div class="text-xs text-gray-600">(${percentage}%)</div>
+                                                </td>
+                                            `;
+                                        }).join('')}
+                                        <td class="px-4 py-3 text-center font-bold text-base border-r">
+                                            <div class="text-lg">${exam.total}/${exam.selectedBooks.reduce((sum, book) => sum + book.totalMarks, 0)}</div>
+                                            <div class="text-sm text-gray-600">(${exam.percentage}%)</div>
+                                        </td>
+                                        <td class="px-4 py-3 text-center font-bold text-xl ${getGradeColorClass(exam.grade)}">
+                                            ${exam.grade}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     ` : `
-                        <td class="px-3 py-2 text-center text-gray-400 border-r">-</td>
-                        <td class="px-3 py-2 text-center text-gray-400 border-r">-</td>
-                        <td class="px-3 py-2 text-center text-gray-400 border-r">-</td>
+                        <!-- No Results Yet -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-clock text-3xl text-gray-400 mb-3"></i>
+                            <p class="font-medium text-gray-600">ফলাফল এখনো এন্ট্রি করা হয়নি</p>
+                            <p class="text-sm text-gray-500">শিক্ষক এখনো এই পরীক্ষার ফলাফল দেননি</p>
+                        </div>
                     `}
-                    <td class="px-3 py-2 text-center border-r">${statusBadge}</td>
-                    <td class="px-3 py-2 text-center">
-                        ${exam.hasResults ? `
-                            <button onclick="showExamDetailBreakdown('${studentId}', '${exam.id}')" 
-                                    class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">
-                                <i class="fas fa-eye"></i> দেখুন
-                            </button>
-                        ` : `
-                            <span class="text-gray-400 text-xs">অপেক্ষমাণ</span>
-                        `}
-                    </td>
-                </tr>
+                </div>
             `;
         });
-    }
-    
-    resultsHTML += `
-                    </tbody>
-                </table>
-            </div>
-        </div>
         
-        <!-- Summary Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div class="bg-blue-50 p-3 rounded-lg text-center">
-                <div class="text-lg font-bold text-blue-600">${allExams.length}</div>
-                <div class="text-xs text-blue-700">মোট পরীক্ষা</div>
-            </div>
-            <div class="bg-green-50 p-3 rounded-lg text-center">
-                <div class="text-lg font-bold text-green-600">${allExams.filter(e => e.hasResults).length}</div>
-                <div class="text-xs text-green-700">ফলাফল পাওয়া</div>
-            </div>
-            <div class="bg-yellow-50 p-3 rounded-lg text-center">
-                <div class="text-lg font-bold text-yellow-600">
-                    ${allExams.filter(e => e.hasResults).length > 0 ? 
-                        Math.round(allExams.filter(e => e.hasResults).reduce((sum, e) => sum + e.percentage, 0) / allExams.filter(e => e.hasResults).length) : 0}%
+        // Overall Summary Stats
+        resultsHTML += `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-200">
+                <div class="bg-blue-50 p-3 rounded-lg text-center">
+                    <div class="text-lg font-bold text-blue-600">${allExams.length}</div>
+                    <div class="text-xs text-blue-700">মোট পরীক্ষা</div>
                 </div>
-                <div class="text-xs text-yellow-700">গড় পারফরম্যান্স</div>
-            </div>
-            <div class="bg-purple-50 p-3 rounded-lg text-center">
-                <div class="text-lg font-bold text-purple-600">
-                    ${allExams.filter(e => e.hasResults && e.grade.includes('A')).length}
+                <div class="bg-green-50 p-3 rounded-lg text-center">
+                    <div class="text-lg font-bold text-green-600">${allExams.filter(e => e.hasResults).length}</div>
+                    <div class="text-xs text-green-700">ফলাফল পাওয়া</div>
                 </div>
-                <div class="text-xs text-purple-700">A গ্রেড</div>
+                <div class="bg-yellow-50 p-3 rounded-lg text-center">
+                    <div class="text-lg font-bold text-yellow-600">
+                        ${allExams.filter(e => e.hasResults).length > 0 ? 
+                            Math.round(allExams.filter(e => e.hasResults).reduce((sum, e) => sum + e.percentage, 0) / allExams.filter(e => e.hasResults).length) : 0}%
+                    </div>
+                    <div class="text-xs text-yellow-700">গড় পারফরম্যান্স</div>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-lg text-center">
+                    <div class="text-lg font-bold text-purple-600">
+                        ${allExams.filter(e => e.hasResults && e.grade.includes('A')).length}
+                    </div>
+                    <div class="text-xs text-purple-700">A গ্রেড</div>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
     
     if (resultsHTML === '') {
         resultsHTML = `
@@ -2768,6 +3084,15 @@ export {
     clearAllResults,
     openClassExam,
     editClassExam,
+    showExamEditModal,
+    closeExamEditModal,
+    toggleAvailableBooksInEdit,
+    loadAvailableBooksForEdit,
+    addBookToEdit,
+    removeBookFromEdit,
+    updateBookMarksInEdit,
+    updateEditSelectedBooksDisplay,
+    saveExamEdits,
     viewClassExamResults,
     duplicateClassExam,
     deleteClassExam,
