@@ -95,7 +95,7 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-text">
-                    <h1 onclick="if(typeof showSection === 'function') showSection('dashboard'); else console.error('showSection not available');" style="cursor: pointer;" title="Go to Dashboard">
+                    <h1 onclick="if(typeof navigateToSection === 'function') navigateToSection('dashboard'); else console.error('navigateToSection not available');" style="cursor: pointer;" title="Go to Dashboard">
                         <i class="fas fa-graduation-cap"></i> <span id="headerAppName">Loading...</span>
                     </h1>
                     <p>Student Management System</p>
@@ -127,16 +127,16 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <ul class="nav-list" id="navList">
-                    <li class="admin-only"><a href="#" onclick="if(typeof showSection === 'function') showSection('dashboard', event); else console.error('showSection not available');" class="nav-link">
+                    <li class="admin-only"><a href="#dashboard" onclick="if(typeof navigateToSection === 'function') navigateToSection('dashboard'); else console.error('navigateToSection not available');" class="nav-link">
                         <i class="fas fa-home"></i> Dashboard
                     </a></li>
-                    <li class="admin-only"><a href="#" onclick="if(typeof showSection === 'function') showSection('registration', event); else console.error('showSection not available');" class="nav-link">
+                    <li class="admin-only"><a href="#registration" onclick="if(typeof navigateToSection === 'function') navigateToSection('registration'); else console.error('navigateToSection not available');" class="nav-link">
                         <i class="fas fa-user-plus"></i> Register Student
                     </a></li>
-                    <li class="admin-only"><a href="#" onclick="if(typeof showSection === 'function') showSection('attendance', event); else console.error('showSection not available');" class="nav-link">
+                    <li class="admin-only"><a href="#attendance" onclick="if(typeof navigateToSection === 'function') navigateToSection('attendance'); else console.error('navigateToSection not available');" class="nav-link">
                         <i class="fas fa-check-circle"></i> Daily Attendance
                     </a></li>
-                    <li class="admin-only"><a href="#" onclick="if(typeof showSection === 'function') showSection('reports', event); else console.error('showSection not available');" class="nav-link">
+                    <li class="admin-only"><a href="#reports" onclick="if(typeof navigateToSection === 'function') navigateToSection('reports'); else console.error('navigateToSection not available');" class="nav-link">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a></li>
                     <li class="nav-item dropdown">
@@ -147,7 +147,7 @@
                             <!-- Class options will be populated dynamically -->
                         </div>
                     </li>
-                    <li class="admin-only"><a href="#" onclick="if(typeof showSection === 'function') showSection('settings', event); else console.error('showSection not available');" class="nav-link">
+                    <li class="admin-only"><a href="#settings" onclick="if(typeof navigateToSection === 'function') navigateToSection('settings'); else console.error('navigateToSection not available');" class="nav-link">
                         <i class="fas fa-cog"></i> Settings
                     </a></li>
                 </ul>

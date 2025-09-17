@@ -997,7 +997,10 @@ function toggleAlertDetails(index) {
 // Function to show Teachers Corner for a specific class
 function showTeachersCornerForClass(className) {
     // Navigate to Teachers Corner section
-    if (typeof showSection === 'function') {
+    if (typeof navigateToSection === 'function') {
+        navigateToSection('teachers-corner');
+    } else if (typeof showSection === 'function') {
+        window.location.hash = '#teachers-corner';
         showSection('teachers-corner-section');
     }
     

@@ -2533,7 +2533,7 @@
             });
         }
         
-        async function showStudentProfile(studentId) {
+        async function showStudentProfile(studentId, defaultTab = 'overview') {
             currentStudentIdForProfile = studentId;
             const student = allStudents.find(s => s.id === studentId);
             if (!student) return;
@@ -2560,6 +2560,7 @@
                         <button onclick="switchProfileTab('overview')" class="profile-tab active py-2 px-1 border-b-2 border-blue-500 text-sm font-medium text-blue-600">এক নজরে</button>
                         <button onclick="switchProfileTab('personal')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">ব্যক্তিগত তথ্য</button>
                         <button onclick="switchProfileTab('attendance')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">উপস্থিতি</button>
+                        <button onclick="switchProfileTab('exams')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">পরীক্ষা</button>
                         <button onclick="switchProfileTab('logs')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">শিক্ষকের নোট</button>
                         <button onclick="switchProfileTab('score-history')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">স্কোর ইতিহাস</button>
                         <button onclick="switchProfileTab('tarbiyah-goals')" class="profile-tab py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">তরবিয়াহ লক্ষ্য</button>
@@ -2673,6 +2674,18 @@
                     </div>
                 </div>
                 
+                <!-- Exams Tab -->
+                <div id="profile-exams" class="profile-tab-content hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-3">পরীক্ষার ফলাফল</h4>
+                            <div id="student-exam-results-container">
+                                <!-- Student exam results will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Logs Tab -->
                 <div id="profile-logs" class="profile-tab-content hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -2746,6 +2759,16 @@
             const studentProfileContent = document.getElementById('student-profile-content');
             if (studentProfileContent) {
                 studentProfileContent.innerHTML = profileContent;
+                
+                // Load exam results for this student
+                if (typeof window.loadStudentExamResults === 'function') {
+                    window.loadStudentExamResults(studentId);
+                }
+                
+                // Switch to the specified default tab
+                if (defaultTab !== 'overview') {
+                    setTimeout(() => switchProfileTab(defaultTab), 100);
+                }
             }
             const studentProfileModal = document.getElementById('student-profile-modal');
             if (studentProfileModal) studentProfileModal.style.display = 'flex';

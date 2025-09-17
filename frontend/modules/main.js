@@ -14,10 +14,10 @@ import { t, changeLanguage, initializeLanguage, updateAllTexts } from '../transl
 
 // Debug: Check if Settings module is loaded
 console.log('🔍 Settings module loaded:', Settings);
-    console.log('🔍 Settings.loadBooks:', Settings.loadBooks);
-    console.log('🔍 Settings.updateBookDropdowns:', Settings.updateBookDropdowns);
-    console.log('🔍 typeof Settings.loadBooks:', typeof Settings.loadBooks);
-    console.log('🔍 typeof Settings.updateBookDropdowns:', typeof Settings.updateBookDropdowns);
+console.log('🔍 Settings.loadBooks:', Settings.loadBooks);
+console.log('🔍 Settings.updateBookDropdowns:', Settings.updateBookDropdowns);
+console.log('🔍 typeof Settings.loadBooks:', typeof Settings.loadBooks);
+console.log('🔍 typeof Settings.updateBookDropdowns:', typeof Settings.updateBookDropdowns);
 
 // Expose translation function globally
 window.t = t;
@@ -115,6 +115,8 @@ window.editClass = Settings.editClass;
 window.deleteClass = Settings.deleteClass;
 window.editBook = Settings.editBook;
 window.deleteBook = Settings.deleteBook;
+window.getClassIdByName = Settings.getClassIdByName;
+window.getClassNameById = Settings.getClassNameById;
 // Note: Education Progress functions removed - Progress tracking is now handled in Teachers Corner
 
 // Exam Management functions
@@ -135,9 +137,49 @@ window.openClassExam = ExamManagement.openClassExam;
 window.editClassExam = ExamManagement.editClassExam;
 window.viewClassExamResults = ExamManagement.viewClassExamResults;
 window.duplicateClassExam = ExamManagement.duplicateClassExam;
+window.deleteClassExam = ExamManagement.deleteClassExam;
 window.viewAllClassExams = ExamManagement.viewAllClassExams;
+window.updateComparisonMatrix = ExamManagement.updateComparisonMatrix;
+window.renderComparisonMatrix = ExamManagement.renderComparisonMatrix;
+window.getComparisonCellColor = ExamManagement.getComparisonCellColor;
+window.selectAllExams = ExamManagement.selectAllExams;
+window.exportComparisonMatrix = ExamManagement.exportComparisonMatrix;
+window.showComparisonChart = ExamManagement.showComparisonChart;
+window.closeResultsComparisonModal = ExamManagement.closeResultsComparisonModal;
 window.exportClassResults = ExamManagement.exportClassResults;
+window.showExportSelectionModal = ExamManagement.showExportSelectionModal;
+window.closeExportSelectionModal = ExamManagement.closeExportSelectionModal;
+window.proceedWithExport = ExamManagement.proceedWithExport;
+window.exportSingleExamResults = ExamManagement.exportSingleExamResults;
+window.exportAllExamResults = ExamManagement.exportAllExamResults;
+window.openResultsViewInterface = ExamManagement.openResultsViewInterface;
+window.closeResultsViewModal = ExamManagement.closeResultsViewModal;
 window.classExamAnalytics = ExamManagement.classExamAnalytics;
+window.calculateClassAnalytics = ExamManagement.calculateClassAnalytics;
+window.closeClassAnalyticsModal = ExamManagement.closeClassAnalyticsModal;
+window.exportAnalyticsReport = ExamManagement.exportAnalyticsReport;
+window.printAnalyticsReport = ExamManagement.printAnalyticsReport;
+window.updateSelectedBooksDisplay = ExamManagement.updateSelectedBooksDisplay;
+window.updateBookMarksInSelection = ExamManagement.updateBookMarksInSelection;
+window.removeBookFromSelection = ExamManagement.removeBookFromSelection;
+window.removeBookFromExamWithConfirmation = ExamManagement.removeBookFromExamWithConfirmation;
+window.saveExamSession = ExamManagement.saveExamSession;
+window.refreshExamSectionInstantly = ExamManagement.refreshExamSectionInstantly;
+window.showQuickNotification = ExamManagement.showQuickNotification;
+window.openResultEntryInterface = ExamManagement.openResultEntryInterface;
+window.renderStudentResultRow = ExamManagement.renderStudentResultRow;
+window.updateStudentMark = ExamManagement.updateStudentMark;
+window.calculateStudentExamTotals = ExamManagement.calculateStudentExamTotals;
+window.closeResultEntryModal = ExamManagement.closeResultEntryModal;
+window.saveResultsDraft = ExamManagement.saveResultsDraft;
+window.publishResults = ExamManagement.publishResults;
+window.clearAllResults = ExamManagement.clearAllResults;
+window.importResultsCSV = ExamManagement.importResultsCSV;
+window.showStudentExamDetail = ExamManagement.showStudentExamDetail;
+window.loadStudentExamResults = ExamManagement.loadStudentExamResults;
+window.showExamDetailBreakdown = ExamManagement.showExamDetailBreakdown;
+window.closeExamBreakdownModal = ExamManagement.closeExamBreakdownModal;
+window.getRankHTML = ExamManagement.getRankHTML;
 
 // User Management functions
 window.loadUsers = Settings.loadUsers;
@@ -285,6 +327,105 @@ async function refreshStudentsData() {
     }
 }
 
+// Hash Navigation System
+function setupHashNavigation() {
+    console.log('🔗 Setting up hash navigation...');
+    
+    // Map hash names to actual section IDs
+    const hashToSection = {
+        'dashboard': 'dashboard',
+        'registration': 'registration', 
+        'attendance': 'attendance',
+        'reports': 'reports',
+        'settings': 'settings',
+        'teachers-corner': 'teachers-corner-section'
+    };
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', function() {
+        const hash = window.location.hash.replace('#', '');
+        console.log(`🔗 Hash changed to: ${hash}`);
+        
+        const sectionId = hashToSection[hash] || hash;
+        if (sectionId && typeof showSection === 'function') {
+            showSection(sectionId);
+            
+            // Section-specific initialization
+            if (hash === 'attendance') {
+                console.log('📊 Initializing attendance data after navigation...');
+                if (typeof loadAttendanceForDate === 'function') {
+                    setTimeout(() => loadAttendanceForDate(), 100);
+                }
+            } else if (hash === 'dashboard') {
+                console.log('📊 Initializing dashboard data after navigation...');
+                if (typeof updateDashboard === 'function') {
+                    setTimeout(() => updateDashboard(), 100);
+                }
+            }
+        }
+    });
+    
+    // Handle initial page load with hash
+    window.addEventListener('load', function() {
+        const hash = window.location.hash.replace('#', '');
+        console.log(`🔗 Page loaded with hash: ${hash}`);
+        
+        const sectionId = hashToSection[hash] || hash;
+        if (sectionId && hash) {
+            // Wait for app initialization to complete, then show section
+            setTimeout(async () => {
+                console.log(`🔗 Restoring section: ${hash} → ${sectionId}`);
+                
+                // Ensure app data is loaded first
+                if (typeof showSection === 'function') {
+                    await showSection(sectionId);
+                    
+                    // Additional initialization for specific sections
+                    if (hash === 'attendance') {
+                        console.log('📊 Initializing attendance data after hash restoration...');
+                        if (typeof loadAttendanceForDate === 'function') {
+                            setTimeout(() => loadAttendanceForDate(), 100);
+                        }
+                        if (typeof updateDateInputMax === 'function') {
+                            updateDateInputMax();
+                        }
+                    } else if (hash === 'dashboard') {
+                        console.log('📊 Initializing dashboard data after hash restoration...');
+                        if (typeof updateDashboard === 'function') {
+                            setTimeout(() => updateDashboard(), 100);
+                        }
+                    }
+                }
+            }, 1000); // Longer delay to ensure full app initialization
+        }
+    });
+    
+    console.log('✅ Hash navigation setup complete');
+}
+
+// Navigation helper function
+function navigateToSection(hashName) {
+    const hashToSection = {
+        'dashboard': 'dashboard',
+        'registration': 'registration', 
+        'attendance': 'attendance',
+        'reports': 'reports',
+        'settings': 'settings',
+        'teachers-corner': 'teachers-corner-section'
+    };
+    
+    window.location.hash = '#' + hashName;
+    const actualSectionId = hashToSection[hashName] || hashName;
+    
+    if (typeof showSection === 'function') {
+        showSection(actualSectionId);
+    }
+}
+
+// Expose navigation functions globally
+window.setupHashNavigation = setupHashNavigation;
+window.navigateToSection = navigateToSection;
+
 // Initialize application data from database
 async function initializeApp() {
     try {
@@ -304,46 +445,46 @@ async function initializeApp() {
         if (window.currentUser && window.currentUser.role === 'admin') {
             // Admin users: load all data
             console.log('👤 Admin user detected, loading all data');
+        
+        // Load students from database
+        const studentsResponse = await fetch('/api/students');
+        if (studentsResponse.ok) {
+            const studentsData = await studentsResponse.json();
+            // Update the global window variables directly
+            window.students = studentsData;
+            console.log(`✅ Loaded ${studentsData.length} students from database`);
+        }
+        
+        // Load attendance from database
+        const attendanceResponse = await fetch('/api/attendance');
+        if (attendanceResponse.ok) {
+            const attendanceData = await attendanceResponse.json();
+            // Update the global window variables directly
+            window.attendance = attendanceData;
             
-            // Load students from database
-            const studentsResponse = await fetch('/api/students');
-            if (studentsResponse.ok) {
-                const studentsData = await studentsResponse.json();
-                // Update the global window variables directly
-                window.students = studentsData;
-                console.log(`✅ Loaded ${studentsData.length} students from database`);
-            }
-            
-            // Load attendance from database
-            const attendanceResponse = await fetch('/api/attendance');
-            if (attendanceResponse.ok) {
-                const attendanceData = await attendanceResponse.json();
-                // Update the global window variables directly
-                window.attendance = attendanceData;
+            // Populate savedAttendanceDates with dates that have attendance data
+            if (attendanceData && typeof attendanceData === 'object') {
+                const savedDates = Object.keys(attendanceData).filter(date => {
+                    const dateAttendance = attendanceData[date];
+                    return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
+                });
                 
-                // Populate savedAttendanceDates with dates that have attendance data
-                if (attendanceData && typeof attendanceData === 'object') {
-                    const savedDates = Object.keys(attendanceData).filter(date => {
-                        const dateAttendance = attendanceData[date];
-                        return dateAttendance && typeof dateAttendance === 'object' && Object.keys(dateAttendance).length > 0;
-                    });
-                    
-                    // Clear and populate the savedAttendanceDates Set
-                    window.savedAttendanceDates.clear();
-                    savedDates.forEach(date => window.savedAttendanceDates.add(date));
-                    
-                    console.log(`✅ Loaded attendance data from database`);
-                    console.log(`✅ Populated savedAttendanceDates with ${savedDates.length} dates:`, savedDates);
-                }
+                // Clear and populate the savedAttendanceDates Set
+                window.savedAttendanceDates.clear();
+                savedDates.forEach(date => window.savedAttendanceDates.add(date));
+                
+                console.log(`✅ Loaded attendance data from database`);
+                console.log(`✅ Populated savedAttendanceDates with ${savedDates.length} dates:`, savedDates);
             }
-            
-            // Load holidays from database
-            const holidaysResponse = await fetch('/api/holidays');
-            if (holidaysResponse.ok) {
-                const holidaysData = await holidaysResponse.json();
-                // Update the global window variables directly
-                window.holidays = holidaysData;
-                console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
+        }
+        
+        // Load holidays from database
+        const holidaysResponse = await fetch('/api/holidays');
+        if (holidaysResponse.ok) {
+            const holidaysData = await holidaysResponse.json();
+            // Update the global window variables directly
+            window.holidays = holidaysData;
+            console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
             }
         } else if (window.currentUser && window.currentUser.role === 'user' && window.currentUser.class_name) {
             // Regular users: load only their class data
@@ -413,34 +554,34 @@ async function initializeApp() {
         
         // Only initialize admin-specific features for admin users
         if (window.currentUser && window.currentUser.role === 'admin') {
-            // Update class dropdowns after loading data
-            if (typeof updateClassDropdowns === 'function') {
-                updateClassDropdowns();
-            }
+        // Update class dropdowns after loading data
+        if (typeof updateClassDropdowns === 'function') {
+            updateClassDropdowns();
+        }
             
             // Populate attendance class filter after classes are loaded
             if (typeof Attendance.populateAttendanceClassFilter === 'function') {
                 Attendance.populateAttendanceClassFilter();
             }
-            
-            // Update book dropdowns after loading books
-            if (typeof updateBookDropdowns === 'function') {
-                updateBookDropdowns();
-            }
-            
+        
+        // Update book dropdowns after loading books
+        if (typeof updateBookDropdowns === 'function') {
+            updateBookDropdowns();
+        }
+        
             // Update dashboard - ONLY for admin users
-            if (typeof updateDashboard === 'function') {
-                updateDashboard();
-            }
-            
-            // Initialize academic year start date
-            if (typeof initializeAcademicYearStart === 'function') {
-                initializeAcademicYearStart();
-            }
-            
-            // Initialize Hijri settings
-            if (typeof initializeHijriSettings === 'function') {
-                initializeHijriSettings();
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+        
+        // Initialize academic year start date
+        if (typeof initializeAcademicYearStart === 'function') {
+            initializeAcademicYearStart();
+        }
+        
+        // Initialize Hijri settings
+        if (typeof initializeHijriSettings === 'function') {
+            initializeHijriSettings();
             }
         } else {
             console.log('👤 Regular user detected, skipping admin-specific initialization');
@@ -503,7 +644,13 @@ async function initializeApp() {
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup hash navigation first
+    setupHashNavigation();
+    
+    // Then initialize app data
+    initializeApp();
+});
 
 // Teachers Corner Dropdown Functions
 function toggleTeachersCornerDropdown() {
@@ -736,6 +883,8 @@ async function openTeachersCornerForClass(className) {
         if (canProceed()) {
             try {
                 console.log('✅ Proceeding with dashboard loading...');
+                // Set hash for Teachers Corner
+                window.location.hash = '#teachers-corner';
                 window.showClassDashboard(className);
                 return;
             } catch (error) {
