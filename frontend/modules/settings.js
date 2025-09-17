@@ -12,9 +12,7 @@ function saveData() {
     if (window.students) {
         localStorage.setItem('madaniMaktabStudents', JSON.stringify(window.students));
     }
-    if (window.holidays) {
-        localStorage.setItem('madaniMaktabHolidays', JSON.stringify(window.holidays));
-    }
+    // Holiday management removed - no longer saved to localStorage
     console.log('💾 Data saved to localStorage');
 }
 
