@@ -348,10 +348,13 @@
                         <button onclick="showMarkAllAbsentModal()" class="btn btn-danger btn-sm">
                             <i class="fas fa-user-slash"></i> <span data-translate="markAllAbsent">Mark All Absent</span>
                         </button>
-                        <button onclick="markAllNeutral()" class="btn btn-warning btn-sm">
+                        <button onclick="markAllHoliday()" class="btn btn-holiday btn-sm">
+                            <i class="fas fa-calendar-day"></i> <span data-translate="markAllHoliday">Mark All Holiday</span>
+                        </button>
+                        <button onclick="markAllNeutral()" class="btn btn-clear btn-sm">
                             <i class="fas fa-eraser"></i> <span data-translate="markAllNeutral">Clear All</span>
                         </button>
-                        <button onclick="copyPreviousDayAttendance()" class="btn btn-secondary btn-sm">
+                        <button onclick="copyPreviousDayAttendance()" class="btn btn-copy btn-sm">
                             <i class="fas fa-copy"></i> <span data-translate="copyPreviousDay">Copy Previous Day</span>
                         </button>
                         <button onclick="saveAttendance()" class="btn btn-primary btn-sm btn-save-attendance">

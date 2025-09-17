@@ -994,6 +994,57 @@ async function markAllNeutral() {
     showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedNeutral')}`);
 }
 
+async function markAllHoliday() {
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (!selectedDate) {
+        showModal(t('error'), t('pleaseSelectDate'));
+        return;
+    }
+    
+    const filteredStudents = getFilteredStudents();
+    if (filteredStudents.length === 0) {
+        showModal(t('error'), t('noStudentsFound'));
+        return;
+    }
+    
+    if (!confirm(`${t('confirmMarkAllHoliday')} ${filteredStudents.length} ${t('students')}?`)) {
+        return;
+    }
+    
+    // Initialize attendance record for the day if it doesn't exist
+    if (!attendance[selectedDate]) {
+        attendance[selectedDate] = {};
+    }
+    
+    // Mark all filtered students as holiday
+    filteredStudents.forEach(student => {
+        attendance[selectedDate][student.id] = {
+            status: 'holiday',
+            reason: ''
+        };
+    });
+    
+    // Refresh display without saving to database
+    await loadAttendanceForDate();
+    
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes*';
+    }
+    
+    // Refresh attendance calendar if it's visible to show updated status
+    refreshAttendanceCalendarIfVisible();
+    
+    // Update dashboard to reflect the changes
+    if (typeof updateDashboard === 'function') {
+        updateDashboard();
+    }
+    
+    showModal(t('success'), `${filteredStudents.length} ${t('studentsMarkedHoliday')}`);
+}
+
 async function autoCopyFromPreviousDay(targetDate) {
     // Holiday status is now allowed - no restrictions
     
@@ -1340,4 +1391,4 @@ function resetAttendanceClassFilter() {
     }
 }
 
-export { studentDetailSource, initializeTodayAttendance, updateDateInputMax, updateAbsenceReason, updateFilteredStudentCount, updateFilterStatus, getFilteredStudents, showMarkAllAbsentModal, closeBulkAbsentModal, showStudentDetail, showResetAttendanceModal, closeResetAttendanceModal, markAllPresent, markAllNeutral, copyPreviousDayAttendance, saveAttendance, loadAttendanceForDate, confirmMarkAllAbsent, confirmResetAttendance, toggleAttendance, populateAttendanceClassFilter, refreshAttendanceClassFilter, resetAttendanceClassFilter }
+export { studentDetailSource, initializeTodayAttendance, updateDateInputMax, updateAbsenceReason, updateFilteredStudentCount, updateFilterStatus, getFilteredStudents, showMarkAllAbsentModal, closeBulkAbsentModal, showStudentDetail, showResetAttendanceModal, closeResetAttendanceModal, markAllPresent, markAllNeutral, markAllHoliday, copyPreviousDayAttendance, saveAttendance, loadAttendanceForDate, confirmMarkAllAbsent, confirmResetAttendance, toggleAttendance, populateAttendanceClassFilter, refreshAttendanceClassFilter, resetAttendanceClassFilter }

@@ -83,6 +83,7 @@ const translations = {
         allClasses: "All Classes",
         markAllPresent: "Mark All Present",
         markAllAbsent: "Mark All Absent", 
+        markAllHoliday: "Mark All Holiday",
         markAllNeutral: "Mark All Neutral",
         copyPreviousDay: "Copy Previous Day",
         saveAttendance: "Save Attendance",
@@ -234,8 +235,10 @@ const translations = {
         bulkAbsentConfirm: "Mark All Absent",
         cancel: "Cancel",
         pleaseProvideReason: "Please provide a reason for the absence",
+        confirmMarkAllHoliday: "Are you sure you want to mark all filtered students as holiday?",
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
+        studentsMarkedHoliday: "students marked as holiday",
         studentsMarkedNeutral: "students cleared to neutral",
         markAllNeutral: "Clear All",
         noAttendanceDataFound: "No attendance data found for",
@@ -341,6 +344,7 @@ const translations = {
         studentsConfirmedPresent: "students confirmed present",
         studentsMarkedPresent: "students marked as present",
         studentsMarkedAbsent: "students marked as absent",
+        studentsMarkedHoliday: "students marked as holiday",
         rememberToSaveAttendance: "Remember to save attendance after making changes!",
         selectDateRangeToGenerate: "Select date range and click \"Generate Report\" to view attendance data.",
         showAttendanceTrackingCalendar: "Show Attendance Tracking Calendar",
@@ -579,6 +583,7 @@ const translations = {
         allClasses: "সকল শ্রেণী",
         markAllPresent: "সবাইকে উপস্থিত চিহ্নিত করুন",
         markAllAbsent: "সবাইকে অনুপস্থিত চিহ্নিত করুন",
+        markAllHoliday: "সবাইকে ছুটি চিহ্নিত করুন",
         markAllNeutral: "সবাইকে নিরপেক্ষ চিহ্নিত করুন",
         copyPreviousDay: "পূর্ববর্তী দিন কপি করুন",
         saveAttendance: "উপস্থিতি সংরক্ষণ করুন",
@@ -587,6 +592,8 @@ const translations = {
         noStudentsFound: "নির্বাচিত মানদণ্ডের জন্য কোন ছাত্র পাওয়া যায়নি।",
         noStudentsFoundRegister: "কোন ছাত্র পাওয়া যায়নি। অনুগ্রহ করে প্রথমে ছাত্র নিবন্ধন করুন।",
         reasonForAbsence: "অনুপস্থিতির কারণ",
+        confirmMarkAllHoliday: "আপনি কি নিশ্চিত যে সব ফিল্টার করা ছাত্রদের ছুটি হিসেবে চিহ্নিত করতে চান?",
+        studentsMarkedHoliday: "ছাত্রদের ছুটি হিসেবে চিহ্নিত করা হয়েছে",
         
         // Reports
         attendanceReports: "উপস্থিতির রিপোর্ট",
@@ -1065,11 +1072,12 @@ function updateAttendanceTexts() {
     
     // Update bulk action buttons
     const bulkButtons = document.querySelectorAll('.bulk-actions .btn');
-    if (bulkButtons.length >= 4) {
+    if (bulkButtons.length >= 5) {
         bulkButtons[0].innerHTML = `<i class="fas fa-check-double"></i> ${t('markAllPresent')}`;
         bulkButtons[1].innerHTML = `<i class="fas fa-user-slash"></i> ${t('markAllAbsent')}`;
-        bulkButtons[2].innerHTML = `<i class="fas fa-eraser"></i> ${t('markAllNeutral')}`;
-        bulkButtons[3].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
+        bulkButtons[2].innerHTML = `<i class="fas fa-calendar-day"></i> ${t('markAllHoliday')}`;
+        bulkButtons[3].innerHTML = `<i class="fas fa-eraser"></i> ${t('markAllNeutral')}`;
+        bulkButtons[4].innerHTML = `<i class="fas fa-copy"></i> ${t('copyPreviousDay')}`;
     }
     
     // Update bulk absent modal

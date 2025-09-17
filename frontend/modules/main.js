@@ -54,6 +54,7 @@ window.clearStudentFilters = Registration.clearStudentFilters;
 window.markAllPresent = Attendance.markAllPresent;
 window.showMarkAllAbsentModal = Attendance.showMarkAllAbsentModal;
 window.markAllNeutral = Attendance.markAllNeutral;
+window.markAllHoliday = Attendance.markAllHoliday;
 window.copyPreviousDayAttendance = Attendance.copyPreviousDayAttendance;
 window.saveAttendance = Attendance.saveAttendance;
 window.toggleAttendance = Attendance.toggleAttendance;
