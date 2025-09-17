@@ -198,12 +198,7 @@ function generateCalendarDays(year, month, startDayOfWeek, daysInMonth) {
             dayClass += ' before-academic-year';
             dayTitle = `Before academic year start (${formatDate(academicYearStartDate)})`;
         }
-        // Check if it's a holiday
-        else if (isHoliday(dateStr)) {
-            dayClass += ' holiday-day';
-            const holidayName = getHolidayName(dateStr);
-            dayTitle = `Holiday: ${holidayName}`;
-        }
+        // Note: Holiday status is now handled in attendance data, not displayed here
         // Check if attendance was saved to database (priority over future date)
         else if (savedAttendanceDates.has(dateStr)) {
             dayClass += ' attendance-taken';
@@ -252,9 +247,8 @@ function generateAttendanceSummary(year, month) {
         const dayOfWeek = d.getDay();
         const isWeekend = dayOfWeek === 5; // Assuming Friday is the weekend
 
-        if (isHoliday(dateString)) {
-            holidaysCount++;
-        } else if (!isWeekend) {
+        // Note: Holiday status is now handled in attendance data, not counted here
+        if (!isWeekend) {
             if (attendance[dateString] && Object.keys(attendance[dateString]).length > 0) {
                 totalTaken++;
         } else {

@@ -270,21 +270,7 @@ async function showSection(sectionId, event) {
             }
         }
         
-        if (typeof displayHolidays === 'function') {
-            console.log('✅ displayHolidays function found, calling...');
-            displayHolidays();
-            console.log('✅ displayHolidays completed');
-        } else {
-            console.error('❌ displayHolidays function not found');
-            // Try to access through window object
-            if (typeof window.displayHolidays === 'function') {
-                console.log('✅ displayHolidays found in window, calling...');
-                window.displayHolidays();
-                console.log('✅ window.displayHolidays completed');
-            } else {
-                console.error('❌ displayHolidays not found in window either');
-            }
-        }
+        // Holiday management removed - no longer needed
         
         if (typeof loadBooks === 'function') {
             console.log('✅ loadBooks function found, calling...');
@@ -462,18 +448,26 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
                 for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     
-                    if (isHoliday(dateStr)) continue;
+                    // Holiday status is now handled in attendance data, not blocked here
                     if (!attendance[dateStr] || Object.keys(attendance[dateStr]).length === 0) continue;
                     
-                    totalSchoolDays++;
                     const record = attendance[dateStr] ? attendance[dateStr][student.id] : null;
                     
                     if (record) {
-                        if (record.status === 'present') present++;
-                        else if (record.status === 'absent') absent++;
-                        else if (record.status === 'leave') leave++;
+                        if (record.status === 'present') {
+                            present++;
+                            totalSchoolDays++;
+                        } else if (record.status === 'absent') {
+                            absent++;
+                            totalSchoolDays++;
+                        } else if (record.status === 'leave') {
+                            leave++;
+                            totalSchoolDays++;
+                        }
+                        // Note: 'holiday' status is not counted in totalSchoolDays or attendance calculations
                     } else {
                         absent++;
+                        totalSchoolDays++;
                     }
                 }
                 

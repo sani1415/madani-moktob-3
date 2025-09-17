@@ -655,35 +655,6 @@ def test_delete2():
     logger.info("DEBUG: test_delete2 called")
     return jsonify({'success': True, 'message': 'Test delete2 works'})
 
-@app.route('/api/holidays/delete/<path:date>', methods=['DELETE'])
-def delete_holiday(date):
-    logger.info(f"DEBUG: delete_holiday called with date: {date}")
-    try:
-        db.delete_holiday(date)
-        return jsonify({'success': True})
-    except Exception as e:
-        logger.error(f"DEBUG: Error in delete_holiday: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/holidays', methods=['GET'])
-def get_holidays():
-    try:
-        holidays = db.get_holidays()
-        return jsonify(holidays)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/holidays', methods=['POST'])
-def add_holiday():
-    try:
-        holiday_data = request.json
-        if not holiday_data or not holiday_data.get('date') or not holiday_data.get('name'):
-            return jsonify({'error': 'Date and name are required'}), 400
-            
-        db.add_holiday(holiday_data['date'], holiday_data['name'])
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 # Education Progress API Routes
 @app.route('/api/education', methods=['GET'])

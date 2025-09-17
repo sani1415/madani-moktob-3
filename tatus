@@ -1,0 +1,44 @@
+[1mdiff --cc backend/app_server.py[m
+[1mindex c734e24,a84876a..0000000[m
+[1m--- a/backend/app_server.py[m
+[1m+++ b/backend/app_server.py[m
+[36m@@@ -262,38 -652,9 +262,9 @@@[m [mdef test_delete()[m
+  [m
+  @app.route('/api/test-delete2', methods=['DELETE'])[m
+  def test_delete2():[m
+[31m -    logger.info("DEBUG: test_delete2 called")[m
+[32m +    print("DEBUG: test_delete2 called")[m
+      return jsonify({'success': True, 'message': 'Test delete2 works'})[m
+  [m
+[31m- @app.route('/api/holidays/delete/<path:date>', methods=['DELETE'])[m
+[31m- def delete_holiday(date):[m
+[31m-     print(f"DEBUG: delete_holiday called with date: {date}")[m
+[31m-     try:[m
+[31m-         db.delete_holiday(date)[m
+[31m-         return jsonify({'success': True})[m
+[31m-     except Exception as e:[m
+[31m-         print(f"DEBUG: Error in delete_holiday: {e}")[m
+[31m-         return jsonify({'error': str(e)}), 500[m
+[31m- [m
+[31m- @app.route('/api/holidays', methods=['GET'])[m
+[31m- def get_holidays():[m
+[31m-     try:[m
+[31m-         holidays = db.get_holidays()[m
+[31m-         return jsonify(holidays)[m
+[31m-     except Exception as e:[m
+[31m-         return jsonify({'error': str(e)}), 500[m
+[31m- [m
+[31m- @app.route('/api/holidays', methods=['POST'])[m
+[31m- def add_holiday():[m
+[31m-     try:[m
+[31m-         holiday_data = request.json[m
+[31m-         if not holiday_data or not holiday_data.get('date') or not holiday_data.get('name'):[m
+[31m-             return jsonify({'error': 'Date and name are required'}), 400[m
+[31m-             [m
+[31m-         db.add_holiday(holiday_data['date'], holiday_data['name'])[m
+[31m-         return jsonify({'success': True})[m
+[31m-     except Exception as e:[m
+[31m-         return jsonify({'error': str(e)}), 500[m
+  [m
+  # Education Progress API Routes[m
+  @app.route('/api/education', methods=['GET'])[m

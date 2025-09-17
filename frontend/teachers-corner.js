@@ -954,12 +954,12 @@
                     });
             
                     // Batch DOM updates with color coding
-                    requestAnimationFrame(() => {
-                        // Check if elements exist before updating
-                        const totalStudentsEl = document.getElementById('class-total-students');
-                        const presentTodayEl = document.getElementById('class-present-today');
-                        const absentTodayEl = document.getElementById('class-absent-today');
-                        const attendanceRateEl = document.getElementById('class-attendance-rate');
+            requestAnimationFrame(() => {
+                // Check if elements exist before updating
+                const totalStudentsEl = document.getElementById('class-total-students');
+                const presentTodayEl = document.getElementById('class-present-today');
+                const absentTodayEl = document.getElementById('class-absent-today');
+                const attendanceRateEl = document.getElementById('class-attendance-rate');
                         
                         // Debug: Check if elements exist
                         console.log('🎓 Teachers Corner - DOM Elements Check:', {
@@ -968,7 +968,7 @@
                             'class-absent-today': !!absentTodayEl,
                             'class-attendance-rate': !!attendanceRateEl
                         });
-                        
+                
                         if (totalStudentsEl) {
                             updateElementText('class-total-students', total);
                             console.log('✅ Updated class-total-students:', total);

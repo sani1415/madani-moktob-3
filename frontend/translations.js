@@ -1183,10 +1183,7 @@ function updateSettingsTexts() {
         addClassBtn.innerHTML = `<i class="fas fa-plus"></i> ${t('addClass')}`;
     }
     
-    const addHolidayBtn = document.querySelector('.add-holiday .btn');
-    if (addHolidayBtn) {
-        addHolidayBtn.innerHTML = `<i class="fas fa-calendar-plus"></i> ${t('addHoliday')}`;
-    }
+    // Holiday management removed - no longer needed
     
     // Update data management section texts
     const dataTranslateElements = document.querySelectorAll('[data-translate]');

@@ -461,12 +461,15 @@ body {
 }
 
 .nav-link {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 15px 25px;
     text-decoration: none;
     color: #666;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    min-height: 48px;
 }
 
 .nav-link:hover,
@@ -478,6 +481,36 @@ body {
 
 .nav-link i {
     margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* Navigation dropdown toggle should look like regular nav links */
+.nav-link.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 15px 25px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #666;
+    font-size: inherit;
+    font-weight: normal;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-link.dropdown-toggle:hover,
+.nav-link.dropdown-toggle.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+    background-color: #f8f9fa;
+}
+
+.nav-link.dropdown-toggle i.fa-chevron-down {
+    margin-left: 5px;
+    font-size: 12px;
 }
 
 /* Main Content */
@@ -1789,7 +1822,8 @@ body {
     min-width: 100px;
 }
 
-.dropdown-toggle {
+/* Attendance dropdown toggle styling */
+.attendance-dropdown .dropdown-toggle {
     padding: 6px 12px;
     border: 1px solid #dee2e6;
     border-radius: 20px;
@@ -1804,36 +1838,36 @@ body {
     min-width: 80px;
 }
 
-.dropdown-toggle:hover {
+.attendance-dropdown .dropdown-toggle:hover {
     border-color: #007bff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.dropdown-toggle.present {
+.attendance-dropdown .dropdown-toggle.present {
     background: #27ae60;
     color: white;
     border-color: #27ae60;
 }
 
-.dropdown-toggle.absent {
+.attendance-dropdown .dropdown-toggle.absent {
     background: #e74c3c;
     color: white;
     border-color: #e74c3c;
 }
 
-.dropdown-toggle.clear {
+.attendance-dropdown .dropdown-toggle.clear {
     background: #6c757d;
     color: white;
     border-color: #6c757d;
 }
 
-.dropdown-toggle.neutral {
+.attendance-dropdown .dropdown-toggle.neutral {
     background: #6c757d;
     color: white;
     border-color: #6c757d;
 }
 
-.dropdown-toggle.holiday {
+.attendance-dropdown .dropdown-toggle.holiday {
     background: #ffc107;
     color: #212529;
     border-color: #ffc107;
@@ -2519,13 +2553,19 @@ body {
     }
     
     .nav-link {
+        display: flex;
+        align-items: center;
         padding: 15px 20px;
         border-bottom: 1px solid #eee;
         border-left: none;
+        white-space: nowrap;
+        min-height: 48px;
     }
     
     .nav-link:hover,
-    .nav-link.active {
+    .nav-link.active,
+    .nav-link.dropdown-toggle:hover,
+    .nav-link.dropdown-toggle.active {
         border-bottom: 1px solid #eee;
         border-left: 4px solid #3498db;
     }
@@ -2603,7 +2643,7 @@ body {
         min-width: 80px;
     }
     
-    .dropdown-toggle {
+    .attendance-dropdown .dropdown-toggle {
         font-size: 11px;
         padding: 5px 10px;
     }

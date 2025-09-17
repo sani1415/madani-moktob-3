@@ -89,12 +89,10 @@ window.updateDateRestrictions = Settings.updateDateRestrictions;
 window.clearDateRestrictions = Settings.clearDateRestrictions;
 window.addClass = Settings.addClass;
 window.addBook = Settings.addBook;
-window.addHoliday = Settings.addHoliday;
-window.deleteHoliday = Settings.deleteHoliday;
-window.getHolidayName = Settings.getHolidayName;
+// Holiday management functions removed
 window.showResetAttendanceModal = Attendance.showResetAttendanceModal;
 window.displayClasses = Settings.displayClasses;
-window.displayHolidays = Settings.displayHolidays;
+// displayHolidays function removed
 window.loadBooks = Settings.loadBooks;
 window.updateClassFilterOptions = Registration.updateClassFilterOptions;
 window.updateClassDropdowns = Settings.updateClassDropdowns;
@@ -110,7 +108,7 @@ console.log('🔍 window.loadBooks:', window.loadBooks);
 console.log('🔍 window.updateBookDropdowns:', window.updateBookDropdowns);
 console.log('🔍 typeof window.loadBooks:', typeof window.loadBooks);
 console.log('🔍 typeof window.updateBookDropdowns:', typeof window.updateBookDropdowns);
-window.isHoliday = Settings.isHoliday;
+// isHoliday function removed
 window.editClass = Settings.editClass;
 window.deleteClass = Settings.deleteClass;
 window.editBook = Settings.editBook;
