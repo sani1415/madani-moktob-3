@@ -868,8 +868,6 @@ function updateDateRestrictions() {
         'reportStartDate',
         'reportEndDate',
         'attendanceDate',
-        'holidayStartDate',
-        'holidayEndDate'
     ];
     
     dateInputIds.forEach(inputId => {
@@ -897,8 +895,6 @@ function clearDateRestrictions() {
         'reportStartDate',
         'reportEndDate',
         'attendanceDate',
-        'holidayStartDate',
-        'holidayEndDate'
     ];
     
     dateInputIds.forEach(inputId => {
