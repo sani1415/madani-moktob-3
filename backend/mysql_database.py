@@ -359,6 +359,72 @@ class MySQLDatabase:
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
             ''')
             
+            # Create exam management tables
+            logger.info("MySQLDatabase: Creating exam management tables...")
+            
+            # Create exam_sessions table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS exam_sessions (
+                    id VARCHAR(50) PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    class_name VARCHAR(50) NOT NULL,
+                    year YEAR NOT NULL,
+                    term VARCHAR(50) NOT NULL,
+                    exam_type VARCHAR(50) NOT NULL,
+                    status ENUM('draft', 'published') DEFAULT 'draft',
+                    created_by VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    published_at TIMESTAMP NULL,
+                    last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    
+                    INDEX idx_class_year_term (class_name, year, term),
+                    INDEX idx_status (status),
+                    INDEX idx_created_by (created_by)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            logger.info("MySQLDatabase: exam_sessions table created/verified")
+            
+            # Create exam_books table (junction table)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS exam_books (
+                    exam_id VARCHAR(50) NOT NULL,
+                    book_id INT NOT NULL,
+                    book_name VARCHAR(255) NOT NULL,
+                    total_marks INT NOT NULL DEFAULT 100,
+                    display_order INT DEFAULT 0,
+                    
+                    PRIMARY KEY (exam_id, book_id),
+                    FOREIGN KEY (exam_id) REFERENCES exam_sessions(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+                    INDEX idx_exam_id (exam_id)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            logger.info("MySQLDatabase: exam_books table created/verified")
+            
+            # Create exam_results table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS exam_results (
+                    exam_id VARCHAR(50) NOT NULL,
+                    student_id VARCHAR(50) NOT NULL,
+                    book_id INT NOT NULL,
+                    marks_obtained INT NOT NULL DEFAULT 0,
+                    total_marks INT NOT NULL,
+                    entered_by VARCHAR(50),
+                    entered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    
+                    PRIMARY KEY (exam_id, student_id, book_id),
+                    FOREIGN KEY (exam_id) REFERENCES exam_sessions(id) ON DELETE CASCADE,
+                    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+                    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+                    INDEX idx_exam_student (exam_id, student_id),
+                    INDEX idx_student_id (student_id)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+            ''')
+            logger.info("MySQLDatabase: exam_results table created/verified")
+            
+            logger.info("MySQLDatabase: All exam management tables created successfully")
+
             # Create app settings table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS app_settings (
@@ -1895,6 +1961,310 @@ class MySQLDatabase:
             
         except Error as e:
             print(f"Error getting book by ID: {e}")
+            raise
+
+    # ===== EXAM MANAGEMENT METHODS =====
+    
+    def get_class_exams(self, class_name):
+        """Get all exams for a specific class with their books"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get exam sessions for the class (using a simpler, more reliable approach)
+            cursor.execute('''
+                SELECT * FROM exam_sessions 
+                WHERE class_name = %s
+                ORDER BY created_at DESC
+            ''', (class_name,))
+            
+            exams = cursor.fetchall()
+            logger.info(f"Found {len(exams)} exam sessions for class: {class_name}")
+            
+            # Get books for each exam separately (more reliable than GROUP_CONCAT)
+            for exam in exams:
+                cursor.execute('''
+                    SELECT book_id, book_name, total_marks, display_order
+                    FROM exam_books 
+                    WHERE exam_id = %s
+                    ORDER BY display_order
+                ''', (exam['id'],))
+                
+                books = cursor.fetchall()
+                exam['selectedBooks'] = [
+                    {
+                        'id': book['book_id'],
+                        'name': book['book_name'], 
+                        'totalMarks': book['total_marks']
+                    }
+                    for book in books
+                ]
+                logger.info(f"Loaded {len(books)} books for exam: {exam['name']}")
+                
+                # Convert datetime fields to ISO format for frontend
+                if exam['created_at']:
+                    exam['createdDate'] = exam['created_at'].isoformat()
+                if exam['published_at']:
+                    exam['publishedDate'] = exam['published_at'].isoformat()
+                if exam['last_modified']:
+                    exam['lastModified'] = exam['last_modified'].isoformat()
+                
+                # Normalize field names for frontend compatibility
+                exam['class'] = exam['class_name']  # Frontend expects 'class'
+                exam['type'] = exam['exam_type']    # Frontend expects 'type'
+            
+            cursor.close()
+            conn.close()
+            return exams
+            
+        except Error as e:
+            logger.error(f"Error getting class exams: {e}")
+            raise
+    
+    def create_exam_session(self, exam_data):
+        """Create a new exam session with its books"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Insert exam session
+            cursor.execute('''
+                INSERT INTO exam_sessions (id, name, class_name, year, term, exam_type, status, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                exam_data['id'],
+                exam_data['name'],
+                exam_data.get('class', exam_data.get('class_name')),  # Handle both field names
+                exam_data['year'],
+                exam_data['term'],
+                exam_data.get('type', exam_data.get('exam_type')),  # Handle both field names
+                exam_data.get('status', 'draft'),
+                exam_data.get('created_by', exam_data.get('createdBy'))
+            ))
+            
+            # Insert exam books
+            if 'selectedBooks' in exam_data and exam_data['selectedBooks']:
+                for i, book in enumerate(exam_data['selectedBooks']):
+                    cursor.execute('''
+                        INSERT INTO exam_books (exam_id, book_id, book_name, total_marks, display_order)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (
+                        exam_data['id'],
+                        book['id'],
+                        book['name'],
+                        book.get('totalMarks', 100),
+                        i
+                    ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Created exam session: {exam_data['id']} - {exam_data['name']}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error creating exam session: {e}")
+            if conn:
+                conn.rollback()
+            raise
+    
+    def update_exam_session(self, exam_data):
+        """Update an existing exam session and its books"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Update exam session
+            cursor.execute('''
+                UPDATE exam_sessions 
+                SET name = %s, year = %s, term = %s, exam_type = %s, status = %s,
+                    published_at = %s, last_modified = CURRENT_TIMESTAMP
+                WHERE id = %s
+            ''', (
+                exam_data['name'],
+                exam_data['year'],
+                exam_data['term'],
+                exam_data.get('type', exam_data.get('exam_type')),  # Handle both field names
+                exam_data.get('status', 'draft'),
+                exam_data.get('published_at') if exam_data.get('status') == 'published' else None,
+                exam_data['id']
+            ))
+            
+            # Update exam books if provided
+            if 'selectedBooks' in exam_data:
+                # Delete existing books for this exam
+                cursor.execute('DELETE FROM exam_books WHERE exam_id = %s', (exam_data['id'],))
+                
+                # Insert updated books
+                for i, book in enumerate(exam_data['selectedBooks']):
+                    cursor.execute('''
+                        INSERT INTO exam_books (exam_id, book_id, book_name, total_marks, display_order)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (
+                        exam_data['id'],
+                        book['id'],
+                        book['name'],
+                        book.get('totalMarks', 100),
+                        i
+                    ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Updated exam session: {exam_data['id']}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error updating exam session: {e}")
+            if conn:
+                conn.rollback()
+            raise
+    
+    def delete_exam_session(self, exam_id):
+        """Delete an exam session and all its related data"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Delete exam session (CASCADE will handle books and results)
+            cursor.execute('DELETE FROM exam_sessions WHERE id = %s', (exam_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Deleted exam session: {exam_id}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error deleting exam session: {e}")
+            if conn:
+                conn.rollback()
+            raise
+    
+    def get_exam_results(self, exam_id):
+        """Get all results for a specific exam"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute('''
+                SELECT er.*, s.name as student_name, s.rollNumber as roll_number, eb.book_name
+                FROM exam_results er
+                JOIN students s ON er.student_id = s.id
+                JOIN exam_books eb ON er.exam_id = eb.exam_id AND er.book_id = eb.book_id
+                WHERE er.exam_id = %s
+                ORDER BY s.rollNumber, eb.display_order
+            ''', (exam_id,))
+            
+            results = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            return results
+            
+        except Error as e:
+            logger.error(f"Error getting exam results: {e}")
+            raise
+    
+    def save_exam_results(self, exam_id, results_data):
+        """Save/update exam results for multiple students"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # results_data should be a list of result objects
+            for result in results_data:
+                cursor.execute('''
+                    INSERT INTO exam_results (exam_id, student_id, book_id, marks_obtained, total_marks, entered_by)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                    marks_obtained = VALUES(marks_obtained),
+                    total_marks = VALUES(total_marks),
+                    entered_by = VALUES(entered_by),
+                    updated_at = CURRENT_TIMESTAMP
+                ''', (
+                    exam_id,
+                    result['student_id'],
+                    result['book_id'],
+                    result['marks_obtained'],
+                    result['total_marks'],
+                    result.get('entered_by')
+                ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Saved exam results for exam: {exam_id}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error saving exam results: {e}")
+            if conn:
+                conn.rollback()
+            raise
+    
+    def update_student_exam_result(self, exam_id, student_id, result_data):
+        """Update exam results for a specific student"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # result_data should contain book results for the student
+            for book_id, book_result in result_data.items():
+                if book_result.get('marks_obtained') is not None:
+                    cursor.execute('''
+                        INSERT INTO exam_results (exam_id, student_id, book_id, marks_obtained, total_marks, entered_by)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        marks_obtained = VALUES(marks_obtained),
+                        total_marks = VALUES(total_marks),
+                        entered_by = VALUES(entered_by),
+                        updated_at = CURRENT_TIMESTAMP
+                    ''', (
+                        exam_id,
+                        student_id,
+                        int(book_id),
+                        book_result['marks_obtained'],
+                        book_result.get('total_marks', 100),
+                        book_result.get('entered_by')
+                    ))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Updated exam results for student {student_id} in exam {exam_id}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error updating student exam result: {e}")
+            if conn:
+                conn.rollback()
+            raise
+    
+    def clear_exam_results(self, exam_id):
+        """Clear all results for a specific exam"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM exam_results WHERE exam_id = %s', (exam_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            logger.info(f"Cleared exam results for exam: {exam_id}")
+            return True
+            
+        except Error as e:
+            logger.error(f"Error clearing exam results: {e}")
+            if conn:
+                conn.rollback()
             raise
 
     # User Authentication Methods

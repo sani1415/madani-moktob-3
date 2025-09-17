@@ -26,28 +26,68 @@ async function initClassExamManagement(className) {
 // Load all exams for a specific class
 async function loadClassExams(className) {
     try {
-        // For now, load from localStorage (will be replaced with API call)
-        const allExamSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
-        const allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+        console.log(`📚 Loading exams for class: ${className}...`);
         
-        // Filter exams for this specific class
-        currentClassExams = allExamSessions.filter(session => session.class === className);
+        // Make API call to get class exams
+        const response = await fetch(`/api/exams/${encodeURIComponent(className)}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Load API Error ${response.status}:`, errorText);
+            throw new Error(`Failed to load exams: ${response.status} ${response.statusText} - ${errorText}`);
+        }
         
-        // Filter results for this class
+        const exams = await response.json();
+        
+        // Update global variables
+        currentClassExams = exams || [];
+        
+        // Load exam results for each exam
         currentClassExamResults = {};
-        Object.keys(allExamResults).forEach(sessionKey => {
-            if (sessionKey.includes(className)) {
-                currentClassExamResults[sessionKey] = allExamResults[sessionKey];
+        for (const exam of currentClassExams) {
+            try {
+                const resultsResponse = await fetch(`/api/exams/${exam.id}/results`);
+                if (resultsResponse.ok) {
+                    const results = await resultsResponse.json();
+                    currentClassExamResults[exam.id] = results || [];
+                }
+            } catch (resultsError) {
+                console.warn(`⚠️ Could not load results for exam ${exam.id}:`, resultsError);
+                currentClassExamResults[exam.id] = [];
             }
-        });
+        }
         
-        console.log(`📚 Loaded ${currentClassExams.length} exams for class: ${className}`);
+        console.log(`✅ Loaded ${currentClassExams.length} exams for class: ${className}`);
         console.log(`📊 Loaded results for ${Object.keys(currentClassExamResults).length} exam sessions`);
         
     } catch (error) {
         console.error(`❌ Error loading exams for class ${className}:`, error);
-        currentClassExams = [];
-        currentClassExamResults = {};
+        
+        // Show user-friendly error notification  
+        showQuickNotification('⚠️ ডাটাবেস থেকে ডেটা লোড করতে সমস্যা - স্থানীয় ডেটা ব্যবহার করা হচ্ছে', 'warning');
+        
+        // Fallback to localStorage if API fails
+        console.log('🔄 Falling back to localStorage...');
+        try {
+            const allExamSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
+            const allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+            
+            currentClassExams = allExamSessions.filter(session => session.class === className);
+            
+            currentClassExamResults = {};
+            Object.keys(allExamResults).forEach(sessionKey => {
+                if (sessionKey.includes(className)) {
+                    currentClassExamResults[sessionKey] = allExamResults[sessionKey];
+                }
+            });
+            
+            console.log(`📦 Fallback: Loaded ${currentClassExams.length} exams from localStorage`);
+            console.log(`📦 Fallback: Loaded results for ${Object.keys(currentClassExamResults).length} exam sessions`);
+            
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            currentClassExams = [];
+            currentClassExamResults = {};
+        }
     }
 }
 
@@ -731,30 +771,78 @@ function createExamWithBooks(examId) {
     openResultEntryInterface(examSession);
 }
 
-// Save exam session to localStorage (will be replaced with API call)
-function saveExamSession(examSession) {
+// Save exam session to database via API
+async function saveExamSession(examSession) {
     try {
-        let examSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
+        console.log(`💾 Saving exam session: ${examSession.name}...`);
         
-        // Check if exam already exists (for editing)
-        const existingIndex = examSessions.findIndex(session => session.id === examSession.id);
-        const isNewExam = existingIndex < 0;
+        // Check if this is an update or create operation
+        const isExistingExam = currentClassExams.some(exam => exam.id === examSession.id);
+        const isNewExam = !isExistingExam;
         
-        if (existingIndex >= 0) {
-            examSessions[existingIndex] = examSession;
+        let response;
+        if (isExistingExam) {
+            // Update existing exam
+            response = await fetch(`/api/exams/${examSession.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(examSession)
+            });
         } else {
-            examSessions.push(examSession);
+            // Create new exam
+            response = await fetch('/api/exams', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(examSession)
+            });
         }
         
-        localStorage.setItem('examSessions', JSON.stringify(examSessions));
-        console.log(`💾 Saved exam session: ${examSession.name}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ API Error ${response.status}:`, errorText);
+            throw new Error(`Failed to save exam: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`✅ Successfully saved exam session: ${examSession.name}`, result);
         
         // Instant UI updates
         refreshExamSectionInstantly(examSession.class, isNewExam);
         
     } catch (error) {
         console.error('❌ Error saving exam session:', error);
-        alert('পরীক্ষা সংরক্ষণে সমস্যা হয়েছে।');
+        
+        // Show user-friendly error notification
+        showQuickNotification('⚠️ ডাটাবেস সংযোগ সমস্যা - স্থানীয় সংরক্ষণ ব্যবহার করা হচ্ছে', 'warning');
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage...');
+        try {
+            let examSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
+            
+            const existingIndex = examSessions.findIndex(session => session.id === examSession.id);
+            const isNewExam = existingIndex < 0;
+            
+            if (existingIndex >= 0) {
+                examSessions[existingIndex] = examSession;
+            } else {
+                examSessions.push(examSession);
+            }
+            
+            localStorage.setItem('examSessions', JSON.stringify(examSessions));
+            console.log(`📦 Fallback: Saved exam session to localStorage`);
+            
+            // Instant UI updates
+            refreshExamSectionInstantly(examSession.class, isNewExam);
+            
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            alert('পরীক্ষা সংরক্ষণে সমস্যা হয়েছে।');
+        }
     }
 }
 
@@ -838,6 +926,14 @@ function openResultEntryInterface(examSession) {
     const studentsInClass = window.students ? window.students.filter(s => 
         s.class === examSession.class && s.status === 'active'
     ) : [];
+    
+    console.log(`👥 Found ${studentsInClass.length} active students for class: ${examSession.class}`);
+    console.log(`📚 Total students available: ${window.students ? window.students.length : 0}`);
+    
+    if (studentsInClass.length === 0) {
+        console.warn(`⚠️ No students found for class ${examSession.class}. Available classes:`, 
+            window.students ? [...new Set(window.students.map(s => s.class))] : []);
+    }
     
     // Calculate dynamic width based on number of books
     const baseWidth = 75; // Base width percentage
@@ -961,9 +1057,19 @@ function openResultEntryInterface(examSession) {
 }
 
 function renderStudentResultRow(student, examSession, sessionKey) {
-    // Get existing results if any
-    const allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
-    const studentResults = allExamResults[sessionKey]?.[student.id] || {};
+    // Get existing results if any (try from API-loaded cache first)
+    let studentResults = {};
+    
+    if (currentClassExamResults[sessionKey]?.[student.id]) {
+        // Use API-loaded results from cache
+        studentResults = currentClassExamResults[sessionKey][student.id];
+        console.log(`📊 Using API-loaded results for student ${student.id}`);
+    } else {
+        // Fallback to localStorage
+        console.log(`📦 Falling back to localStorage for student ${student.id} results`);
+        const allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+        studentResults = allExamResults[sessionKey]?.[student.id] || {};
+    }
     
     let rowHTML = `
         <tr class="border-b hover:bg-gray-50" style="height: 60px;">
@@ -1001,26 +1107,65 @@ function renderStudentResultRow(student, examSession, sessionKey) {
     return rowHTML;
 }
 
-function updateStudentMark(studentId, bookId, value, examId) {
+async function updateStudentMark(studentId, bookId, value, examId) {
     const mark = value === '' ? null : parseInt(value);
     const examSession = getCurrentExamSession(examId);
     if (!examSession) return;
     
     const sessionKey = getExamSessionKey(examSession);
     
-    // Get or create exam results structure
-    let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
-    if (!allExamResults[sessionKey]) allExamResults[sessionKey] = {};
-    if (!allExamResults[sessionKey][studentId]) allExamResults[sessionKey][studentId] = {};
-    
-    // Update the mark
-    allExamResults[sessionKey][studentId][bookId] = mark;
-    
-    // Save to localStorage
-    localStorage.setItem('examResults', JSON.stringify(allExamResults));
-    
-    // Recalculate and update this student's totals
-    const studentResults = allExamResults[sessionKey][studentId];
+    // Save individual mark to database via API
+    try {
+        const resultData = {};
+        resultData[bookId] = {
+            marks_obtained: mark,
+            total_marks: examSession.selectedBooks.find(b => b.id == bookId)?.totalMarks || 100,
+            entered_by: window.currentUser ? window.currentUser.username : 'system'
+        };
+
+        const response = await fetch(`/api/exams/${examSession.id}/results/${studentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(resultData)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Update mark API Error ${response.status}:`, errorText);
+            throw new Error(`Failed to save mark: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log(`✅ Successfully saved mark for student ${studentId}, book ${bookId}: ${mark}`);
+
+        // Update local cache for immediate UI updates
+        if (!currentClassExamResults[sessionKey]) currentClassExamResults[sessionKey] = {};
+        if (!currentClassExamResults[sessionKey][studentId]) currentClassExamResults[sessionKey][studentId] = {};
+        currentClassExamResults[sessionKey][studentId][bookId] = mark;
+
+        // Recalculate and update this student's totals
+        const studentResults = currentClassExamResults[sessionKey][studentId];
+
+    } catch (error) {
+        console.error('❌ Error saving mark:', error);
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage for mark saving...');
+        let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+        if (!allExamResults[sessionKey]) allExamResults[sessionKey] = {};
+        if (!allExamResults[sessionKey][studentId]) allExamResults[sessionKey][studentId] = {};
+        
+        // Update the mark
+        allExamResults[sessionKey][studentId][bookId] = mark;
+        
+        // Save to localStorage
+        localStorage.setItem('examResults', JSON.stringify(allExamResults));
+        
+        // Recalculate and update this student's totals
+        const studentResults = allExamResults[sessionKey][studentId];
+    }
     const { total, percentage, grade } = calculateStudentExamTotals(studentId, examSession, studentResults);
     
     // Update DOM elements
@@ -1185,8 +1330,19 @@ function getExamSessionKey(examSession) {
 }
 
 function getCurrentExamSession(examId) {
+    // First try to find in current loaded exams (from database)
+    let exam = currentClassExams.find(session => session.id === examId);
+    
+    if (exam) {
+        return exam;
+    }
+    
+    // Fallback to localStorage for backward compatibility
     const examSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
-    return examSessions.find(session => session.id === examId);
+    exam = examSessions.find(session => session.id === examId);
+    
+    console.log(`🔍 getCurrentExamSession(${examId}): ${exam ? 'Found' : 'Not found'}`);
+    return exam;
 }
 
 function closeResultEntryModal() {
@@ -1233,7 +1389,7 @@ function publishResults(examId) {
     closeResultEntryModal();
 }
 
-function clearAllResults(examId) {
+async function clearAllResults(examId) {
     if (!confirm('আপনি কি নিশ্চিত যে সব ফলাফল মুছে দিতে চান?')) {
         return;
     }
@@ -1241,18 +1397,51 @@ function clearAllResults(examId) {
     const examSession = getCurrentExamSession(examId);
     if (!examSession) return;
     
-    const sessionKey = getExamSessionKey(examSession);
-    let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
-    
-    // Clear results for this session
-    delete allExamResults[sessionKey];
-    localStorage.setItem('examResults', JSON.stringify(allExamResults));
-    
-    // Refresh the interface
-    closeResultEntryModal();
-    openResultEntryInterface(examSession);
-    
-    alert('সব ফলাফল মুছে ফেলা হয়েছে।');
+    try {
+        // Clear results via API
+        const response = await fetch(`/api/exams/${examId}/results`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Clear results API Error ${response.status}:`, errorText);
+            throw new Error(`Failed to clear results: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log(`✅ Successfully cleared all results for exam: ${examId}`);
+
+        // Clear from local cache
+        const sessionKey = getExamSessionKey(examSession);
+        if (currentClassExamResults[sessionKey]) {
+            delete currentClassExamResults[sessionKey];
+        }
+
+        // Refresh the interface
+        closeResultEntryModal();
+        openResultEntryInterface(examSession);
+        
+        alert('সব ফলাফল মুছে ফেলা হয়েছে।');
+
+    } catch (error) {
+        console.error('❌ Error clearing results:', error);
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage for clearing results...');
+        const sessionKey = getExamSessionKey(examSession);
+        let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+        
+        // Clear results for this session
+        delete allExamResults[sessionKey];
+        localStorage.setItem('examResults', JSON.stringify(allExamResults));
+        
+        // Refresh the interface
+        closeResultEntryModal();
+        openResultEntryInterface(examSession);
+        
+        alert('সব ফলাফল মুছে ফেলা হয়েছে।');
+    }
 }
 
 function openClassExam(examId) {
@@ -1499,7 +1688,15 @@ function addBookToEdit(bookId, bookName) {
 }
 
 function removeBookFromEdit(bookId) {
-    editModalSelectedBooks = editModalSelectedBooks.filter(b => b.id !== bookId);
+    console.log(`🗑️ Removing book from edit: ${bookId}`);
+    console.log(`📚 Before removal - Selected books:`, editModalSelectedBooks.map(b => `${b.name} (${b.id})`));
+    
+    const initialCount = editModalSelectedBooks.length;
+    editModalSelectedBooks = editModalSelectedBooks.filter(b => b.id != bookId); // Use != to handle string/number comparison
+    
+    console.log(`📚 After removal - Selected books:`, editModalSelectedBooks.map(b => `${b.name} (${b.id})`));
+    console.log(`📊 Books removed: ${initialCount - editModalSelectedBooks.length}`);
+    
     updateEditSelectedBooksDisplay();
     
     // Refresh available books list
@@ -1565,6 +1762,9 @@ function saveExamEdits(examId) {
         return;
     }
     
+    // Debug: Check class field before update
+    console.log(`🔍 Before edit - examSession.class: ${examSession.class}, examSession.class_name: ${examSession.class_name}`);
+    
     // Update exam session with new details
     examSession.year = newYear;
     examSession.term = newTerm;
@@ -1572,10 +1772,19 @@ function saveExamEdits(examId) {
     examSession.type = newType;
     examSession.lastModified = new Date().toISOString();
     
+    // Ensure class field is preserved (it might be class_name from database)
+    if (!examSession.class && examSession.class_name) {
+        examSession.class = examSession.class_name;
+        console.log(`🔧 Fixed missing class field: ${examSession.class}`);
+    }
+    
     // Update selected books if they were modified
     if (editModalSelectedBooks.length > 0) {
         examSession.selectedBooks = [...editModalSelectedBooks];
     }
+    
+    // Debug: Check class field after update
+    console.log(`🔍 After edit - examSession.class: ${examSession.class}`);
     
     // Save the updated exam
     saveExamSession(examSession);
@@ -1765,7 +1974,7 @@ function duplicateClassExam(examId, event) {
         showQuickNotification(`✅ পরীক্ষা কপি হয়েছে: ${newExamSession.name}`, 'success');
 }
 
-function deleteClassExam(examId, event) {
+async function deleteClassExam(examId, event) {
     event.stopPropagation();
     console.log(`🗑️ Deleting exam: ${examId}`);
     
@@ -1781,16 +1990,19 @@ function deleteClassExam(examId, event) {
     }
     
     try {
-        // Remove exam session
-        let examSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
-        examSessions = examSessions.filter(session => session.id !== examId);
-        localStorage.setItem('examSessions', JSON.stringify(examSessions));
+        // Delete via API
+        const response = await fetch(`/api/exams/${examId}`, {
+            method: 'DELETE'
+        });
         
-        // Remove exam results
-        const sessionKey = getExamSessionKey(examSession);
-        let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
-        delete allExamResults[sessionKey];
-        localStorage.setItem('examResults', JSON.stringify(allExamResults));
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Delete API Error ${response.status}:`, errorText);
+            throw new Error(`Failed to delete exam: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`✅ Successfully deleted exam: ${examSession.name}`, result);
         
         // Instant refresh after deletion
         refreshExamSectionInstantly(examSession.class);
@@ -1799,7 +2011,32 @@ function deleteClassExam(examId, event) {
         
     } catch (error) {
         console.error('❌ Error deleting exam:', error);
-        alert('পরীক্ষা মুছতে সমস্যা হয়েছে।');
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage...');
+        try {
+            // Remove exam session
+            let examSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
+            examSessions = examSessions.filter(session => session.id !== examId);
+            localStorage.setItem('examSessions', JSON.stringify(examSessions));
+            
+            // Remove exam results
+            const sessionKey = getExamSessionKey(examSession);
+            let allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+            delete allExamResults[sessionKey];
+            localStorage.setItem('examResults', JSON.stringify(allExamResults));
+            
+            console.log(`📦 Fallback: Deleted exam from localStorage`);
+            
+            // Instant refresh after deletion
+            refreshExamSectionInstantly(examSession.class);
+            
+            showQuickNotification(`✅ পরীক্ষা "${examSession.name}" মুছে ফেলা হয়েছে`, 'success');
+            
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            alert('পরীক্ষা মুছতে সমস্যা হয়েছে।');
+        }
     }
 }
 
@@ -2769,9 +3006,19 @@ function loadStudentExamResults(studentId) {
         return;
     }
     
-    // Get all exam sessions for this student's class
-    const allExamSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
-    const studentClassExams = allExamSessions.filter(session => session.class === student.class);
+    // Get all exam sessions for this student's class (use API-loaded data)
+    let studentClassExams = [];
+    
+    if (currentClassExams.length > 0 && currentClassExams[0].class_name === student.class) {
+        // Use currently loaded exams if they match this student's class
+        studentClassExams = currentClassExams;
+        console.log(`📊 Using API-loaded exams for student's class: ${student.class}`);
+    } else {
+        // Fallback to localStorage
+        console.log(`📦 Falling back to localStorage for student exam results`);
+        const allExamSessions = JSON.parse(localStorage.getItem('examSessions')) || [];
+        studentClassExams = allExamSessions.filter(session => session.class === student.class);
+    }
     
     if (studentClassExams.length === 0) {
         container.innerHTML = `
@@ -2784,8 +3031,16 @@ function loadStudentExamResults(studentId) {
         return;
     }
     
-    // Get all exam results
-    const allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+    // Get all exam results (try from API cache first)
+    let allExamResults = {};
+    if (Object.keys(currentClassExamResults).length > 0) {
+        allExamResults = currentClassExamResults;
+        console.log(`📊 Using API-loaded results for student: ${studentId}`);
+    } else {
+        // Fallback to localStorage
+        console.log(`📦 Falling back to localStorage for results`);
+        allExamResults = JSON.parse(localStorage.getItem('examResults')) || {};
+    }
     
     // Filter and organize results by year and term
     const organizedResults = {};

@@ -1358,6 +1358,138 @@ def get_books_by_class(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ===== EXAM MANAGEMENT API ENDPOINTS =====
+
+@app.route('/api/exams/<class_name>', methods=['GET'])
+def get_class_exams(class_name):
+    """Get all exams for a specific class"""
+    try:
+        logger.info(f"API: Getting exams for class: {class_name}")
+        exams = db.get_class_exams(class_name)
+        logger.info(f"API: Returning {len(exams)} exams for class: {class_name}")
+        return jsonify(exams)
+    except Exception as e:
+        logger.error(f"Error in get_class_exams endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams', methods=['POST'])
+def create_exam():
+    """Create a new exam session"""
+    try:
+        exam_data = request.json
+        
+        # Validate required fields (handle both frontend naming conventions)
+        required_fields = ['id', 'name', 'year', 'term', 'selectedBooks']
+        for field in required_fields:
+            if field not in exam_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Check for class field (can be 'class' or 'class_name')
+        if 'class' not in exam_data and 'class_name' not in exam_data:
+            return jsonify({'error': 'Missing required field: class or class_name'}), 400
+            
+        # Check for exam type field (can be 'type' or 'exam_type')
+        if 'type' not in exam_data and 'exam_type' not in exam_data:
+            return jsonify({'error': 'Missing required field: type or exam_type'}), 400
+        
+        success = db.create_exam_session(exam_data)
+        if success:
+            return jsonify({'success': True, 'exam_id': exam_data['id']})
+        else:
+            return jsonify({'error': 'Failed to create exam'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in create_exam endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>', methods=['PUT'])
+def update_exam(exam_id):
+    """Update an existing exam session"""
+    try:
+        exam_data = request.json
+        exam_data['id'] = exam_id  # Ensure ID matches URL parameter
+        
+        success = db.update_exam_session(exam_data)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update exam'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in update_exam endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>', methods=['DELETE'])
+def delete_exam(exam_id):
+    """Delete an exam session and all its results"""
+    try:
+        logger.info(f"API: Deleting exam: {exam_id}")
+        success = db.delete_exam_session(exam_id)
+        if success:
+            logger.info(f"API: Successfully deleted exam: {exam_id}")
+            return jsonify({'success': True})
+        else:
+            logger.error(f"API: Failed to delete exam: {exam_id}")
+            return jsonify({'error': 'Failed to delete exam'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in delete_exam endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>/results', methods=['GET'])
+def get_exam_results(exam_id):
+    """Get all results for a specific exam"""
+    try:
+        results = db.get_exam_results(exam_id)
+        return jsonify(results)
+    except Exception as e:
+        logger.error(f"Error in get_exam_results endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>/results', methods=['POST'])
+def save_exam_results(exam_id):
+    """Save/update exam results for all students"""
+    try:
+        results_data = request.json
+        success = db.save_exam_results(exam_id, results_data)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to save exam results'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in save_exam_results endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>/results/<student_id>', methods=['PUT'])
+def update_student_exam_result(exam_id, student_id):
+    """Update exam results for a specific student"""
+    try:
+        result_data = request.json
+        success = db.update_student_exam_result(exam_id, student_id, result_data)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to update student result'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in update_student_exam_result endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exams/<exam_id>/results', methods=['DELETE'])
+def clear_exam_results(exam_id):
+    """Clear all results for a specific exam"""
+    try:
+        success = db.clear_exam_results(exam_id)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to clear exam results'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error in clear_exam_results endpoint: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/create_sample_data', methods=['POST'])
 def create_sample_data():
     try:
