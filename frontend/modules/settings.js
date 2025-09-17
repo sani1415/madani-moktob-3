@@ -138,195 +138,7 @@ async function editClass(classId, oldClassName) {
     }
 }
 
-// Holiday management functions
-async function addHoliday() {
-    const startDateInput = document.getElementById('holidayStartDate');
-    const endDateInput = document.getElementById('holidayEndDate');
-    const nameInput = document.getElementById('holidayName');
-    
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-    const name = nameInput.value.trim();
-    
-    if (!startDate || !name) {
-        showModal('Error', 'Please enter holiday start date and name');
-        return;
-    }
-    
-    // If no end date is provided, use start date (single day holiday)
-    const finalEndDate = endDate || startDate;
-    
-    // Validate date range
-    if (new Date(startDate) > new Date(finalEndDate)) {
-        showModal('Error', 'Start date cannot be after end date');
-        return;
-    }
-    
-    // Check if any date in the range conflicts with existing holidays
-    const conflictingHoliday = window.holidays ? window.holidays.find(h => {
-        const existingStart = new Date(h.startDate);
-        const existingEnd = new Date(h.endDate);
-        const newStart = new Date(startDate);
-        const newEnd = new Date(finalEndDate);
-        
-        return (newStart <= existingEnd && newEnd >= existingStart);
-    }) : null;
-    
-    if (conflictingHoliday) {
-        showModal('Error', 'Holiday dates conflict with existing holiday: ' + conflictingHoliday.name);
-        return;
-    }
-    
-    // Save to database via API
-    try {
-        const response = await fetch('/api/holidays', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                date: startDate,
-                name: name,
-                startDate: startDate,
-                endDate: finalEndDate
-            })
-        });
-        
-        if (response.ok) {
-            // Add to global array
-            if (window.holidays) {
-                window.holidays.push({ 
-                    startDate, 
-                    endDate: finalEndDate, 
-                    name,
-                    date: startDate
-                });
-                window.holidays.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            }
-            
-            displayHolidays();
-            
-            // Clear inputs
-            startDateInput.value = '';
-            endDateInput.value = '';
-            nameInput.value = '';
-            
-            const dayCount = Math.ceil((new Date(finalEndDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-            showModal('Success', `Holiday added successfully (${dayCount} day${dayCount > 1 ? 's' : ''})`);
-        } else {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to add holiday');
-        }
-    } catch (error) {
-        console.error('Error adding holiday:', error);
-        showModal('Error', 'Failed to add holiday: ' + error.message);
-    }
-}
-
-async function deleteHoliday(index) {
-    const holiday = window.holidays ? window.holidays[index] : null;
-    if (!holiday) {
-        showModal('Error', 'Holiday not found');
-        return;
-    }
-    
-    try {
-        const dateToDelete = holiday.startDate || holiday.date;
-        
-        const response = await fetch(`/api/holidays/delete/${dateToDelete}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            if (window.holidays) window.holidays.splice(index, 1);
-            displayHolidays();
-            showModal('Success', 'Holiday deleted successfully');
-        } else {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to delete holiday');
-        }
-    } catch (error) {
-        console.error('Error deleting holiday:', error);
-        showModal('Error', 'Failed to delete holiday: ' + error.message);
-    }
-}
-
-function displayHolidays() {
-    const holidaysList = document.getElementById('holidaysList');
-    if (!holidaysList) return;
-    
-    if (!window.holidays || window.holidays.length === 0) {
-        holidaysList.innerHTML = '<p>No holidays configured.</p>';
-        return;
-    }
-    
-    holidaysList.innerHTML = window.holidays.map((holiday, index) => {
-        const startDate = holiday.startDate || holiday.date;
-        const endDate = holiday.endDate || holiday.date;
-        const isRange = startDate !== endDate;
-        const dayCount = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-        
-        return `
-            <div class="list-item">
-                <div class="list-item-info">
-                    <strong>${holiday.name}</strong>
-                    <span>${isRange ? `${startDate} to ${endDate} (${dayCount} days)` : startDate}</span>
-                </div>
-                <button onclick="deleteHoliday(${index})" class="btn btn-danger btn-small">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
-}
-
-function isHoliday(date) {
-    if (!window.holidays || window.holidays.length === 0) return false;
-    
-    return window.holidays.some(h => {
-        const startDate = h.startDate || h.date;
-        const endDate = h.endDate || h.date;
-        
-        let checkDate;
-        if (typeof date === 'string') {
-            checkDate = new Date(date);
-        } else {
-            checkDate = date;
-        }
-        
-        const checkDateStr = checkDate.toISOString().split('T')[0];
-        const startDateStr = new Date(startDate).toISOString().split('T')[0];
-        const endDateStr = new Date(endDate).toISOString().split('T')[0];
-        
-        return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
-    });
-}
-
-function getHolidayName(date) {
-    if (!window.holidays || window.holidays.length === 0) return '';
-    
-    const holiday = window.holidays.find(h => {
-        const startDate = h.startDate || h.date;
-        const endDate = h.endDate || h.date;
-        
-        let checkDate;
-        if (typeof date === 'string') {
-            checkDate = new Date(date);
-        } else {
-            checkDate = date;
-        }
-        
-        const checkDateStr = checkDate.toISOString().split('T')[0];
-        const startDateStr = new Date(startDate).toISOString().split('T')[0];
-        const endDateStr = new Date(endDate).toISOString().split('T')[0];
-        
-        return checkDateStr >= startDateStr && checkDateStr <= endDateStr;
-    });
-    return holiday ? holiday.name : '';
-}
+// Holiday management functions removed
 
 // Education progress functions
 async function loadEducationProgress() {
@@ -1209,6 +1021,7 @@ export {
     deleteClass, 
     displayClasses, 
     editClass, 
+<<<<<<< Updated upstream
     addHoliday, 
     deleteHoliday, 
     displayHolidays, 
@@ -1222,6 +1035,8 @@ export {
     closeEditBookModal, 
     showDeleteAllEducationModal, 
     deleteAllEducationData, 
+=======
+>>>>>>> Stashed changes
     closeBookManagementEditModal, 
     displayBooks, 
     getClassNameById, 

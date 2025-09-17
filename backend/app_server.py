@@ -265,6 +265,7 @@ def test_delete2():
     print("DEBUG: test_delete2 called")
     return jsonify({'success': True, 'message': 'Test delete2 works'})
 
+<<<<<<< Updated upstream
 @app.route('/api/holidays/delete/<path:date>', methods=['DELETE'])
 def delete_holiday(date):
     print(f"DEBUG: delete_holiday called with date: {date}")
@@ -294,6 +295,8 @@ def add_holiday():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+=======
+>>>>>>> Stashed changes
 
 # Education Progress API Routes
 @app.route('/api/education', methods=['GET'])

@@ -158,21 +158,7 @@ async function showSection(sectionId, event) {
             }
         }
         
-        if (typeof displayHolidays === 'function') {
-            console.log('✅ displayHolidays function found, calling...');
-            displayHolidays();
-            console.log('✅ displayHolidays completed');
-        } else {
-            console.error('❌ displayHolidays function not found');
-            // Try to access through window object
-            if (typeof window.displayHolidays === 'function') {
-                console.log('✅ displayHolidays found in window, calling...');
-                window.displayHolidays();
-                console.log('✅ window.displayHolidays completed');
-            } else {
-                console.error('❌ displayHolidays not found in window either');
-            }
-        }
+        // Holiday management removed - no longer needed
         
         if (typeof loadBooks === 'function') {
             console.log('✅ loadBooks function found, calling...');
@@ -249,7 +235,7 @@ function showAttendanceCalendar() {
             // Create new calendar
             console.log('Creating new calendar...');
             console.log('Attendance data:', Object.keys(attendance).length, 'dates');
-            console.log('Holidays data:', holidays.length, 'holidays');
+            // Holiday management removed - calendar no longer tracks holidays
             
             const calendarHTML = typeof generateAttendanceTrackingCalendar === 'function' ? generateAttendanceTrackingCalendar() : '';
             const calendarToggle = reportsSection.querySelector('.calendar-toggle');
@@ -324,7 +310,43 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
             console.log(`${filteredStudents.length} students to process.`);
             
             const reportData = filteredStudents.map(student => {
+<<<<<<< Updated upstream
                 const stats = calculateStudentAttendanceStats(student, startDate, endDate);
+=======
+                // Simple attendance calculation for reports
+                let present = 0, absent = 0, leave = 0, totalSchoolDays = 0;
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    // Holiday status is now handled in attendance data, not blocked here
+                    if (!attendance[dateStr] || Object.keys(attendance[dateStr]).length === 0) continue;
+                    
+                    const record = attendance[dateStr] ? attendance[dateStr][student.id] : null;
+                    
+                    if (record) {
+                        if (record.status === 'present') {
+                            present++;
+                            totalSchoolDays++;
+                        } else if (record.status === 'absent') {
+                            absent++;
+                            totalSchoolDays++;
+                        } else if (record.status === 'leave') {
+                            leave++;
+                            totalSchoolDays++;
+                        }
+                        // Note: 'holiday' status is not counted in totalSchoolDays or attendance calculations
+                    } else {
+                        absent++;
+                        totalSchoolDays++;
+                    }
+                }
+                
+                const attendanceRate = totalSchoolDays > 0 ? Math.round((present / (totalSchoolDays - leave)) * 100) : 0;
+                
+>>>>>>> Stashed changes
         return {
                     ...student,
                     presentDays: stats.present,

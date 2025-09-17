@@ -404,10 +404,8 @@ async function applyStickyAttendanceToFuture(savedDate) {
         futureDate.setDate(savedDateObj.getDate() + i);
         const futureDateStr = futureDate.toISOString().split('T')[0];
         
-        // Skip holidays
-        if (!isHoliday(futureDateStr)) {
-            futureDates.push(futureDateStr);
-        }
+        // Include all dates (holiday status is handled in attendance data)
+        futureDates.push(futureDateStr);
     }
     
     console.log(`Found ${futureDates.length} future dates to apply sticky attendance to`);
@@ -685,12 +683,7 @@ async function confirmMarkAllAbsent() {
         return;
     }
     
-    // Prevent bulk actions on holidays
-    if (isHoliday(selectedDate)) {
-        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
-        closeBulkAbsentModal();
-        return;
-    }
+    // Note: Holiday status is now handled in attendance data, not blocked here
     
     const filteredStudents = getFilteredStudents();
     

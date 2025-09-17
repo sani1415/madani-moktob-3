@@ -389,12 +389,15 @@ body {
 }
 
 .nav-link {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 15px 25px;
     text-decoration: none;
     color: #666;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    min-height: 48px;
 }
 
 .nav-link:hover,
@@ -406,6 +409,36 @@ body {
 
 .nav-link i {
     margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* Navigation dropdown toggle styling - override attendance dropdown styles */
+.nav-link.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 15px 25px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #666 !important;
+    transition: all 0.3s ease !important;
+    border-bottom: 3px solid transparent !important;
+    min-width: auto !important;
+    font-size: inherit !important;
+}
+
+.nav-link.dropdown-toggle:hover,
+.nav-link.dropdown-toggle.active {
+    color: #3498db !important;
+    border-bottom-color: #3498db !important;
+    background-color: #f8f9fa !important;
+    box-shadow: none !important;
+}
+
+.nav-link.dropdown-toggle i.fa-chevron-down {
+    margin-left: auto;
+    margin-right: 0;
 }
 
 /* Main Content */
@@ -1794,9 +1827,13 @@ body {
     }
     
     .nav-link {
+        display: flex;
+        align-items: center;
         padding: 15px 20px;
         border-bottom: 1px solid #eee;
         border-left: none;
+        white-space: nowrap;
+        min-height: 48px;
     }
     
     .nav-link:hover,
