@@ -1017,12 +1017,6 @@ export {
     deleteClass, 
     displayClasses, 
     editClass, 
-<<<<<<< Updated upstream
-    addHoliday, 
-    deleteHoliday, 
-    displayHolidays, 
-    isHoliday, 
-    getHolidayName, 
     displayBooksList, 
     showAddBookForm, 
     hideAddBookForm, 
@@ -1031,8 +1025,6 @@ export {
     closeEditBookModal, 
     showDeleteAllEducationModal, 
     deleteAllEducationData, 
-=======
->>>>>>> Stashed changes
     closeBookManagementEditModal, 
     displayBooks, 
     getClassNameById, 
