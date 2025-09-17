@@ -310,9 +310,6 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
             console.log(`${filteredStudents.length} students to process.`);
             
             const reportData = filteredStudents.map(student => {
-<<<<<<< Updated upstream
-                const stats = calculateStudentAttendanceStats(student, startDate, endDate);
-=======
                 // Simple attendance calculation for reports
                 let present = 0, absent = 0, leave = 0, totalSchoolDays = 0;
                 const start = new Date(startDate);
@@ -345,8 +342,8 @@ function generateReportWithDates(startDate, endDate, selectedClass, fromBeginnin
                 }
                 
                 const attendanceRate = totalSchoolDays > 0 ? Math.round((present / (totalSchoolDays - leave)) * 100) : 0;
+                const stats = { present, absent, leave, attendanceRate };
                 
->>>>>>> Stashed changes
         return {
                     ...student,
                     presentDays: stats.present,
