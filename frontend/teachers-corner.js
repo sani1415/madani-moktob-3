@@ -1710,13 +1710,7 @@
                 }
             }
             
-            // If we were adding a note from student profile, reopen it
-            if (currentStudentIdForProfile) {
-                // Small delay to ensure modal is fully closed
-                setTimeout(() => {
-                    showStudentProfile(currentStudentIdForProfile);
-                }, 100);
-            }
+            // Note: Removed automatic reopening of student profile to prevent unwanted popups
         }
         function saveLogEntry() {
             const logIdElement = document.getElementById('log-id');
@@ -1796,9 +1790,6 @@
                     
                     // Refresh display
                     renderTeachersLogbook();
-                    if (currentStudentIdForProfile) {
-                        showStudentProfile(currentStudentIdForProfile);
-                    }
                     
                     closeLogModal();
                     alert('নোট সফলভাবে সংরক্ষিত হয়েছে।');
@@ -1832,9 +1823,6 @@
                     
                     // Refresh display
             renderTeachersLogbook();
-                    if (currentStudentIdForProfile) {
-                        showStudentProfile(currentStudentIdForProfile);
-                    }
                     
                     closeLogModal();
                     alert('নোট সফলভাবে আপডেট হয়েছে।');
@@ -1864,9 +1852,6 @@
                     
                     // Refresh display
                     renderTeachersLogbook();
-                    if (currentStudentIdForProfile) {
-                        showStudentProfile(currentStudentIdForProfile);
-                    }
                     
                     alert('নোট সফলভাবে মুছে ফেলা হয়েছে।');
             } else {
@@ -2038,7 +2023,7 @@
                             /* Force grid layout in print */
                             .main-content {
                                 display: grid !important;
-                                grid-template-columns: repeat(4, 1fr) !important;
+                                grid-template-columns: repeat(3, 1fr) !important;
                                 gap: 6px !important;
                                 width: 100% !important;
                             }
@@ -2123,7 +2108,7 @@
                         /* Main Content Grid */
                         .main-content {
                             display: grid;
-                            grid-template-columns: repeat(4, 1fr);
+                            grid-template-columns: repeat(3, 1fr);
                             gap: 6px;
                             margin-bottom: 8px;
                             width: 100%;
@@ -2138,7 +2123,7 @@
                             }
                             
                             .info-card {
-                                flex: 1 1 calc(25% - 6px);
+                                flex: 1 1 calc(33.33% - 6px);
                                 min-width: 200px;
                             }
                         }
@@ -2427,7 +2412,7 @@
                             
                             .main-content {
                                 display: grid !important;
-                                grid-template-columns: repeat(4, 1fr) !important;
+                                grid-template-columns: repeat(3, 1fr) !important;
                                 gap: 6px !important;
                                 margin-bottom: 8px !important;
                             }
@@ -2523,10 +2508,6 @@
                                 <div class="stat-number">${studentLogs.length}</div>
                                 <div class="stat-label">শিক্ষকের নোট</div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-number">${attendanceStats.totalBooks || 0}</div>
-                                <div class="stat-label">পঠিত বই</div>
-                            </div>
                         </div>
                     </div>
                     
@@ -2603,35 +2584,13 @@
                             </div>
                         </div>
                         
-                        <!-- Quick Stats -->
-                        <div class="info-card">
-                            <h3 class="card-header">
-                                ⚡ দ্রুত পরিসংখ্যান
-                            </h3>
-                            <div class="info-row">
-                                <span class="info-label">সর্বোচ্চ:</span>
-                                <span class="info-value">${Math.max(...scoreHistory.map(s => s.newScore), getHusnulKhulukScore(student.id))}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">সর্বনিম্ন:</span>
-                                <span class="info-value">${Math.min(...scoreHistory.map(s => s.oldScore), getHusnulKhulukScore(student.id))}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">পরিবর্তন:</span>
-                                <span class="info-value">${scoreHistory.length} বার</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">নোট:</span>
-                                <span class="info-value">${studentLogs.length} টি</span>
-                            </div>
-                        </div>
                     </div>
                     
                     <!-- Detailed Sections -->
                     <!-- Score History Section -->
                     <div class="detail-section">
                         <h3 class="section-header">
-                            📊 হুসনুল খুলুক স্কোর ইতিহাস
+                            📊 হুসনুল খুলুক 
                         </h3>
                         <table class="data-table">
                             <thead>
@@ -2678,31 +2637,6 @@
                         </div>
                     </div>
                     
-                    <!-- Education Progress Section -->
-                    <div class="detail-section">
-                        <h3 class="section-header">
-                            📚 শিক্ষার অগ্রগতি ও বই পড়ার অবস্থা
-                        </h3>
-                        ${attendanceStats.booksProgress && attendanceStats.booksProgress.length > 0 ? 
-                            attendanceStats.booksProgress.map(book => {
-                                const progressPercentage = book.total_pages > 0 ? Math.round((book.completed_pages || 0) / book.total_pages * 100) : 0;
-                                return `
-                                    <div class="book-progress">
-                                        <div class="book-name">📖 ${book.book_name}</div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: ${progressPercentage}%"></div>
-                                        </div>
-                                        <div class="progress-info">
-                                            <span>অগ্রগতি: ${book.completed_pages || 0}/${book.total_pages || 0} পৃষ্ঠা</span>
-                                            <span>${progressPercentage}% সম্পন্ন</span>
-                                        </div>
-                                        ${book.notes ? `<div class="progress-notes">💭 ${book.notes}</div>` : ''}
-                                    </div>
-                                `;
-                            }).join('') : 
-                            '<p style="text-align: center; color: #6c757d; padding: 20px; background: #f8f9fa; border-radius: 6px;">কোনো বই অগ্রগতি নেই।</p>'
-                        }
-                    </div>
                     
                     <!-- Footer -->
                     <div class="footer">
