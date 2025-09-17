@@ -264,14 +264,7 @@ async function initializeApp() {
             }
         }
         
-        // Load holidays from database
-        const holidaysResponse = await fetch('/api/holidays');
-        if (holidaysResponse.ok) {
-            const holidaysData = await holidaysResponse.json();
-            // Update the global window variables directly
-            window.holidays = holidaysData;
-            console.log(`✅ Loaded ${holidaysData.length} holidays from database`);
-        }
+        // Holiday management removed - no longer needed
         
         // Load classes from database
         const classesResponse = await fetch('/api/classes');
