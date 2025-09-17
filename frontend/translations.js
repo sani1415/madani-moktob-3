@@ -74,6 +74,10 @@ const translations = {
         
         // Daily Attendance
         dailyAttendanceTitle: "Daily Attendance",
+        present: "Present",
+        absent: "Absent",
+        holiday: "Holiday",
+        clear: "Clear",
         date: "Date:",
         filterByClass: "Filter by Class:",
         allClasses: "All Classes",
@@ -566,6 +570,10 @@ const translations = {
         
         // Daily Attendance
         dailyAttendanceTitle: "দৈনিক উপস্থিতি",
+        present: "উপস্থিত",
+        absent: "অনুপস্থিত",
+        holiday: "ছুটি",
+        clear: "মুছে ফেলুন",
         date: "তারিখ:",
         filterByClass: "শ্রেণী অনুযায়ী ফিল্টার:",
         allClasses: "সকল শ্রেণী",

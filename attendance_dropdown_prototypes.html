@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Dropdown Prototypes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .prototype-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .prototype-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .student-row {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        
+        .student-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .student-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .student-roll {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* DESIGN 1: Standard Dropdown with Status Colors */
+        .design1 .attendance-dropdown {
+            position: relative;
+            min-width: 120px;
+        }
+        
+        .design1 .dropdown-toggle {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .design1 .dropdown-toggle:hover {
+            border-color: #007bff;
+        }
+        
+        .design1 .dropdown-toggle.present {
+            background: #d4edda;
+            border-color: #27ae60;
+            color: #155724;
+        }
+        
+        .design1 .dropdown-toggle.absent {
+            background: #f8d7da;
+            border-color: #e74c3c;
+            color: #721c24;
+        }
+        
+        .design1 .dropdown-toggle.clear {
+            background: #e2e3e5;
+            border-color: #6c757d;
+            color: #383d41;
+        }
+        
+        .design1 .dropdown-arrow {
+            transition: transform 0.2s;
+        }
+        
+        .design1 .dropdown-toggle.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .design1 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .design1 .dropdown-menu.show {
+            display: block;
+        }
+        
+        .design1 .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .design1 .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .design1 .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .design1 .status-dot.present {
+            background: #27ae60;
+        }
+        
+        .design1 .status-dot.absent {
+            background: #e74c3c;
+        }
+        
+        .design1 .status-dot.clear {
+            background: #6c757d;
+        }
+        
+        /* DESIGN 2: Compact Icon Dropdown */
+        .design2 .attendance-dropdown {
+            position: relative;
+            width: 40px;
+        }
+        
+        .design2 .dropdown-toggle {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #dee2e6;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        
+        .design2 .dropdown-toggle.present {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+        
+        .design2 .dropdown-toggle.absent {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .design2 .dropdown-toggle.clear {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        
+        .design2 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+            min-width: 120px;
+            margin-top: 5px;
+        }
+        
+        .design2 .dropdown-menu.show {
+            display: block;
+        }
+        
+        .design2 .dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        
+        .design2 .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .design2 .dropdown-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .design2 .dropdown-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+        
+        /* DESIGN 3: Status Badge Dropdown */
+        .design3 .attendance-dropdown {
+            position: relative;
+            min-width: 100px;
+        }
+        
+        .design3 .dropdown-toggle {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .design3 .dropdown-toggle.present {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+        
+        .design3 .dropdown-toggle.absent {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .design3 .dropdown-toggle.clear {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        
+        .design3 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+            margin-top: 5px;
+        }
+        
+        .design3 .dropdown-menu.show {
+            display: block;
+        }
+        
+        .design3 .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            font-size: 12px;
+        }
+        
+        .design3 .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+        
+        /* DESIGN 4: Minimalist Text Dropdown */
+        .design4 .attendance-dropdown {
+            position: relative;
+            min-width: 80px;
+        }
+        
+        .design4 .dropdown-toggle {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .design4 .dropdown-toggle.present {
+            background: #d4edda;
+            border-color: #27ae60;
+            color: #155724;
+        }
+        
+        .design4 .dropdown-toggle.absent {
+            background: #f8d7da;
+            border-color: #e74c3c;
+            color: #721c24;
+        }
+        
+        .design4 .dropdown-toggle.clear {
+            background: #e2e3e5;
+            border-color: #6c757d;
+            color: #383d41;
+        }
+        
+        .design4 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .design4 .dropdown-menu.show {
+            display: block;
+        }
+        
+        .design4 .dropdown-item {
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+        
+        .design4 .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+        
+        /* DESIGN 5: Card-Style Dropdown */
+        .design5 .attendance-dropdown {
+            position: relative;
+            min-width: 140px;
+        }
+        
+        .design5 .dropdown-toggle {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .design5 .dropdown-toggle:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .design5 .dropdown-toggle.present {
+            background: #d4edda;
+            border-color: #27ae60;
+            color: #155724;
+        }
+        
+        .design5 .dropdown-toggle.absent {
+            background: #f8d7da;
+            border-color: #e74c3c;
+            color: #721c24;
+        }
+        
+        .design5 .dropdown-toggle.clear {
+            background: #e2e3e5;
+            border-color: #6c757d;
+            color: #383d41;
+        }
+        
+        .design5 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+            margin-top: 5px;
+        }
+        
+        .design5 .dropdown-menu.show {
+            display: block;
+        }
+        
+        .design5 .dropdown-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        
+        .design5 .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .design5 .dropdown-item:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .design5 .dropdown-item:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .design5 .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .design5 .status-icon.present {
+            background: #27ae60;
+        }
+        
+        .design5 .status-icon.absent {
+            background: #e74c3c;
+        }
+        
+        .design5 .status-icon.clear {
+            background: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Attendance Dropdown Design Prototypes</h1>
+    <p>Here are 5 different dropdown designs for the attendance system. Click the dropdowns to see the options.</p>
+    
+    <!-- DESIGN 1: Standard Dropdown with Status Colors -->
+    <div class="prototype-section design1">
+        <div class="prototype-title">Design 1: Standard Dropdown with Status Colors</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle present" onclick="toggleDropdown(this)">
+                    <span>Present</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-dot present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-dot absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-dot clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle absent" onclick="toggleDropdown(this)">
+                    <span>Absent</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-dot present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-dot absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-dot clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 2: Compact Icon Dropdown -->
+    <div class="prototype-section design2">
+        <div class="prototype-title">Design 2: Compact Icon Dropdown</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle present" onclick="toggleDropdown(this)">
+                    ✓
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <span>✓</span>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <span>✗</span>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <span>−</span>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle absent" onclick="toggleDropdown(this)">
+                    ✗
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <span>✓</span>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <span>✗</span>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <span>−</span>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 3: Status Badge Dropdown -->
+    <div class="prototype-section design3">
+        <div class="prototype-title">Design 3: Status Badge Dropdown</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle present" onclick="toggleDropdown(this)">
+                    <span>Present</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-dot present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-dot absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-dot clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle absent" onclick="toggleDropdown(this)">
+                    <span>Absent</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-dot present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-dot absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-dot clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 4: Minimalist Text Dropdown -->
+    <div class="prototype-section design4">
+        <div class="prototype-title">Design 4: Minimalist Text Dropdown</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle present" onclick="toggleDropdown(this)">
+                    <span>P</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">Present</div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">Absent</div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">Clear</div>
+                </div>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle absent" onclick="toggleDropdown(this)">
+                    <span>A</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">Present</div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">Absent</div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">Clear</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 5: Card-Style Dropdown -->
+    <div class="prototype-section design5">
+        <div class="prototype-title">Design 5: Card-Style Dropdown</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle present" onclick="toggleDropdown(this)">
+                    <span>Present</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-icon present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-icon absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-icon clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-dropdown">
+                <div class="dropdown-toggle absent" onclick="toggleDropdown(this)">
+                    <span>Absent</span>
+                    <span>▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="selectStatus(this, 'present')">
+                        <div class="status-icon present"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'absent')">
+                        <div class="status-icon absent"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectStatus(this, 'clear')">
+                        <div class="status-icon clear"></div>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleDropdown(toggle) {
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+            document.querySelectorAll('.dropdown-toggle').forEach(t => {
+                t.classList.remove('open');
+            });
+            
+            // Toggle current dropdown
+            const menu = toggle.nextElementSibling;
+            const isOpen = menu.classList.contains('show');
+            
+            if (!isOpen) {
+                menu.classList.add('show');
+                toggle.classList.add('open');
+            }
+        }
+        
+        function selectStatus(item, status) {
+            const dropdown = item.closest('.attendance-dropdown');
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            
+            // Update toggle text and class
+            const textSpan = toggle.querySelector('span:first-child');
+            const statusTexts = {
+                'present': 'Present',
+                'absent': 'Absent', 
+                'clear': 'Clear'
+            };
+            
+            // Handle different designs
+            if (toggle.textContent.includes('✓') || toggle.textContent.includes('✗') || toggle.textContent.includes('−')) {
+                // Icon design
+                const icons = {
+                    'present': '✓',
+                    'absent': '✗',
+                    'clear': '−'
+                };
+                toggle.textContent = icons[status];
+            } else if (toggle.textContent.includes('P') || toggle.textContent.includes('A') || toggle.textContent.includes('C')) {
+                // Minimalist design
+                const letters = {
+                    'present': 'P',
+                    'absent': 'A',
+                    'clear': 'C'
+                };
+                textSpan.textContent = letters[status];
+            } else {
+                // Text design
+                textSpan.textContent = statusTexts[status];
+            }
+            
+            // Update toggle class
+            toggle.className = 'dropdown-toggle ' + status;
+            
+            // Close dropdown
+            menu.classList.remove('show');
+            toggle.classList.remove('open');
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.attendance-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+                document.querySelectorAll('.dropdown-toggle').forEach(t => {
+                    t.classList.remove('open');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

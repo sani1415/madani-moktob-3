@@ -15,25 +15,40 @@ function toggleMobileMenu() {
     }
 }
 
+// Navigation state tracking
+const navigationState = {
+    lastVisited: {},
+    isInitialized: false,
+    cacheTimeout: 30000 // 30 seconds cache
+};
+
+// Function to clear navigation cache (call when data changes)
+function clearNavigationCache(sectionId = null) {
+    if (sectionId) {
+        delete navigationState.lastVisited[sectionId];
+        console.log(`🗑️ Cleared cache for ${sectionId}`);
+    } else {
+        navigationState.lastVisited = {};
+        console.log('🗑️ Cleared all navigation cache');
+    }
+}
+
+// Make cache clearing function globally accessible
+window.clearNavigationCache = clearNavigationCache;
+
 async function showSection(sectionId, event) {
-    console.log(`🚀 showSection called with sectionId: ${sectionId}`);
-    
     // Check role-based access control
     if (window.currentUser && window.currentUser.role === 'user') {
         // Regular users can only access Teachers Corner
         if (sectionId !== 'teachers-corner-section') {
-            console.log('❌ Access denied: Regular users can only access Teachers Corner');
             return;
         }
     }
     
     // Hide all sections
     const sections = document.querySelectorAll('.section');
-    console.log(`🔍 Found ${sections.length} sections:`, Array.from(sections).map(s => ({ id: s.id, hasActive: s.classList.contains('active') })));
-    
     sections.forEach(section => {
         section.classList.remove('active');
-        console.log(`❌ Removed active from section: ${section.id}`);
     });
     
     // Remove active class from nav links
@@ -44,12 +59,8 @@ async function showSection(sectionId, event) {
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
-        console.log(`✅ Added active to section: ${sectionId}`);
-        console.log(`🔍 Section ${sectionId} now has classes:`, targetSection.className);
-        console.log(`🔍 Section ${sectionId} computed display:`, window.getComputedStyle(targetSection).display);
     } else {
         console.error(`❌ Section with id '${sectionId}' not found!`);
-        console.log('🔍 Available sections:', Array.from(sections).map(s => s.id));
     }
     
     // Add active class to clicked nav link
@@ -65,11 +76,24 @@ async function showSection(sectionId, event) {
         toggleButton.className = 'fas fa-bars';
     }
     
-    // Update content based on section
+    // Update content based on section (optimized with smart caching)
     if (sectionId === 'dashboard') {
-        // Access dashboard functions through global scope
+        // Smart caching: only update if not recently visited or data is stale
+        const now = Date.now();
+        const lastVisit = navigationState.lastVisited.dashboard || 0;
+        const shouldUpdate = !navigationState.lastVisited.dashboard || 
+                           (now - lastVisit) > navigationState.cacheTimeout;
+        
         if (typeof updateDashboard === 'function') {
-            updateDashboard();
+            if (shouldUpdate) {
+                console.log('🔄 Dashboard: Loading fresh data...');
+                setTimeout(() => {
+                    updateDashboard();
+                    navigationState.lastVisited.dashboard = now;
+                }, 0);
+            } else {
+                console.log('⚡ Dashboard: Using cached data (instant)');
+            }
         }
     } else if (sectionId === 'attendance') {
         // Set today's date automatically when attendance section is shown
@@ -84,18 +108,47 @@ async function showSection(sectionId, event) {
             updateDateInputMax();
         }
         
-        // Access attendance functions through global scope
+        // Smart caching for attendance: only load if not recently visited
+        const now = Date.now();
+        const lastVisit = navigationState.lastVisited.attendance || 0;
+        const shouldUpdate = !navigationState.lastVisited.attendance || 
+                           (now - lastVisit) > navigationState.cacheTimeout;
+        
         if (typeof loadAttendanceForDate === 'function') {
-            await loadAttendanceForDate();
+            if (shouldUpdate) {
+                console.log('🔄 Attendance: Loading fresh data...');
+                setTimeout(async () => {
+                    await loadAttendanceForDate();
+                    navigationState.lastVisited.attendance = now;
+                }, 0);
+            } else {
+                console.log('⚡ Attendance: Using cached data (instant)');
+            }
         }
     } else if (sectionId === 'registration') {
-        // Access registration functions through global scope
+        // Smart caching for registration: only load if not recently visited
+        const now = Date.now();
+        const lastVisit = navigationState.lastVisited.registration || 0;
+        const shouldUpdate = !navigationState.lastVisited.registration || 
+                           (now - lastVisit) > navigationState.cacheTimeout;
+        
         if (typeof displayStudentsList === 'function') {
-            displayStudentsList();
+            if (shouldUpdate) {
+                console.log('🔄 Registration: Loading fresh data...');
+                setTimeout(() => {
+                    displayStudentsList();
+                    navigationState.lastVisited.registration = now;
+                }, 0);
+            } else {
+                console.log('⚡ Registration: Using cached data (instant)');
+            }
         }
+        
         // Update class dropdowns when registration section is shown
         if (typeof updateClassDropdowns === 'function') {
-            updateClassDropdowns();
+            setTimeout(() => {
+                updateClassDropdowns();
+            }, 0);
         }
         // Show student list by default, hide form
         const studentsListContainer = document.getElementById('studentsListContainer');
@@ -106,48 +159,24 @@ async function showSection(sectionId, event) {
         }
     } else if (sectionId === 'teachers-corner-section') {
         console.log('🎓 Teachers Corner section activated');
-        console.log('🔍 Checking if teachers corner functions are available...');
-        console.log('🔍 typeof showClassDashboard:', typeof window.showClassDashboard);
-        console.log('🔍 typeof renderTodaySummary:', typeof window.renderTodaySummary);
-        console.log('🔍 typeof renderClassStudentList:', typeof window.renderClassStudentList);
         
-        // Initialize teachers corner if the function exists
+        // Initialize teachers corner with proper timing
         if (typeof window.initTeachersCorner === 'function') {
-            console.log('✅ Calling initTeachersCorner...');
-            try {
-                window.initTeachersCorner();
-                console.log('✅ initTeachersCorner completed successfully');
-            } catch (error) {
-                console.error('❌ Error in initTeachersCorner:', error);
-            }
-        } else {
-            console.warn('⚠️ initTeachersCorner function not available');
+            // Use a small delay to ensure DOM is ready (critical for Teachers Corner)
+            setTimeout(() => {
+                try {
+                    window.initTeachersCorner();
+                    console.log('✅ Teachers Corner initialized successfully');
+                } catch (error) {
+                    console.error('❌ Error in initTeachersCorner:', error);
+                }
+            }, 50); // Keep small delay for DOM readiness
         }
         
-        // Force a small delay to ensure DOM is updated
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-        // Double-check that the section is visible
+        // Ensure section is visible
         const teachersCornerSection = document.getElementById('teachers-corner-section');
-        if (teachersCornerSection) {
-            console.log('🔍 Final section visibility check:', {
-                hasActiveClass: teachersCornerSection.classList.contains('active'),
-                computedDisplay: window.getComputedStyle(teachersCornerSection).display,
-                classes: teachersCornerSection.className
-            });
-            
-            // Force the section to be visible if it's not
-            if (!teachersCornerSection.classList.contains('active')) {
-                console.warn('⚠️ Section not active, forcing activation...');
-                teachersCornerSection.classList.add('active');
-            }
-            
-            // Also force display if CSS is not working
-            const computedDisplay = window.getComputedStyle(teachersCornerSection).display;
-            if (computedDisplay === 'none') {
-                console.warn('⚠️ CSS display is still none, forcing display...');
-                teachersCornerSection.style.display = 'block';
-            }
+        if (teachersCornerSection && !teachersCornerSection.classList.contains('active')) {
+            teachersCornerSection.classList.add('active');
         }
         
         console.log('✅ Teachers Corner section setup completed');

@@ -32,6 +32,10 @@ window.updateAllTexts = updateAllTexts;
 window.showSection = Misc.showSection;
 window.openSettingsTab = Misc.openSettingsTab;
 
+// Debug: Check if functions are properly assigned
+console.log('🔍 showSection assigned to window:', typeof window.showSection);
+console.log('🔍 Misc.showSection:', typeof Misc.showSection);
+
 // Registration functions
 window.hideStudentRegistrationForm = Registration.hideStudentRegistrationForm;
 window.displayStudentsList = Registration.displayStudentsList;

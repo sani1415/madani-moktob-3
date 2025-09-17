@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Button Prototypes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .prototype-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .prototype-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .student-row {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        
+        .student-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+        
+        .student-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .student-roll {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* DESIGN 1: Compact Horizontal Buttons */
+        .design1 .attendance-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .design1 .btn-attendance {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+        
+        .design1 .btn-present {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .design1 .btn-present:hover {
+            background: #229954;
+        }
+        
+        .design1 .btn-present.active {
+            background: #1e8449;
+            box-shadow: 0 0 0 2px #27ae60;
+        }
+        
+        .design1 .btn-absent {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .design1 .btn-absent:hover {
+            background: #c0392b;
+        }
+        
+        .design1 .btn-absent.active {
+            background: #a93226;
+            box-shadow: 0 0 0 2px #e74c3c;
+        }
+        
+        .design1 .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .design1 .btn-clear:hover {
+            background: #5a6268;
+        }
+        
+        .design1 .btn-clear.active {
+            background: #495057;
+            box-shadow: 0 0 0 2px #6c757d;
+        }
+        
+        /* DESIGN 2: Icon-Only Circular Buttons */
+        .design2 .attendance-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .design2 .btn-attendance {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .design2 .btn-present {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .design2 .btn-present:hover {
+            background: #229954;
+            transform: scale(1.1);
+        }
+        
+        .design2 .btn-present.active {
+            background: #1e8449;
+            box-shadow: 0 0 0 3px #27ae60;
+        }
+        
+        .design2 .btn-absent {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .design2 .btn-absent:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+        
+        .design2 .btn-absent.active {
+            background: #a93226;
+            box-shadow: 0 0 0 3px #e74c3c;
+        }
+        
+        .design2 .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .design2 .btn-clear:hover {
+            background: #5a6268;
+            transform: scale(1.1);
+        }
+        
+        .design2 .btn-clear.active {
+            background: #495057;
+            box-shadow: 0 0 0 3px #6c757d;
+        }
+        
+        /* DESIGN 3: Pill-Shaped Toggle Style */
+        .design3 .attendance-buttons {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 2px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .design3 .btn-attendance {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 18px;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+        
+        .design3 .btn-present.active {
+            background: #27ae60;
+            color: white;
+            box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3);
+        }
+        
+        .design3 .btn-absent.active {
+            background: #e74c3c;
+            color: white;
+            box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+        }
+        
+        .design3 .btn-clear.active {
+            background: #6c757d;
+            color: white;
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+        }
+        
+        /* DESIGN 4: Minimalist Text Buttons */
+        .design4 .attendance-buttons {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .design4 .btn-attendance {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+        
+        .design4 .btn-present.active {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+        
+        .design4 .btn-absent.active {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .design4 .btn-clear.active {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        
+        /* DESIGN 5: Status Indicator with Click Areas */
+        .design5 .attendance-buttons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .design5 .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #dee2e6;
+            background: white;
+            position: relative;
+        }
+        
+        .design5 .status-indicator.present {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        
+        .design5 .status-indicator.absent {
+            background: #e74c3c;
+            border-color: #e74c3c;
+        }
+        
+        .design5 .status-indicator.clear {
+            background: #6c757d;
+            border-color: #6c757d;
+        }
+        
+        .design5 .btn-attendance {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            font-size: 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+        
+        .design5 .btn-attendance:hover {
+            background: #f8f9fa;
+        }
+        
+        .design5 .btn-attendance.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Attendance Button Design Prototypes</h1>
+    <p>Here are 5 different designs for the 3-button attendance system. Click the buttons to see active states.</p>
+    
+    <!-- DESIGN 1: Compact Horizontal Buttons -->
+    <div class="prototype-section design1">
+        <div class="prototype-title">Design 1: Compact Horizontal Buttons</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present active">Present</button>
+                <button class="btn-attendance btn-absent">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present">Present</button>
+                <button class="btn-attendance btn-absent active">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 2: Icon-Only Circular Buttons -->
+    <div class="prototype-section design2">
+        <div class="prototype-title">Design 2: Icon-Only Circular Buttons</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present active" title="Present">✓</button>
+                <button class="btn-attendance btn-absent" title="Absent">✗</button>
+                <button class="btn-attendance btn-clear" title="Clear">−</button>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present" title="Present">✓</button>
+                <button class="btn-attendance btn-absent active" title="Absent">✗</button>
+                <button class="btn-attendance btn-clear" title="Clear">−</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 3: Pill-Shaped Toggle Style -->
+    <div class="prototype-section design3">
+        <div class="prototype-title">Design 3: Pill-Shaped Toggle Style</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present active">Present</button>
+                <button class="btn-attendance btn-absent">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present">Present</button>
+                <button class="btn-attendance btn-absent active">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 4: Minimalist Text Buttons -->
+    <div class="prototype-section design4">
+        <div class="prototype-title">Design 4: Minimalist Text Buttons</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present active">P</button>
+                <button class="btn-attendance btn-absent">A</button>
+                <button class="btn-attendance btn-clear">C</button>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-buttons">
+                <button class="btn-attendance btn-present">P</button>
+                <button class="btn-attendance btn-absent active">A</button>
+                <button class="btn-attendance btn-clear">C</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DESIGN 5: Status Indicator with Click Areas -->
+    <div class="prototype-section design5">
+        <div class="prototype-title">Design 5: Status Indicator with Click Areas</div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Ahmed Ali</div>
+                <div class="student-roll">Roll: 001</div>
+            </div>
+            <div class="attendance-buttons">
+                <div class="status-indicator present"></div>
+                <button class="btn-attendance btn-present active">Present</button>
+                <button class="btn-attendance btn-absent">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+        <div class="student-row">
+            <div class="student-info">
+                <div class="student-name">Fatima Khan</div>
+                <div class="student-roll">Roll: 002</div>
+            </div>
+            <div class="attendance-buttons">
+                <div class="status-indicator absent"></div>
+                <button class="btn-attendance btn-present">Present</button>
+                <button class="btn-attendance btn-absent active">Absent</button>
+                <button class="btn-attendance btn-clear">Clear</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add click functionality to demonstrate active states
+        document.querySelectorAll('.btn-attendance').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from siblings
+                const siblings = this.parentElement.querySelectorAll('.btn-attendance');
+                siblings.forEach(sib => sib.classList.remove('active'));
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Update status indicator in design 5
+                const statusIndicator = this.parentElement.querySelector('.status-indicator');
+                if (statusIndicator) {
+                    statusIndicator.className = 'status-indicator';
+                    if (this.classList.contains('btn-present')) {
+                        statusIndicator.classList.add('present');
+                    } else if (this.classList.contains('btn-absent')) {
+                        statusIndicator.classList.add('absent');
+                    } else if (this.classList.contains('btn-clear')) {
+                        statusIndicator.classList.add('clear');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -37,20 +37,18 @@ function updateDateInputMax() {
 }
 
 async function loadAttendanceForDate() {
-    console.log('=== loadAttendanceForDate called ===');
     let selectedDate = document.getElementById('attendanceDate').value;
     const attendanceList = document.getElementById('attendanceList');
     
-    // Ensure class filter is populated with a delay to ensure classes are loaded
+    // Only populate class filter if it's empty (first time load)
     if (typeof populateAttendanceClassFilter === 'function') {
-        console.log('🔄 Ensuring class filter is populated...');
-        setTimeout(() => {
-            populateAttendanceClassFilter();
-        }, 500);
+        const classFilter = document.getElementById('classFilter');
+        if (classFilter && classFilter.options.length <= 1) {
+            setTimeout(() => {
+                populateAttendanceClassFilter();
+            }, 100);
+        }
     }
-    
-    console.log('Selected date:', selectedDate);
-    console.log('Attendance list element:', attendanceList);
     
     // If no date is selected, automatically set today's date
     if (!selectedDate) {
@@ -79,10 +77,8 @@ async function loadAttendanceForDate() {
     
     let filteredStudents = getFilteredStudents();
     
-    // Debug: Log students data
-    console.log('Total students available:', students.length);
-    console.log('Filtered students:', filteredStudents.length);
-    console.log('Students data:', students);
+    // Debug: Log students data (reduced logging)
+    console.log(`Loading ${filteredStudents.length} students for ${selectedDate}`);
     
     // Sort students by class and then roll number
     filteredStudents.sort((a, b) => {
@@ -103,12 +99,13 @@ async function loadAttendanceForDate() {
         return;
     }
     
-    console.log('Generating HTML for', filteredStudents.length, 'students');
+    // Generating HTML for students
     attendanceList.innerHTML = filteredStudents.map(student => {
         const studentAttendance = attendance[selectedDate][student.id] || { status: 'neutral', reason: '' };
         const status = studentAttendance.status;
         const isAbsent = status === 'absent';
         const isPresent = status === 'present';
+        const isHoliday = status === 'holiday';
         const isNeutral = status === 'neutral' || !status;
         
         // Set toggle appearance and next status based on current status
@@ -121,8 +118,22 @@ async function loadAttendanceForDate() {
             nextStatus = 'absent';
         } else if (isAbsent) {
             toggleClass = 'absent';
+            nextStatus = 'holiday';
+        } else if (isHoliday) {
+            toggleClass = 'holiday';
             nextStatus = 'neutral';
         }
+        
+        // Get status text for display
+        const statusTexts = {
+            'present': t('present') || 'Present',
+            'absent': t('absent') || 'Absent',
+            'holiday': t('holiday') || 'Holiday',
+            'neutral': t('clear') || 'Clear',
+            'clear': t('clear') || 'Clear'
+        };
+        
+        const currentStatusText = statusTexts[status] || statusTexts['neutral'];
         
         return `
             <div class="student-row">
@@ -144,9 +155,29 @@ async function loadAttendanceForDate() {
                         </h4>
                     </div>
                     <div class="attendance-toggle">
-                        <div class="toggle-switch ${toggleClass}" 
-                             onclick="toggleAttendance('${student.id}', '${selectedDate}', '${nextStatus}')">
-                            <div class="toggle-slider"></div>
+                        <div class="attendance-dropdown">
+                            <div class="dropdown-toggle ${status}" onclick="toggleAttendanceDropdown('${student.id}', '${selectedDate}')">
+                                <span>${currentStatusText}</span>
+                                <span>▼</span>
+                            </div>
+                            <div class="dropdown-menu" id="dropdown-${student.id}">
+                                <div class="dropdown-item" onclick="selectAttendanceStatus('${student.id}', '${selectedDate}', 'present')">
+                                    <div class="status-dot present"></div>
+                                    <span>${t('present') || 'Present'}</span>
+                                </div>
+                                <div class="dropdown-item" onclick="selectAttendanceStatus('${student.id}', '${selectedDate}', 'absent')">
+                                    <div class="status-dot absent"></div>
+                                    <span>${t('absent') || 'Absent'}</span>
+                                </div>
+                                <div class="dropdown-item" onclick="selectAttendanceStatus('${student.id}', '${selectedDate}', 'holiday')">
+                                    <div class="status-dot holiday"></div>
+                                    <span>${t('holiday') || 'Holiday'}</span>
+                                </div>
+                                <div class="dropdown-item" onclick="selectAttendanceStatus('${student.id}', '${selectedDate}', 'neutral')">
+                                    <div class="status-dot neutral"></div>
+                                    <span>${t('clear') || 'Clear'}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -162,9 +193,7 @@ async function loadAttendanceForDate() {
         updateAttendancePageHijri();
     }
     
-    console.log('=== loadAttendanceForDate completed ===');
-    console.log('Generated HTML length:', attendanceList.innerHTML.length);
-    console.log('Students displayed:', filteredStudents.length);
+    console.log(`✅ Attendance loaded: ${filteredStudents.length} students`);
 }
 
 async function copyPreviousDayAttendance() {
@@ -198,12 +227,158 @@ async function copyPreviousDayAttendance() {
     }
 }
 
-async function toggleAttendance(studentId, date, status) {
-    // Prevent attendance marking on holidays
-    if (isHoliday(date)) {
-        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
-        return;
+// New dropdown functions
+function toggleAttendanceDropdown(studentId, date) {
+    // Close all other dropdowns first
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('show');
+    });
+    
+    // Toggle current dropdown
+    const dropdown = document.getElementById(`dropdown-${studentId}`);
+    if (dropdown) {
+        dropdown.classList.toggle('show');
     }
+}
+
+function selectAttendanceStatus(studentId, date, status) {
+    // Close the dropdown
+    const dropdown = document.getElementById(`dropdown-${studentId}`);
+    if (dropdown) {
+        dropdown.classList.remove('show');
+    }
+    
+    // Update attendance directly without full refresh
+    updateAttendanceStatus(studentId, date, status);
+}
+
+// Optimized function to update only the specific student row
+async function updateAttendanceStatus(studentId, date, status) {
+    // Holiday status is now allowed - no restrictions
+    
+    if (!attendance[date]) {
+        attendance[date] = {};
+    }
+    
+    // Update attendance data
+    if (status === 'neutral') {
+        delete attendance[date][studentId];
+    } else {
+        attendance[date][studentId] = {
+            status: status || 'neutral',
+            reason: status === 'present' || status === 'neutral' ? '' : (attendance[date][studentId]?.reason || '')
+        };
+    }
+    
+    // Update only the specific student row instead of regenerating everything
+    updateStudentRow(studentId, date, status);
+    
+    // Update student count display (important for UI consistency)
+    const filteredStudents = getFilteredStudents();
+    updateFilteredStudentCount(filteredStudents.length);
+    
+    // Update filter status indicator
+    updateFilterStatus();
+    
+    // Show visual indication that changes are pending
+    const saveButton = document.querySelector('.btn-save-attendance');
+    if (saveButton) {
+        saveButton.style.background = '#e67e22';
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes*';
+    }
+    
+    // Only refresh calendar if it's visible (minimal update)
+    refreshAttendanceCalendarIfVisible();
+}
+
+// Function to update only a specific student row
+function updateStudentRow(studentId, date, status) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+    
+    const studentAttendance = attendance[date][studentId] || { status: 'neutral', reason: '' };
+    const isAbsent = status === 'absent';
+    const isPresent = status === 'present';
+    const isHoliday = status === 'holiday';
+    const isNeutral = status === 'neutral' || !status;
+    
+    // Get status text for display
+    const statusTexts = {
+        'present': t('present') || 'Present',
+        'absent': t('absent') || 'Absent',
+        'holiday': t('holiday') || 'Holiday',
+        'neutral': t('clear') || 'Clear',
+        'clear': t('clear') || 'Clear'
+    };
+    
+    const currentStatusText = statusTexts[status] || statusTexts['neutral'];
+    
+    // Find the student row and update it
+    const studentRows = document.querySelectorAll('.student-row');
+    studentRows.forEach(row => {
+        const nameElement = row.querySelector('.clickable-name');
+        if (nameElement && nameElement.getAttribute('onclick').includes(studentId)) {
+            // Update the dropdown toggle
+            const dropdownToggle = row.querySelector('.dropdown-toggle');
+            if (dropdownToggle) {
+                dropdownToggle.className = `dropdown-toggle ${status}`;
+                const textSpan = dropdownToggle.querySelector('span:first-child');
+                if (textSpan) {
+                    textSpan.textContent = currentStatusText;
+                }
+            }
+            
+            // Update reason input visibility
+            const reasonInput = row.querySelector('.inline-reason-input');
+            const reasonDisplay = row.querySelector('.reason-display');
+            
+            if (isAbsent) {
+                if (!reasonInput) {
+                    // Add reason input
+                    const h4 = row.querySelector('h4');
+                    if (h4) {
+                        h4.innerHTML += `
+                            <span class="inline-reason-input">
+                                <input type="text" 
+                                       placeholder="${t('reasonForAbsence')}"
+                                       value="${studentAttendance.reason || ''}"
+                                       onchange="updateAbsenceReason('${studentId}', '${date}', this.value)"
+                                       class="reason-input-inline">
+                            </span>
+                        `;
+                    }
+                }
+                if (reasonDisplay) {
+                    reasonDisplay.textContent = studentAttendance.reason ? `(${studentAttendance.reason})` : '';
+                }
+            } else if (isHoliday) {
+                // Holiday status - no reason input needed
+                if (reasonInput) reasonInput.remove();
+                if (reasonDisplay) reasonDisplay.remove();
+            } else {
+                // Remove reason input and display
+                if (reasonInput) reasonInput.remove();
+                if (reasonDisplay) reasonDisplay.remove();
+            }
+        }
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.attendance-dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
+
+// Make functions globally accessible
+window.toggleAttendanceDropdown = toggleAttendanceDropdown;
+window.selectAttendanceStatus = selectAttendanceStatus;
+
+async function toggleAttendance(studentId, date, status) {
+    // Holiday status is now allowed - no restrictions
     
     if (!attendance[date]) {
         attendance[date] = {};
@@ -232,16 +407,8 @@ async function toggleAttendance(studentId, date, status) {
         saveButton.innerHTML = '<i class="fas fa-save"></i> Save Changes*';
     }
     
-    // Refresh attendance calendar if it's visible to show updated status
+    // Only refresh calendar if it's visible (minimal update)
     refreshAttendanceCalendarIfVisible();
-    
-    // Also try force refresh as backup (for debugging)
-    setTimeout(() => forceRefreshAttendanceCalendar(), 100);
-    
-    // Update dashboard to reflect the changes
-    if (typeof updateDashboard === 'function') {
-        updateDashboard();
-    }
 }
 
 function updateAbsenceReason(studentId, date, reason) {
@@ -269,11 +436,7 @@ async function saveAttendance() {
     
     console.log('Saving attendance for date:', selectedDate);
     
-    // Prevent saving attendance on holidays
-    if (isHoliday(selectedDate)) {
-        showModal(t('error'), t('cannotSaveAttendanceOnHolidays'));
-        return;
-    }
+    // Holiday status is now allowed - no restrictions
     
     // Initialize attendance record for the day if it doesn't exist
     if (!attendance[selectedDate]) {
@@ -583,13 +746,6 @@ function updateFilterStatus() {
 function getFilteredStudents() {
     const selectedDate = document.getElementById('attendanceDate').value;
     const selectedClass = document.getElementById('classFilter').value;
-    
-    console.log('🔍 getFilteredStudents - selectedDate:', selectedDate);
-    console.log('🔍 getFilteredStudents - selectedClass:', selectedClass);
-    console.log('🔍 getFilteredStudents - selectedClass type:', typeof selectedClass);
-    console.log('🔍 getFilteredStudents - selectedClass length:', selectedClass ? selectedClass.length : 'N/A');
-    console.log('🔍 getFilteredStudents - students.length:', students.length);
-    console.log('🔍 getFilteredStudents - sample student class:', students[0]?.class);
 
     // Helper function to parse inactivation date
     function parseInactivationDate(inactivationDate) {
@@ -675,11 +831,7 @@ async function markAllPresent() {
         return;
     }
     
-    // Prevent bulk actions on holidays
-    if (isHoliday(selectedDate)) {
-        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
-        return;
-    }
+    // Holiday status is now allowed - no restrictions
     
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
@@ -808,11 +960,7 @@ async function markAllNeutral() {
         return;
     }
     
-    // Prevent bulk actions on holidays
-    if (isHoliday(selectedDate)) {
-        showModal(t('error'), t('cannotMarkAttendanceOnHolidays'));
-        return;
-    }
+    // Holiday status is now allowed - no restrictions
     
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
@@ -854,10 +1002,7 @@ async function markAllNeutral() {
 }
 
 async function autoCopyFromPreviousDay(targetDate) {
-    // Don't auto-copy to holidays
-    if (isHoliday(targetDate)) {
-        return;
-    }
+    // Holiday status is now allowed - no restrictions
     
     const filteredStudents = getFilteredStudents();
     if (filteredStudents.length === 0) {
@@ -876,7 +1021,7 @@ async function autoCopyFromPreviousDay(targetDate) {
         checkDate.setDate(targetDateObj.getDate() - i);
         const checkDateStr = checkDate.toISOString().split('T')[0];
         
-        if (!isHoliday(checkDateStr) && attendance[checkDateStr] && 
+        if (attendance[checkDateStr] && 
             Object.keys(attendance[checkDateStr]).length > 0) {
             
             if (!foundAnyAttendance) {

@@ -2,6 +2,12 @@
         // Students will be loaded from main application database
         let allStudents = [];
         
+        // Utility function to get today's date in YYYY-MM-DD format (same as main dashboard)
+        function getTodayString() {
+            const today = new Date();
+            return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+        
         // Function to load students from main app
         async function loadStudentsFromMainApp() {
             try {
@@ -908,8 +914,8 @@
         function renderTodaySummary(students) {
             const total = students.length;
             
-            // Get today's attendance data from main app
-            const today = new Date().toISOString().split('T')[0];
+            // Get today's attendance data from main app (use same date format as main dashboard)
+            const today = getTodayString();
             let present = 0;
             let absent = 0;
             
@@ -930,31 +936,54 @@
                                 } else if (studentAttendance.status === 'absent') {
                                     absent++;
                                 }
+                                // Note: Holiday status is not counted in present/absent for attendance rate calculation
                             }
                         });
                     }
                     
-            const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+                    // Calculate attendance rate correctly: present / (present + absent)
+                    const rate = (present + absent) > 0 ? Math.round((present / (present + absent)) * 100) : 0;
+                    
+                    // Debug logging
+                    console.log('🎓 Teachers Corner - Today Summary:', {
+                        total: total,
+                        present: present,
+                        absent: absent,
+                        rate: rate,
+                        today: today
+                    });
             
                     // Batch DOM updates with color coding
-            requestAnimationFrame(() => {
-                // Check if elements exist before updating
-                const totalStudentsEl = document.getElementById('class-total-students');
-                const presentTodayEl = document.getElementById('class-present-today');
-                const absentTodayEl = document.getElementById('class-absent-today');
-                const attendanceRateEl = document.getElementById('class-attendance-rate');
-                
+                    requestAnimationFrame(() => {
+                        // Check if elements exist before updating
+                        const totalStudentsEl = document.getElementById('class-total-students');
+                        const presentTodayEl = document.getElementById('class-present-today');
+                        const absentTodayEl = document.getElementById('class-absent-today');
+                        const attendanceRateEl = document.getElementById('class-attendance-rate');
+                        
+                        // Debug: Check if elements exist
+                        console.log('🎓 Teachers Corner - DOM Elements Check:', {
+                            'class-total-students': !!totalStudentsEl,
+                            'class-present-today': !!presentTodayEl,
+                            'class-absent-today': !!absentTodayEl,
+                            'class-attendance-rate': !!attendanceRateEl
+                        });
+                        
                         if (totalStudentsEl) {
                             updateElementText('class-total-students', total);
+                            console.log('✅ Updated class-total-students:', total);
                         }
                         if (presentTodayEl) {
                             updateElementText('class-present-today', present);
+                            console.log('✅ Updated class-present-today:', present);
                         }
                         if (absentTodayEl) {
                             updateElementText('class-absent-today', absent);
+                            console.log('✅ Updated class-absent-today:', absent);
                         }
                         if (attendanceRateEl) {
                             updateElementText('class-attendance-rate', `${rate}%`);
+                            console.log('✅ Updated class-attendance-rate:', `${rate}%`);
                             // Color coding for attendance rate based on percentage using CSS classes
                             attendanceRateEl.classList.remove('attendance-high', 'attendance-medium', 'attendance-low');
                             if (rate >= 80) {
